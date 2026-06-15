@@ -281,3 +281,168 @@ h2 {
     grid-template-columns: repeat(2, 1fr);
   }
 }
+
+.room-flow,
+.room-card,
+.pin-card {
+  display: grid;
+  gap: 1rem;
+}
+
+.room-flow {
+  margin: 1rem 0;
+}
+
+.room-card,
+.pin-card {
+  border: 1px solid rgba(184, 255, 104, 0.24);
+  border-radius: 1.5rem;
+  background: rgba(6, 37, 28, 0.84);
+  padding: 1.25rem;
+  box-shadow: 0 1.25rem 4rem rgba(0, 0, 0, 0.22);
+}
+
+label {
+  display: grid;
+  gap: 0.35rem;
+  color: #dcffe5;
+  font-weight: 800;
+}
+
+input,
+textarea {
+  width: 100%;
+  min-height: 3.2rem;
+  border: 2px solid rgba(184, 255, 104, 0.28);
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.96);
+  color: #08251d;
+  font: inherit;
+  font-size: 1rem;
+  padding: 0.8rem 0.95rem;
+}
+
+textarea {
+  resize: vertical;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  filter: grayscale(0.7);
+  opacity: 0.5;
+}
+
+.split-actions,
+.quick-actions,
+.category-grid,
+.manual-grid {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.category-grid,
+.quick-actions,
+.manual-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.category-pill {
+  min-height: 3.4rem;
+  border: 2px solid rgba(247, 255, 247, 0.24);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #f7fff7;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 900;
+}
+
+.category-pill span {
+  margin-right: 0.4rem;
+}
+
+.category-pill.selected {
+  border-color: #b8ff68;
+  background: #b8ff68;
+  color: #0a251c;
+}
+
+.privacy-copy,
+.pin-list small {
+  color: #d4f4dc;
+  line-height: 1.5;
+}
+
+.target-button {
+  display: grid;
+  gap: 0.2rem;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+.pin-list {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pin-list li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.25rem 0.75rem;
+  border-radius: 1rem;
+  background: rgba(184, 255, 104, 0.12);
+  padding: 0.9rem;
+}
+
+.pin-list span {
+  grid-row: span 2;
+  font-size: 1.8rem;
+}
+
+.pin-list strong,
+.pin-list small {
+  min-width: 0;
+}
+
+@media (min-width: 42rem) {
+  .room-flow {
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  }
+
+  .split-actions,
+  .quick-actions,
+  .category-grid,
+  .manual-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 30rem) {
+  .app-shell {
+    padding: 0.75rem;
+  }
+
+  .hero-card,
+  .room-card,
+  .pin-card,
+  .geo-panel,
+  .map-shell,
+  .detail-panel,
+  .info-card {
+    border-radius: 1.1rem;
+  }
+
+  .category-grid,
+  .quick-actions,
+  .manual-grid {
+    grid-template-columns: 1fr;
+  }
+}
