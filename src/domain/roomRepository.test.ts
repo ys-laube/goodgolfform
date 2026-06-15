@@ -55,10 +55,36 @@ describe('shared RoomRepository backend', () => {
       now: '2026-06-15T09:03:00.000Z',
     });
 
-    await expect(secondClient.listPins(room.id)).resolves.toEqual([firstPin, secondPin]);
-    await expect(firstClient.listPins(room.id)).resolves.toEqual([firstPin, secondPin]);
-    expect(globalThis.localStorage).toBeUndefined();
-    expect(globalThis.sessionStorage).toBeUndefined();
+    await withPoisonedBrowserStorage(async () => {
+      await expect(secondClient.listPins(room.id)).resolves.toEqual([firstPin, secondPin]);
+      await expect(firstClient.listPins(room.id)).resolves.toEqual([firstPin, secondPin]);
+    });
+  });
+
+  it('exposes loose freshness metadata for read snapshots', async () => {
+    const backend = createSharedRoomBackend();
+    const repository = createRoomRepository(backend);
+    const { room, participant } = await repository.createRoom({
+      name: 'Fresh enough round',
+      hostDisplayName: 'Ari',
+      now: '2026-06-15T09:00:00.000Z',
+    });
+    const pin = await repository.createPin({
+      roomId: room.id,
+      participantId: participant.id,
+      participantName: participant.displayName,
+      emoji: '⛳',
+      comment: 'Readable on next loose-freshness poll',
+      lat: 37.42194,
+      lng: -122.08403,
+      now: '2026-06-15T09:05:00.000Z',
+    });
+
+    await expect(repository.listPinSnapshot(room.id, '2026-06-15T09:05:10.000Z')).resolves.toEqual({
+      pins: [pin],
+      observedAt: '2026-06-15T09:05:10.000Z',
+      freshness: 'loose',
+    });
   });
 
   it('returns snapshots so callers cannot mutate append-only backend history', async () => {
@@ -88,3 +114,32 @@ describe('shared RoomRepository backend', () => {
 });
 
 type ShotPinForMutation = Awaited<ReturnType<ReturnType<typeof createRoomRepository>['listPins']>>[number];
+
+async function withPoisonedBrowserStorage(assertions: () => Promise<void>): Promise<void> {
+  const localStorageDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
+  const sessionStorageDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'sessionStorage');
+
+  Object.defineProperty(globalThis, 'localStorage', {
+    configurable: true,
+    get: () => {
+      throw new Error('localStorage must not be used by RoomRepository');
+    },
+  });
+  Object.defineProperty(globalThis, 'sessionStorage', {
+    configurable: true,
+    get: () => {
+      throw new Error('sessionStorage must not be used by RoomRepository');
+    },
+  });
+
+  try {
+    await assertions();
+  } finally {
+    if (localStorageDescriptor) {
+      Object.defineProperty(globalThis, 'localStorage', localStorageDescriptor);
+    }
+    if (sessionStorageDescriptor) {
+      Object.defineProperty(globalThis, 'sessionStorage', sessionStorageDescriptor);
+    }
+  }
+}
