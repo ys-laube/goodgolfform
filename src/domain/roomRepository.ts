@@ -1,4 +1,4 @@
-import type { Coordinate, Participant, RoundRoom, ShotPin } from './models';
+import type { Coordinate, Participant, RoundRoom, ShotPin, ShotPinCategory } from './models';
 
 type StoredRoom = {
   readonly room: RoundRoom;
@@ -26,6 +26,7 @@ export type CreateShotPinInput = Coordinate & {
   readonly roomId: string;
   readonly participantId: string;
   readonly participantName: string;
+  readonly category?: ShotPinCategory;
   readonly emoji: string;
   readonly comment: string;
   readonly now?: string;
@@ -114,6 +115,7 @@ export function createRoomRepository(backend: SharedRoomBackend = defaultBackend
         roomId: input.roomId,
         participantId: input.participantId,
         participantName: input.participantName,
+        category: input.category ?? 'note',
         emoji: input.emoji,
         comment: input.comment,
         lat: input.lat,
