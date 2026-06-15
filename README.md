@@ -10,13 +10,14 @@ This foundation includes:
 - Product copy for concept, privacy boundaries, and approximate-distance disclaimers.
 - Domain model types for rooms, participants, course targets, location samples, and shot pins.
 - Baseline Vitest, TypeScript, ESLint, and production build scripts.
-- No map provider, map SDK, backend, or shared persistence implementation yet.
+- No map provider or map SDK coupling in the app shell.
+- A provider-neutral Room API/repository boundary now exists for invite-link rooms and shot pins. The default local demo adapter is in-memory and single-process; production sharing should set `VITE_ROOM_API_BASE_URL` to a hosted Room API using the same Fetch-style contract.
 
-Shared persistence is MVP-critical for later goals, but it is intentionally not implemented in G001.
+Shared persistence is MVP-critical. The current code separates the client from the Room API contract and keeps the local in-memory adapter as a demo/test fixture, not a hosted persistence substitute.
 
 ## Concept
 
-The app is designed for friends playing together, not public social discovery. A later MVP should let a player create or join a round room by URL, view approximate current-location context, and add playful shot pins visible to room participants.
+The app is designed for friends playing together, not public social discovery. The MVP lets a player create or join a round room by invite token, view approximate current-location context, and add playful shot pins visible to room participants.
 
 ## Non-goals
 
@@ -25,6 +26,7 @@ The app is designed for friends playing together, not public social discovery. A
 - No public social feed, search, followers, or discovery.
 - No rangefinder-grade precision promises.
 - No provider-specific map coupling in this foundation.
+- No client-trusted participant identity: room pin reads/writes require opaque membership credentials issued by the Room API.
 
 ## Privacy and location disclaimer
 
@@ -35,6 +37,8 @@ FunGolf should request location permission only when a round feature needs it. M
 ```bash
 npm install
 npm run dev
+# optional: point the app at a hosted/shared Room API
+VITE_ROOM_API_BASE_URL=https://your-room-api.example npm run dev
 ```
 
 ## Verification scripts
@@ -51,3 +55,7 @@ npm run build
 - Browser geolocation requires a secure context outside localhost; document provider and HTTPS requirements when geolocation work begins.
 - Keep future map integration behind an adapter boundary so provider keys, quota, billing, and regional coverage can be evaluated without locking the app shell to one SDK.
 - Preserve mobile field use: large touch targets, low typing, outdoor-readable contrast, and graceful denied/unavailable location states.
+
+## Room API boundary
+
+The app uses a Fetch-style `RoomApiClient`. If `VITE_ROOM_API_BASE_URL` is set, the UI talks to that remote endpoint. Without it, the app uses a local in-memory demo handler so tests and local previews remain dependency-free. Invite tokens, room ids, participant ids, and member tokens are opaque random identifiers; pin creation and pin reads require the issued membership token.

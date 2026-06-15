@@ -14,6 +14,9 @@ const membership: RoomMembership = {
     displayName: 'Ari',
     joinedAt: '2026-06-15T09:00:00.000Z',
   },
+  roomId: 'room-1',
+  participantId: 'participant-1',
+  memberToken: 'member-1',
 };
 
 describe('mobile shot pin flow', () => {
@@ -41,7 +44,7 @@ describe('mobile shot pin flow', () => {
     ).toEqual({
       roomId: 'room-1',
       participantId: 'participant-1',
-      participantName: 'Ari',
+      memberToken: 'member-1',
       category: 'shot',
       emoji: '🏌️',
       comment: 'Flushed seven iron',

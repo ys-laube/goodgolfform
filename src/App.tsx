@@ -5,7 +5,7 @@ import { sampleCourseTargets } from './domain/courseTargets';
 import { targetDistances } from './domain/geo';
 import { buildMockMapModel } from './domain/mapAdapter';
 import type { Coordinate, ShotPin, ShotPinCategory } from './domain/models';
-import { createRoomApiClient, createRoomApiHandler } from './domain/roomApi';
+import { createRemoteRoomApiClient, createRoomApiClient, createRoomApiHandler } from './domain/roomApi';
 import { createRoomRepository, createSharedRoomBackend, type RoomMembership } from './domain/roomRepository';
 import { buildShotPinInput, findShotPinCategory, shotPinCategories, type ShotPinLocationSource } from './domain/shotPinFlow';
 import { useCurrentLocation } from './hooks/useCurrentLocation';
@@ -44,6 +44,11 @@ export function App() {
   const [flowMessage, setFlowMessage] = useState('Create or join a room to drop quick shot pins.');
 
   const roomApi = useMemo(() => {
+    const remoteBaseUrl = import.meta.env.VITE_ROOM_API_BASE_URL as string | undefined;
+    if (remoteBaseUrl) {
+      return createRemoteRoomApiClient(remoteBaseUrl);
+    }
+
     const handler = createRoomApiHandler(createRoomRepository(createSharedRoomBackend()));
     return createRoomApiClient({ baseUrl: 'https://fungolf.local', fetch: handler });
   }, []);
@@ -63,14 +68,14 @@ export function App() {
     const nextMembership = await roomApi.createRoom({ name: roomName, hostDisplayName: displayName });
     setMembership(nextMembership);
     setInviteToken(nextMembership.room.inviteToken ?? '');
-    setPins(await roomApi.listPins(nextMembership.room.id));
+    setPins(await roomApi.listPins(nextMembership));
     setFlowMessage(`Room ready: ${nextMembership.room.name}. Share invite token ${nextMembership.room.inviteToken}.`);
   }
 
   async function joinRoom() {
     const nextMembership = await roomApi.joinRoom({ inviteToken, displayName });
     setMembership(nextMembership);
-    setPins(await roomApi.listPins(nextMembership.room.id));
+    setPins(await roomApi.listPins(nextMembership));
     setFlowMessage(`Joined ${nextMembership.room.name}. Pins refresh with loose freshness, not live tracking.`);
   }
 
@@ -92,7 +97,7 @@ export function App() {
           manualLocation,
         }),
       );
-      setPins(await roomApi.listPins(pin.roomId));
+      setPins(await roomApi.listPins(membership));
       setComment('');
       setFlowMessage(`${pin.emoji} ${pin.comment} saved from ${source} location as an approximate room pin.`);
     } catch (error) {

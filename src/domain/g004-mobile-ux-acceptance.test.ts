@@ -5,7 +5,7 @@ import { createRoomRepository, createSharedRoomBackend, type CreateShotPinInput 
 describe('G004 mobile shot-pin UX acceptance contract', () => {
   it('supports shot pins from current, tapped, and manual location sources through the shared room boundary', async () => {
     const repository = createRoomRepository(createSharedRoomBackend());
-    const { room, participant } = await repository.createRoom({
+    const membership = await repository.createRoom({
       name: 'Mobile field round',
       hostDisplayName: 'Ari',
       now: '2026-06-15T09:00:00.000Z',
@@ -20,9 +20,9 @@ describe('G004 mobile shot-pin UX acceptance contract', () => {
     const createdPins = await Promise.all(
       pinDrafts.map((draft, index) => {
         const input: CreateShotPinInput = {
-          roomId: room.id,
-          participantId: participant.id,
-          participantName: participant.displayName,
+          roomId: membership.room.id,
+          participantId: membership.participant.id,
+          memberToken: membership.memberToken,
           emoji: draft.emoji,
           comment: draft.comment,
           lat: draft.lat,
@@ -33,7 +33,7 @@ describe('G004 mobile shot-pin UX acceptance contract', () => {
       }),
     );
 
-    await expect(repository.listPins(room.id)).resolves.toEqual(createdPins);
+    await expect(repository.listPins(membership)).resolves.toEqual(createdPins);
     expect(createdPins.map((pin) => `${pin.emoji} ${pin.comment}`)).toEqual(
       pinDrafts.map((draft) => `${draft.emoji} ${draft.comment}`),
     );

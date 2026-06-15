@@ -32,3 +32,8 @@ If a trigger fires, the next design must define image source rights, calibration
 - Record a real two-device browser smoke result once the app is served from a reachable dev/staging URL.
 - Record on-course readability findings under bright sun and poor network conditions.
 - Decide hosted persistence only through a later provider-selection goal; do not infer readiness from the in-memory backend alone.
+
+
+## Final hardening note
+
+Field readiness assumes a hosted Room API endpoint for real multi-device play. Local previews use the same Fetch-style contract with an in-memory handler, but actual friend sharing should configure `VITE_ROOM_API_BASE_URL` and keep membership tokens private to room participants.

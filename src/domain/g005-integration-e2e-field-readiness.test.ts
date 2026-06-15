@@ -85,9 +85,9 @@ describe('G005 integration E2E field-readiness contract', () => {
       const hostPin = await hostContext.createPin(hostPinInput);
       const guestPin = await guestContext.createPin(guestPinInput);
 
-      await expect(hostContext.listPins(hostMembership.room.id)).resolves.toEqual([hostPin, guestPin]);
-      await expect(guestContext.listPins(guestMembership.room.id)).resolves.toEqual([hostPin, guestPin]);
-      await expect(guestContext.listPinSnapshot(guestMembership.room.id, '2026-06-15T09:05:00.000Z')).resolves.toMatchObject({
+      await expect(hostContext.listPins(hostMembership)).resolves.toEqual([hostPin, guestPin]);
+      await expect(guestContext.listPins(guestMembership)).resolves.toEqual([hostPin, guestPin]);
+      await expect(guestContext.listPinSnapshot(guestMembership, '2026-06-15T09:05:00.000Z')).resolves.toMatchObject({
         pins: [hostPin, guestPin],
         freshness: 'loose',
       });
@@ -145,6 +145,9 @@ describe('G005 integration E2E field-readiness contract', () => {
         displayName: 'Ari',
         joinedAt: '2026-06-15T09:00:00.000Z',
       },
+      roomId: 'field-room',
+      participantId: 'participant-ari',
+      memberToken: 'member-ari',
     };
 
     expect(lowAccuracy).toMatchObject({ status: 'low_accuracy', maxAcceptableAccuracyMeters: 50 });

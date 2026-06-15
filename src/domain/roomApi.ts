@@ -3,6 +3,7 @@ import type {
   CreateShotPinInput,
   JoinRoomInput,
   PinListSnapshot,
+  RoomCredential,
   RoomMembership,
   RoomRepository,
 } from './roomRepository';
@@ -14,8 +15,8 @@ export type RoomApiClient = {
   readonly createRoom: (input: CreateRoomInput) => Promise<RoomMembership>;
   readonly joinRoom: (input: JoinRoomInput) => Promise<RoomMembership>;
   readonly createPin: (input: CreateShotPinInput) => Promise<ShotPin>;
-  readonly listPins: (roomId: string) => Promise<readonly ShotPin[]>;
-  readonly listPinSnapshot: (roomId: string, now?: string) => Promise<PinListSnapshot>;
+  readonly listPins: (credential: RoomCredential) => Promise<readonly ShotPin[]>;
+  readonly listPinSnapshot: (credential: RoomCredential, now?: string) => Promise<PinListSnapshot>;
 };
 
 export function createRoomApiHandler(repository: RoomRepository): RoomApiFetch {
@@ -39,17 +40,20 @@ export function createRoomApiHandler(repository: RoomRepository): RoomApiFetch {
       if (pinRoute && request.method === 'POST' && !pinRoute.snapshot) {
         const body = await readJsonRecord(request);
         return jsonResponse(
-          await repository.createPin(parseCreateShotPinInput({ ...body, roomId: pinRoute.roomId })),
+          await repository.createPin(parseCreateShotPinInput({ ...body, roomId: pinRoute.roomId }, request)),
           201,
         );
       }
 
       if (pinRoute && request.method === 'GET' && !pinRoute.snapshot) {
-        return jsonResponse(await repository.listPins(pinRoute.roomId), 200);
+        return jsonResponse(await repository.listPins(parseRoomCredential(pinRoute.roomId, request)), 200);
       }
 
       if (pinRoute && request.method === 'GET' && pinRoute.snapshot) {
-        return jsonResponse(await repository.listPinSnapshot(pinRoute.roomId, url.searchParams.get('now') ?? undefined), 200);
+        return jsonResponse(
+          await repository.listPinSnapshot(parseRoomCredential(pinRoute.roomId, request), url.searchParams.get('now') ?? undefined),
+          200,
+        );
       }
 
       return jsonResponse({ error: 'not_found', message: 'Room API route was not found.' }, 404);
@@ -65,29 +69,38 @@ export function createRoomApiClient(input: { readonly baseUrl: string; readonly 
   return {
     createRoom: (body) => requestJson<RoomMembership>(input.fetch, `${baseUrl}/rooms`, { method: 'POST', body }),
     joinRoom: (body) => requestJson<RoomMembership>(input.fetch, `${baseUrl}/rooms/join`, { method: 'POST', body }),
-    createPin: (body) => requestJson<ShotPin>(input.fetch, `${baseUrl}/rooms/${encodeURIComponent(body.roomId)}/pins`, {
-      method: 'POST',
-      body,
-    }),
-    listPins: (roomId) => requestJson<readonly ShotPin[]>(input.fetch, `${baseUrl}/rooms/${encodeURIComponent(roomId)}/pins`),
-    listPinSnapshot: (roomId, now) => {
-      const url = new URL(`${baseUrl}/rooms/${encodeURIComponent(roomId)}/pins/snapshot`);
+    createPin: (body) =>
+      requestJson<ShotPin>(input.fetch, `${baseUrl}/rooms/${encodeURIComponent(body.roomId)}/pins`, {
+        method: 'POST',
+        body,
+        credential: body,
+      }),
+    listPins: (credential) =>
+      requestJson<readonly ShotPin[]>(input.fetch, `${baseUrl}/rooms/${encodeURIComponent(credential.roomId)}/pins`, {
+        credential,
+      }),
+    listPinSnapshot: (credential, now) => {
+      const url = new URL(`${baseUrl}/rooms/${encodeURIComponent(credential.roomId)}/pins/snapshot`);
       if (now) {
         url.searchParams.set('now', now);
       }
-      return requestJson<PinListSnapshot>(input.fetch, url);
+      return requestJson<PinListSnapshot>(input.fetch, url, { credential });
     },
   };
+}
+
+export function createRemoteRoomApiClient(baseUrl: string, fetcher: RoomApiFetch = fetch): RoomApiClient {
+  return createRoomApiClient({ baseUrl, fetch: fetcher });
 }
 
 async function requestJson<T>(
   fetcher: RoomApiFetch,
   url: string | URL,
-  init: { readonly method?: string; readonly body?: unknown } = {},
+  init: { readonly method?: string; readonly body?: unknown; readonly credential?: RoomCredential } = {},
 ): Promise<T> {
   const response = await fetcher(url, {
     method: init.method ?? 'GET',
-    headers: init.body === undefined ? undefined : { 'content-type': 'application/json' },
+    headers: requestHeaders(init),
     body: init.body === undefined ? undefined : JSON.stringify(init.body),
   });
   const payload = (await response.json()) as unknown;
@@ -98,6 +111,18 @@ async function requestJson<T>(
   }
 
   return payload as T;
+}
+
+function requestHeaders(init: { readonly body?: unknown; readonly credential?: RoomCredential }): HeadersInit | undefined {
+  const headers: Record<string, string> = {};
+  if (init.body !== undefined) {
+    headers['content-type'] = 'application/json';
+  }
+  if (init.credential) {
+    headers['x-fungolf-participant-id'] = init.credential.participantId;
+    headers['x-fungolf-member-token'] = init.credential.memberToken;
+  }
+  return Object.keys(headers).length ? headers : undefined;
 }
 
 function normalizePath(pathname: string): string {
@@ -131,32 +156,45 @@ async function readJsonRecord(request: Request): Promise<Record<string, unknown>
 
 function parseCreateRoomInput(body: Record<string, unknown>): CreateRoomInput {
   return {
-    name: requiredString(body.name, 'name'),
-    hostDisplayName: requiredString(body.hostDisplayName, 'hostDisplayName'),
+    name: boundedString(body.name, 'name', 80),
+    hostDisplayName: boundedString(body.hostDisplayName, 'hostDisplayName', 40),
     now: optionalString(body.now, 'now'),
   };
 }
 
 function parseJoinRoomInput(body: Record<string, unknown>): JoinRoomInput {
   return {
-    inviteToken: requiredString(body.inviteToken, 'inviteToken'),
-    displayName: requiredString(body.displayName, 'displayName'),
+    inviteToken: boundedString(body.inviteToken, 'inviteToken', 96),
+    displayName: boundedString(body.displayName, 'displayName', 40),
     now: optionalString(body.now, 'now'),
   };
 }
 
-function parseCreateShotPinInput(body: Record<string, unknown>): CreateShotPinInput {
+function parseCreateShotPinInput(body: Record<string, unknown>, request: Request): CreateShotPinInput {
+  const roomId = boundedString(body.roomId, 'roomId', 96);
   return {
-    roomId: requiredString(body.roomId, 'roomId'),
-    participantId: requiredString(body.participantId, 'participantId'),
-    participantName: requiredString(body.participantName, 'participantName'),
+    roomId,
+    participantId: credentialHeader(request, 'x-fungolf-participant-id', 'participantId'),
+    memberToken: credentialHeader(request, 'x-fungolf-member-token', 'memberToken'),
     category: optionalShotPinCategory(body.category),
-    emoji: requiredString(body.emoji, 'emoji'),
-    comment: requiredString(body.comment, 'comment'),
-    lat: requiredNumber(body.lat, 'lat'),
-    lng: requiredNumber(body.lng, 'lng'),
+    emoji: boundedString(body.emoji, 'emoji', 16),
+    comment: boundedString(body.comment, 'comment', 140),
+    lat: boundedCoordinate(body.lat, 'lat', -90, 90),
+    lng: boundedCoordinate(body.lng, 'lng', -180, 180),
     now: optionalString(body.now, 'now'),
   };
+}
+
+function parseRoomCredential(roomId: string, request: Request): RoomCredential {
+  return {
+    roomId,
+    participantId: credentialHeader(request, 'x-fungolf-participant-id', 'participantId'),
+    memberToken: credentialHeader(request, 'x-fungolf-member-token', 'memberToken'),
+  };
+}
+
+function credentialHeader(request: Request, headerName: string, fieldName: string): string {
+  return boundedString(request.headers.get(headerName), fieldName, 96);
 }
 
 function optionalShotPinCategory(value: unknown): ShotPinCategory | undefined {
@@ -169,11 +207,15 @@ function optionalShotPinCategory(value: unknown): ShotPinCategory | undefined {
   throw new ValidationError('category must be one of shot, lie, target, or note when provided.');
 }
 
-function requiredString(value: unknown, fieldName: string): string {
+function boundedString(value: unknown, fieldName: string, maxLength: number): string {
   if (typeof value !== 'string' || value.trim() === '') {
     throw new ValidationError(`${fieldName} is required.`);
   }
-  return value;
+  const trimmed = value.trim();
+  if (trimmed.length > maxLength) {
+    throw new ValidationError(`${fieldName} must be ${maxLength} characters or fewer.`);
+  }
+  return trimmed;
 }
 
 function optionalString(value: unknown, fieldName: string): string | undefined {
@@ -186,9 +228,12 @@ function optionalString(value: unknown, fieldName: string): string | undefined {
   return value;
 }
 
-function requiredNumber(value: unknown, fieldName: string): number {
+function boundedCoordinate(value: unknown, fieldName: string, min: number, max: number): number {
   if (typeof value !== 'number' || !Number.isFinite(value)) {
     throw new ValidationError(`${fieldName} must be a finite number.`);
+  }
+  if (value < min || value > max) {
+    throw new ValidationError(`${fieldName} must be between ${min} and ${max}.`);
   }
   return value;
 }

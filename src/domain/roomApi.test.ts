@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { createRoomApiClient, createRoomApiHandler } from './roomApi';
-import { createRoomRepository, createSharedRoomBackend } from './roomRepository';
+import { createRoomRepository, createSharedRoomBackend, type RoomMembership } from './roomRepository';
 
 describe('Room API backend boundary', () => {
-  it('shares room and pin state across independent API clients', async () => {
+  it('shares room and pin state across independent API clients with member credentials', async () => {
     const handler = createRoomApiHandler(createRoomRepository(createSharedRoomBackend()));
     const firstClient = createRoomApiClient({ baseUrl: 'https://fungolf.test', fetch: handler });
     const secondClient = createRoomApiClient({ baseUrl: 'https://fungolf.test', fetch: handler });
@@ -21,7 +21,7 @@ describe('Room API backend boundary', () => {
     const firstPin = await firstClient.createPin({
       roomId: created.room.id,
       participantId: created.participant.id,
-      participantName: created.participant.displayName,
+      memberToken: created.memberToken,
       emoji: '🏌️',
       comment: 'API-visible opener',
       lat: 37.42194,
@@ -31,7 +31,7 @@ describe('Room API backend boundary', () => {
     const secondPin = await secondClient.createPin({
       roomId: joined.room.id,
       participantId: joined.participant.id,
-      participantName: joined.participant.displayName,
+      memberToken: joined.memberToken,
       emoji: '⛳',
       comment: 'Second client can append',
       lat: 37.4221,
@@ -39,8 +39,10 @@ describe('Room API backend boundary', () => {
       now: '2026-06-15T09:13:00.000Z',
     });
 
-    await expect(secondClient.listPins(created.room.id)).resolves.toEqual([firstPin, secondPin]);
-    await expect(firstClient.listPins(created.room.id)).resolves.toEqual([firstPin, secondPin]);
+    expect(firstPin.participantName).toBe('Ari');
+    expect(secondPin.participantName).toBe('Bo');
+    await expect(secondClient.listPins(joined)).resolves.toEqual([firstPin, secondPin]);
+    await expect(firstClient.listPins(created)).resolves.toEqual([firstPin, secondPin]);
   });
 
   it('does not depend on browser local or session storage for API visibility', async () => {
@@ -48,15 +50,15 @@ describe('Room API backend boundary', () => {
     const client = createRoomApiClient({ baseUrl: 'https://fungolf.test', fetch: handler });
 
     await withPoisonedBrowserStorage(async () => {
-      const { room, participant } = await client.createRoom({
+      const membership = await client.createRoom({
         name: 'Storage-free API',
         hostDisplayName: 'Ari',
         now: '2026-06-15T09:14:00.000Z',
       });
       const pin = await client.createPin({
-        roomId: room.id,
-        participantId: participant.id,
-        participantName: participant.displayName,
+        roomId: membership.room.id,
+        participantId: membership.participant.id,
+        memberToken: membership.memberToken,
         emoji: '✅',
         comment: 'No browser storage touched',
         lat: 37.42194,
@@ -64,44 +66,45 @@ describe('Room API backend boundary', () => {
         now: '2026-06-15T09:15:00.000Z',
       });
 
-      await expect(client.listPins(room.id)).resolves.toEqual([pin]);
+      await expect(client.listPins(membership)).resolves.toEqual([pin]);
     });
   });
 
   it('keeps pin writes append-only over the API and exposes loose freshness snapshots', async () => {
     const handler = createRoomApiHandler(createRoomRepository(createSharedRoomBackend()));
     const client = createRoomApiClient({ baseUrl: 'https://fungolf.test', fetch: handler });
-    const { room, participant } = await client.createRoom({
+    const membership = await client.createRoom({
       name: 'Append only API',
       hostDisplayName: 'Ari',
       now: '2026-06-15T09:16:00.000Z',
     });
-    const firstPin = await client.createPin({
-      roomId: room.id,
-      participantId: participant.id,
-      participantName: participant.displayName,
-      emoji: '1️⃣',
-      comment: 'First append',
-      lat: 37.42194,
-      lng: -122.08403,
-      now: '2026-06-15T09:17:00.000Z',
-    });
-    const secondPin = await client.createPin({
-      roomId: room.id,
-      participantId: participant.id,
-      participantName: participant.displayName,
-      emoji: '2️⃣',
-      comment: 'Second append',
-      lat: 37.4221,
-      lng: -122.0844,
-      now: '2026-06-15T09:18:00.000Z',
-    });
+    const firstPin = await client.createPin(pinInput(membership, '1️⃣', 'First append', 37.42194, -122.08403));
+    const secondPin = await client.createPin(pinInput(membership, '2️⃣', 'Second append', 37.4221, -122.0844));
 
-    await expect(client.listPinSnapshot(room.id, '2026-06-15T09:18:10.000Z')).resolves.toEqual({
+    await expect(client.listPinSnapshot(membership, '2026-06-15T09:18:10.000Z')).resolves.toEqual({
       pins: [firstPin, secondPin],
       observedAt: '2026-06-15T09:18:10.000Z',
       freshness: 'loose',
     });
+  });
+
+  it('rejects missing credentials, spoofed participants, invalid coordinates, and oversized input', async () => {
+    const handler = createRoomApiHandler(createRoomRepository(createSharedRoomBackend()));
+    const client = createRoomApiClient({ baseUrl: 'https://fungolf.test', fetch: handler });
+    const membership = await client.createRoom({ name: 'Guarded room', hostDisplayName: 'Ari' });
+
+    await expect(client.listPins({ ...membership, memberToken: 'member_spoofed' })).rejects.toThrow(
+      'Room membership credentials are invalid',
+    );
+    await expect(
+      client.createPin({ ...pinInput(membership, '✅', 'Spoofed', 37.42, -122.08), participantId: 'participant_spoofed' }),
+    ).rejects.toThrow('Room membership credentials are invalid');
+    await expect(client.createPin(pinInput(membership, '✅', 'Invalid latitude', 97, -122.08))).rejects.toThrow(
+      'lat must be between -90 and 90',
+    );
+    await expect(client.createPin(pinInput(membership, '✅', 'x'.repeat(141), 37.42, -122.08))).rejects.toThrow(
+      'comment must be 140 characters or fewer',
+    );
   });
 
   it('returns validation and missing-resource errors through the API client', async () => {
@@ -117,6 +120,19 @@ describe('Room API backend boundary', () => {
     await expect(missingRouteResponse.json()).resolves.toMatchObject({ error: 'not_found' });
   });
 });
+
+function pinInput(membership: RoomMembership, emoji: string, comment: string, lat: number, lng: number) {
+  return {
+    roomId: membership.room.id,
+    participantId: membership.participant.id,
+    memberToken: membership.memberToken,
+    emoji,
+    comment,
+    lat,
+    lng,
+    now: '2026-06-15T09:17:00.000Z',
+  };
+}
 
 async function withPoisonedBrowserStorage(assertions: () => Promise<void>): Promise<void> {
   const localStorageDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');

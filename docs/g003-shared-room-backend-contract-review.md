@@ -36,3 +36,8 @@ The repository boundary should accept and return existing domain concepts (`Roun
 - [ ] Tests demonstrate no reliance on shared local/session storage.
 - [ ] Invalid input cases reject before persistence.
 - [ ] `package.json` remains free of backend provider SDK dependencies.
+
+
+## G007 hardening update
+
+Final review required the shared-room boundary to stop trusting client-supplied participant names and sequential ids. The RoomRepository now issues opaque room/invite/participant/member tokens, derives participant names server-side, and requires membership credentials for pin create/list/snapshot calls. The React app can target a hosted Room API with `VITE_ROOM_API_BASE_URL`; the in-memory handler remains a local demo/test adapter only.

@@ -35,7 +35,7 @@ export function buildShotPinInput(input: BuildShotPinInput): CreateShotPinInput 
   return {
     roomId: input.membership.room.id,
     participantId: input.membership.participant.id,
-    participantName: input.membership.participant.displayName,
+    memberToken: input.membership.memberToken,
     category: category.id,
     emoji: category.emoji,
     comment: normalizeShotPinComment(input.comment, category),

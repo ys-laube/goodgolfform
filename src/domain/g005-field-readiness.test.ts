@@ -45,7 +45,7 @@ describe('G005 field-readiness contract', () => {
     const hostPin = await firstBrowser.createPin({
       roomId: host.room.id,
       participantId: host.participant.id,
-      participantName: host.participant.displayName,
+      memberToken: host.memberToken,
       emoji: '🏌️',
       comment: 'Approx host pin',
       lat: 37.42194,
@@ -55,7 +55,7 @@ describe('G005 field-readiness contract', () => {
     const guestPin = await secondBrowser.createPin({
       roomId: guest.room.id,
       participantId: guest.participant.id,
-      participantName: guest.participant.displayName,
+      memberToken: guest.memberToken,
       emoji: '⛳',
       comment: 'Approx guest pin',
       lat: 37.4222,
@@ -63,14 +63,17 @@ describe('G005 field-readiness contract', () => {
       now: '2026-06-15T10:03:00.000Z',
     });
 
-    await expect(firstBrowser.listPins(host.room.id)).resolves.toEqual([hostPin, guestPin]);
-    await expect(secondBrowser.listPins(host.room.id)).resolves.toEqual([hostPin, guestPin]);
+    await expect(firstBrowser.listPins(host)).resolves.toEqual([hostPin, guestPin]);
+    await expect(secondBrowser.listPins(guest)).resolves.toEqual([hostPin, guestPin]);
   });
 
   it('keeps manual/tapped fallback available before uploaded course-map work is justified', () => {
     const membership = {
       room: { id: 'room-field', name: 'Field round', createdAt: '2026-06-15T10:00:00.000Z', inviteToken: 'invite-field' },
       participant: { id: 'participant-field', displayName: 'Field tester', joinedAt: '2026-06-15T10:00:00.000Z' },
+      roomId: 'room-field',
+      participantId: 'participant-field',
+      memberToken: 'member-field',
     };
 
     expect(
