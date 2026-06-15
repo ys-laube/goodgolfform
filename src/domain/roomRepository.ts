@@ -31,11 +31,18 @@ export type CreateShotPinInput = Coordinate & {
   readonly now?: string;
 };
 
+export type PinListSnapshot = {
+  readonly pins: readonly ShotPin[];
+  readonly observedAt: string;
+  readonly freshness: 'loose';
+};
+
 export type RoomRepository = {
   readonly createRoom: (input: CreateRoomInput) => Promise<RoomMembership>;
   readonly joinRoom: (input: JoinRoomInput) => Promise<RoomMembership>;
   readonly createPin: (input: CreateShotPinInput) => Promise<ShotPin>;
   readonly listPins: (roomId: string) => Promise<readonly ShotPin[]>;
+  readonly listPinSnapshot: (roomId: string, now?: string) => Promise<PinListSnapshot>;
 };
 
 export type SharedRoomBackend = {
@@ -120,7 +127,15 @@ export function createRoomRepository(backend: SharedRoomBackend = defaultBackend
     },
 
     async listPins(roomId) {
-      return (backend.pinsByRoomId.get(roomId) ?? []).map((pin) => ({ ...pin }));
+      return copyPins(backend, roomId);
+    },
+
+    async listPinSnapshot(roomId, now) {
+      return {
+        pins: copyPins(backend, roomId),
+        observedAt: now ?? new Date().toISOString(),
+        freshness: 'loose',
+      };
     },
   };
 }
@@ -137,4 +152,8 @@ function nextId(backend: SharedRoomBackend, prefix: string): string {
   const sequence = backend.nextSequence;
   backend.nextSequence += 1;
   return `${prefix}-${sequence}`;
+}
+
+function copyPins(backend: SharedRoomBackend, roomId: string): readonly ShotPin[] {
+  return (backend.pinsByRoomId.get(roomId) ?? []).map((pin) => ({ ...pin }));
 }
