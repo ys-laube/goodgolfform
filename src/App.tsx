@@ -150,7 +150,7 @@ export function App() {
           </div>
           <label>
             Invite token
-            <input value={inviteToken} onChange={(event) => setInviteToken(event.target.value)} placeholder="invite-2" />
+            <input value={inviteToken} onChange={(event) => setInviteToken(event.target.value)} placeholder="Paste invite token" />
           </label>
         </div>
 

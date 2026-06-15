@@ -78,7 +78,7 @@ export function createRoomRepository(backend: SharedRoomBackend = defaultBackend
       const participant = createParticipant(input.hostDisplayName, createdAt);
       const room: RoundRoom = {
         id: roomId,
-        name: input.name.trim() || 'Golf round',
+        name: boundedString(input.name, 'name', 80),
         createdAt,
         inviteToken,
       };
@@ -118,10 +118,10 @@ export function createRoomRepository(backend: SharedRoomBackend = defaultBackend
         participantId: participant.id,
         participantName: participant.displayName,
         category: input.category ?? 'note',
-        emoji: input.emoji,
-        comment: input.comment,
-        lat: input.lat,
-        lng: input.lng,
+        emoji: boundedString(input.emoji, 'emoji', 16),
+        comment: boundedString(input.comment, 'comment', 140),
+        lat: boundedCoordinate(input.lat, 'lat', -90, 90),
+        lng: boundedCoordinate(input.lng, 'lng', -180, 180),
         createdAt: input.now ?? new Date().toISOString(),
       };
       const existingPins = backend.pinsByRoomId.get(input.roomId) ?? [];
@@ -150,7 +150,7 @@ function createParticipant(displayName: string, joinedAt: string): StoredPartici
   return {
     id: opaqueId('participant'),
     memberToken: opaqueId('member'),
-    displayName: displayName.trim() || 'Golf friend',
+    displayName: boundedString(displayName, 'displayName', 40),
     joinedAt,
   };
 }
@@ -188,6 +188,28 @@ function copyParticipant(participant: StoredParticipant): Participant {
     joinedAt: participant.joinedAt,
     lastKnownLocation: participant.lastKnownLocation ? { ...participant.lastKnownLocation } : undefined,
   };
+}
+
+
+function boundedString(value: string, fieldName: string, maxLength: number): string {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    throw new Error(`${fieldName} is required.`);
+  }
+  if (trimmed.length > maxLength) {
+    throw new Error(`${fieldName} must be ${maxLength} characters or fewer.`);
+  }
+  return trimmed;
+}
+
+function boundedCoordinate(value: number, fieldName: string, min: number, max: number): number {
+  if (!Number.isFinite(value)) {
+    throw new Error(`${fieldName} must be a finite number.`);
+  }
+  if (value < min || value > max) {
+    throw new Error(`${fieldName} must be between ${min} and ${max}.`);
+  }
+  return value;
 }
 
 function opaqueId(prefix: string): string {

@@ -9,7 +9,7 @@ The shared-room persistence surface should stay app-owned and provider-neutral:
 - `createRoom(input)` creates a private invite-link room and returns app-owned room data with an opaque `id` and join token/link material.
 - `joinRoom(input)` validates a room id/token pair and returns the joined room plus participant-scoped identity data.
 - `createPin(input)` appends a new shot pin for an existing room/participant and returns the persisted pin.
-- `listPins(roomId)` returns the room's persisted pins in stable append order.
+- `listPins(credential)` and `listPinSnapshot(credential)` return the room's persisted pins in stable append order only for a participant/member-token credential issued by the Room API.
 
 The repository boundary should accept and return existing domain concepts (`RoundRoom`, `Participant`, `ShotPin`, coordinates, timestamps) rather than provider SDK records, auth sessions, or browser storage handles.
 

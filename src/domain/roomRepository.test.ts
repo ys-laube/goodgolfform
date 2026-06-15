@@ -87,6 +87,34 @@ describe('shared RoomRepository backend', () => {
     ).rejects.toThrow('Room membership credentials are invalid');
   });
 
+
+  it('rejects invalid direct repository input before persistence', async () => {
+    const repository = createRoomRepository(createSharedRoomBackend());
+
+    await expect(repository.createRoom({ name: '', hostDisplayName: 'Ari' })).rejects.toThrow('name is required');
+    await expect(repository.createRoom({ name: 'Round', hostDisplayName: ' ' })).rejects.toThrow('displayName is required');
+
+    const membership = await repository.createRoom({ name: 'Validated round', hostDisplayName: 'Ari' });
+    const basePin = {
+      roomId: membership.room.id,
+      participantId: membership.participant.id,
+      memberToken: membership.memberToken,
+      emoji: '✅',
+      comment: 'Valid direct pin',
+      lat: 37.42194,
+      lng: -122.08403,
+    };
+
+    await expect(repository.createPin({ ...basePin, lat: 91 })).rejects.toThrow('lat must be between -90 and 90');
+    await expect(repository.createPin({ ...basePin, lng: -181 })).rejects.toThrow('lng must be between -180 and 180');
+    await expect(repository.createPin({ ...basePin, emoji: 'x'.repeat(17) })).rejects.toThrow(
+      'emoji must be 16 characters or fewer',
+    );
+    await expect(repository.createPin({ ...basePin, comment: 'x'.repeat(141) })).rejects.toThrow(
+      'comment must be 140 characters or fewer',
+    );
+  });
+
   it('exposes loose freshness metadata for authorized read snapshots', async () => {
     const repository = createRoomRepository(createSharedRoomBackend());
     const membership = await repository.createRoom({
