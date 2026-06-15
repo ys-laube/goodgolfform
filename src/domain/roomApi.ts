@@ -6,7 +6,7 @@ import type {
   RoomMembership,
   RoomRepository,
 } from './roomRepository';
-import type { ShotPin } from './models';
+import type { ShotPin, ShotPinCategory } from './models';
 
 export type RoomApiFetch = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
 
@@ -150,12 +150,23 @@ function parseCreateShotPinInput(body: Record<string, unknown>): CreateShotPinIn
     roomId: requiredString(body.roomId, 'roomId'),
     participantId: requiredString(body.participantId, 'participantId'),
     participantName: requiredString(body.participantName, 'participantName'),
+    category: optionalShotPinCategory(body.category),
     emoji: requiredString(body.emoji, 'emoji'),
     comment: requiredString(body.comment, 'comment'),
     lat: requiredNumber(body.lat, 'lat'),
     lng: requiredNumber(body.lng, 'lng'),
     now: optionalString(body.now, 'now'),
   };
+}
+
+function optionalShotPinCategory(value: unknown): ShotPinCategory | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+  if (value === 'shot' || value === 'lie' || value === 'target' || value === 'note') {
+    return value;
+  }
+  throw new ValidationError('category must be one of shot, lie, target, or note when provided.');
 }
 
 function requiredString(value: unknown, fieldName: string): string {

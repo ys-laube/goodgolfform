@@ -4,6 +4,7 @@ export type Coordinate = {
 };
 
 export type CourseTargetType = 'green' | 'pin' | 'hazard' | 'tee' | 'custom';
+export type ShotPinCategory = 'shot' | 'lie' | 'target' | 'note';
 
 export type RoundRoom = {
   readonly id: string;
@@ -31,6 +32,7 @@ export type ShotPin = Coordinate & {
   readonly roomId: string;
   readonly participantId: string;
   readonly participantName: string;
+  readonly category: ShotPinCategory;
   readonly emoji: string;
   readonly comment: string;
   readonly createdAt: string;
