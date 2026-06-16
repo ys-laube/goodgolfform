@@ -42,6 +42,7 @@ export function App() {
   const [tappedLocation, setTappedLocation] = useState<Coordinate>(sampleCourseTargets[1]);
   const [manualLocation, setManualLocation] = useState<Coordinate>(initialManualLocation);
   const [flowMessage, setFlowMessage] = useState('Create or join a room to drop quick shot pins.');
+  const mapTileTemplate = import.meta.env.VITE_MAP_TILE_URL_TEMPLATE as string | undefined;
 
   const roomApi = useMemo(() => {
     const remoteBaseUrl = import.meta.env.VITE_ROOM_API_BASE_URL as string | undefined;
@@ -57,7 +58,11 @@ export function App() {
     locationState.status === 'ready' || locationState.status === 'low_accuracy'
       ? locationState.sample
       : undefined;
-  const mapModel = buildMockMapModel({ targets: sampleCourseTargets, currentLocation });
+  const mapModel = buildMockMapModel({
+    targets: sampleCourseTargets,
+    currentLocation,
+    tileTemplate: mapTileTemplate,
+  });
   const distances = currentLocation ? targetDistances(currentLocation, sampleCourseTargets) : [];
   const activeCategory = findShotPinCategory(selectedCategory);
   const canDropCurrentPin = Boolean(membership && currentLocation);

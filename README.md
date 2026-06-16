@@ -10,7 +10,7 @@ This foundation includes:
 - Product copy for concept, privacy boundaries, and approximate-distance disclaimers.
 - Domain model types for rooms, participants, course targets, location samples, and shot pins.
 - Baseline Vitest, TypeScript, ESLint, and production build scripts.
-- No map provider or map SDK coupling in the app shell.
+- A real raster tile map surface for golf-course context, rendered without a map SDK dependency.
 - A provider-neutral Room API/repository boundary now exists for invite-link rooms and shot pins. The default local demo adapter is in-memory and single-process; production sharing should set `VITE_ROOM_API_BASE_URL` to a hosted Room API using the same Fetch-style contract.
 
 Shared persistence is MVP-critical. The current code separates the client from the Room API contract and keeps the local in-memory adapter as a demo/test fixture, not a hosted persistence substitute.
@@ -25,7 +25,7 @@ The app is designed for friends playing together, not public social discovery. T
 - No scorecards, betting, settlement, or wagering flows.
 - No public social feed, search, followers, or discovery.
 - No rangefinder-grade precision promises.
-- No provider-specific map coupling in this foundation.
+- No provider-specific map SDK coupling in this foundation; raster tiles stay behind a URL-template boundary.
 - No client-trusted participant identity: room pin reads/writes require opaque membership credentials issued by the Room API.
 
 ## Privacy and location disclaimer
@@ -39,6 +39,8 @@ npm install
 npm run dev
 # optional: point the app at a hosted/shared Room API
 VITE_ROOM_API_BASE_URL=https://your-room-api.example npm run dev
+# optional: point map tiles at another raster tile provider/template
+VITE_MAP_TILE_URL_TEMPLATE=https://tile.openstreetmap.org/{z}/{x}/{y}.png npm run dev
 ```
 
 ## Verification scripts
@@ -53,7 +55,7 @@ npm run build
 ## Development notes
 
 - Browser geolocation requires a secure context outside localhost; document provider and HTTPS requirements when geolocation work begins.
-- Keep future map integration behind an adapter boundary so provider keys, quota, billing, and regional coverage can be evaluated without locking the app shell to one SDK.
+- The visible map uses a raster tile URL-template boundary. Keep any future map SDK, provider keys, quota, billing, and regional coverage decisions behind that adapter boundary.
 - Preserve mobile field use: large touch targets, low typing, outdoor-readable contrast, and graceful denied/unavailable location states.
 
 ## Room API boundary
