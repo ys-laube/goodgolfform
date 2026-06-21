@@ -7,7 +7,7 @@ FunGolf is a mobile-first TypeScript web app foundation for a friendly golf roun
 This foundation includes:
 
 - Vite + React + TypeScript app shell optimized for mobile-first layout.
-- Product copy for concept, privacy boundaries, and approximate-distance disclaimers.
+- Product copy for concept, privacy boundaries, and approximate-distance boundaries.
 - Domain model types for rooms, participants, course targets, location samples, and shot pins.
 - Baseline Vitest, TypeScript, ESLint, and production build scripts.
 - A real raster tile map surface for golf-course context, rendered without a map SDK dependency.
