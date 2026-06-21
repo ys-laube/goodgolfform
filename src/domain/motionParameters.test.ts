@@ -25,7 +25,7 @@ describe('motion parameters', () => {
       launchAngleDegrees: 17,
       followThroughHeight: 112,
       reducedMotionPose: 'extended',
-      accessibleSummary: 'fuller stock assertive tempo, neutral path, standard-window launch',
+      accessibleSummary: '풀 스톡 · 과감한 템포 · 중립 경로 · 표준 탄도',
     });
   });
 
@@ -98,7 +98,7 @@ describe('motion parameters', () => {
 
     expect(new Set([neutral.arcDegrees, windy.arcDegrees, shaped.arcDegrees]).size).toBeGreaterThan(1);
     expect(new Set([neutral.pathOffset, windy.pathOffset, shaped.pathOffset]).size).toBeGreaterThan(1);
-    expect(neutral.accessibleSummary).toMatch(/tempo/i);
+    expect(neutral.accessibleSummary).toMatch(/템포/);
   });
 
   it('keeps motion-viewer values bounded for compact and forceful edge cases', () => {
@@ -135,7 +135,7 @@ describe('motion parameters', () => {
       expect(parameters.launchAngleDegrees).toBeLessThanOrEqual(24);
       expect(parameters.followThroughHeight).toBeGreaterThanOrEqual(84);
       expect(parameters.followThroughHeight).toBeLessThanOrEqual(119);
-      expect(parameters.accessibleSummary).toMatch(/tempo, .+ path, .+ launch/);
+      expect(parameters.accessibleSummary).toMatch(/템포.+경로.+탄도/);
     }
   });
 });

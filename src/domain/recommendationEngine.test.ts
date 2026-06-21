@@ -16,11 +16,11 @@ describe('recommendation engine', () => {
     const recommendation = recommendShot(builtInProfilePresets[0], baselineScenario);
 
     expect(recommendation.selectedClub).toBe('7i');
-    expect(recommendation.distanceFeel).toMatch(/7 IRON 100% profile window/i);
-    expect(recommendation.swingSizeLabel).toBe('fuller stock');
+    expect(recommendation.distanceFeel).toMatch(/7번 아이언 100% 프로필 거리창/);
+    expect(recommendation.swingSizeLabel).toBe('풀 스톡');
     expect(recommendation.trajectoryStrategy).toBe('standard-window');
-    expect(recommendation.why.join(' ')).toMatch(/adjusted target/i);
-    expect(recommendation.gameMetricLabel).toMatch(/fit score/i);
+    expect(recommendation.why.join(' ')).toMatch(/보정 목표/i);
+    expect(recommendation.gameMetricLabel).toMatch(/적합도/i);
     expect(recommendation.distanceFeel).toContain(recommendation.clubLabel);
     expect(recommendation.swingSizeLabel).toBeTruthy();
     expect(recommendation.tempoRating).toBeGreaterThan(0);
@@ -36,7 +36,7 @@ describe('recommendation engine', () => {
 
     expect(recommendation.selectedClub).toBe('7i');
     expect(recommendation.swingSizePercent).toBeLessThan(100);
-    expect(recommendation.swingSizeLabel).toBe('controlled');
+    expect(recommendation.swingSizeLabel).toBe('컨트롤');
   });
 
   it('changes trajectory and tempo for headwind, tailwind, and crosswind scenarios', () => {
@@ -100,8 +100,8 @@ describe('recommendation engine', () => {
       ...recommendation.adjustments.map((adjustment) => adjustment.reason),
     ].join(' ');
 
-    expect(copy).not.toMatch(/\b(coach|caddie|caddy|command|instruct|order)\b/i);
-    expect(copy).not.toMatch(/\b(must|should|need to|try|try to|take|play|hit|aim|choose|use|recommend|guarantee|exact)\b/i);
+    expect(copy).not.toMatch(/\b(coach|caddie|caddy|command|instruct|order)\b|캐디|코치/i);
+    expect(copy).not.toMatch(/\b(must|should|need to|try|try to|take|play|hit|aim|choose|use|recommend|guarantee|exact)\b|반드시|쳐야|겨냥|추천|보장|정확/i);
     expect(copy).not.toMatch(/\b(club up|club down|go for)\b/i);
   });
 });
