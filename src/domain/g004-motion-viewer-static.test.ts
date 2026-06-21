@@ -43,7 +43,8 @@ describe('G004 stale Swing Lab removal guard', () => {
   it('removes motion-viewer styling while preserving responsive mobile layout', () => {
     expect(stylesSource).not.toMatch(/motion-viewer|motion-stage|motion-meter|swing-arc|swing-plane|swing-armature|perspective|preserve-3d|translateZ|rotateX|rotateY/i);
     expect(stylesSource).toContain('.shot-dashboard');
-    expect(stylesSource).not.toMatch(/visual-card|visual-marker/);
+    expect(stylesSource).toContain('.dashboard-metrics');
+    expect(stylesSource).not.toMatch(/visual-card-grid|visual-card|visual-marker/);
     expect(stylesSource).toContain('@media (min-width: 42rem)');
     expect(stylesSource).toContain('@media (min-width: 56rem)');
   });

@@ -96,27 +96,36 @@ export function App() {
         </div>
 
         <section className="shot-dashboard" aria-labelledby="shot-dashboard-title">
+          <div className="dashboard-display" aria-hidden="true">
+            <span className="dashboard-target-line" />
+            <span className="dashboard-shot-arc" />
+            <span className="dashboard-ball-dot" />
+          </div>
           <div className="dashboard-copy">
             <p className="eyebrow">정적 샷 대시보드</p>
-            <h3 id="shot-dashboard-title">한 장으로 보는 타깃 라인</h3>
-            <p>타깃 라인, 공 위치, 바람, 탄도, 추천 요약을 한 패널에 모았습니다.</p>
+            <h3 id="shot-dashboard-title">스크린 골프식 샷 요약</h3>
+            <p>현재 처방을 필드형 숫자판처럼 고정 표시합니다.</p>
           </div>
-          <div className="dashboard-stage" aria-hidden="true">
-            <span className="target-pin" />
-            <span className="target-line" />
-            <span className="trajectory-arc" />
-            <span className="ball-marker" />
-            <span className="wind-arrow">WIND</span>
-          </div>
-          <div className="dashboard-metrics" aria-label="샷 대시보드 요약">
-            <span><strong>추천 요약</strong>{prescription.shotDashboard.recommendationSummary}</span>
-            <span><strong>공 위치</strong>{prescription.shotDashboard.ballHeightSummary}</span>
-            <span><strong>앞뒤 경사</strong>{prescription.shotDashboard.slopeSummary}</span>
-            <span><strong>바람</strong>{prescription.shotDashboard.windSummary}</span>
-            <span><strong>탄도</strong>{prescription.shotDashboard.trajectorySummary}</span>
-            <span><strong>라이</strong>{prescription.shotDashboard.lieSummary}</span>
-          </div>
+          <dl className="dashboard-metrics" aria-label="정적 샷 지표">
+            <div>
+              <dt>플레이 거리</dt>
+              <dd>{prescription.playDistanceMeters}m</dd>
+            </div>
+            <div>
+              <dt>클럽</dt>
+              <dd>{prescription.selectedClubLabel}</dd>
+            </div>
+            <div>
+              <dt>스윙</dt>
+              <dd>{prescription.swingPercent}%</dd>
+            </div>
+            <div>
+              <dt>탄도</dt>
+              <dd>{prescription.trajectoryText}</dd>
+            </div>
+          </dl>
         </section>
+
       </section>
 
       <section id="shot-panel" className="lab-panel caddie-input-panel" aria-labelledby="scenario-title">

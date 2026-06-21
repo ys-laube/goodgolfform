@@ -103,6 +103,9 @@ describe('App SSR/static harness contract', () => {
     expect(renderedApp).toContain('남은 거리와 라이만 빠르게 넣고');
     expect(renderedApp).toContain('지금 처방');
     expect(renderedApp).toContain('추천 요약');
+    expect(renderedApp).toContain('정적 샷 대시보드');
+    expect(renderedApp).toContain('스크린 골프식 샷 요약');
+    expect(renderedApp).toContain('정적 샷 지표');
     expect(renderedApp).toContain('샷 상황 입력');
     expect(renderedApp).toContain('남은 거리 (m)');
     expect(renderedApp).toContain('앞뒤 경사');
@@ -214,6 +217,9 @@ describe('App SSR/static harness contract', () => {
     expect(appSessionSource).toMatch(/buildPrescription/);
     expect(appSessionSource).toMatch(/caddiePresets/);
     expect(appSource).toMatch(/shot-dashboard/);
+    expect(appSource).toMatch(/dashboard-metrics/);
+    expect(appSource).not.toMatch(/visual-card-grid|visualCards/);
+    expect(appSource).not.toMatch(/TrackMan|FlightScope|Foresight|GCQuad|logo|brand|asset|img src|<img/i);
   });
 
   it('keeps all runtime source free of retired GPS, map, room, weather, auth, and backend import surfaces', () => {
