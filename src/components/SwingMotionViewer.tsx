@@ -9,8 +9,20 @@ type SwingMotionViewerProps = {
 };
 
 
-function formatValue(value: string): string {
-  return value.replaceAll('-', ' ');
+function tempoLabel(value: SwingRecommendation['tempo']): string {
+  return { smooth: '부드러운', neutral: '중립', assertive: '과감한' }[value];
+}
+
+function pathBiasLabel(value: SwingRecommendation['pathBias']): string {
+  return { neutral: '중립', 'draw-biased': '드로 성향', 'fade-biased': '페이드 성향' }[value];
+}
+
+function trajectoryLabel(value: SwingRecommendation['trajectoryStrategy']): string {
+  return { flighted: '낮은 탄도', 'standard-window': '표준 탄도', 'launch-higher': '높은 탄도' }[value];
+}
+
+function poseLabel(value: MotionParameters['reducedMotionPose']): string {
+  return { compact: '컴팩트', balanced: '균형', extended: '확장' }[value];
 }
 
 function usePrefersReducedMotion(forceReducedMotion = false): boolean {
@@ -130,15 +142,15 @@ export function SwingMotionViewer({ parameters, recommendation, forceReducedMoti
         </span>
         <span>
           <strong>{(parameters.animationDurationMs / 1000).toFixed(1)}s</strong>
-          {formatValue(recommendation.tempo)} 템포 루프
+          {tempoLabel(recommendation.tempo)} 템포 루프
         </span>
         <span>
           <strong>{parameters.pathOffset}px</strong>
-          {formatValue(recommendation.pathBias)} 경로 오프셋
+          {pathBiasLabel(recommendation.pathBias)} 경로 오프셋
         </span>
         <span>
           <strong>{parameters.launchAngleDegrees}°</strong>
-          {formatValue(recommendation.trajectoryStrategy)} 탄도
+          {trajectoryLabel(recommendation.trajectoryStrategy)}
         </span>
       </div>
     </section>

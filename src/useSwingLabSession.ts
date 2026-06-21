@@ -26,8 +26,16 @@ type AnalysisCard = {
   readonly meta: string;
 };
 
-function formatCardText(value: string): string {
-  return value.replaceAll('-', ' ');
+function tempoLabel(value: SwingRecommendation['tempo']): string {
+  return { smooth: '부드러운', neutral: '중립', assertive: '과감한' }[value];
+}
+
+function pathBiasLabel(value: SwingRecommendation['pathBias']): string {
+  return { neutral: '중립', 'draw-biased': '드로 성향', 'fade-biased': '페이드 성향' }[value];
+}
+
+function trajectoryLabel(value: SwingRecommendation['trajectoryStrategy']): string {
+  return { flighted: '낮은 탄도', 'standard-window': '표준 탄도창', 'launch-higher': '높은 탄도' }[value];
 }
 
 function analysisCardsFor(recommendation: SwingRecommendation): readonly AnalysisCard[] {
@@ -43,14 +51,14 @@ function analysisCardsFor(recommendation: SwingRecommendation): readonly Analysi
       id: 'swing-size-tempo',
       label: '스윙 크기 · 템포',
       title: `${recommendation.swingSizePercent}% ${recommendation.swingSizeLabel}`,
-      detail: `${formatCardText(recommendation.tempo)} 템포 프로필 · 리듬 지수 ${recommendation.tempoRating}`,
+      detail: `${tempoLabel(recommendation.tempo)} 템포 프로필 · 리듬 지수 ${recommendation.tempoRating}`,
       meta: '모션 미터',
     },
     {
       id: 'trajectory-strategy',
       label: '탄도 전략',
-      title: formatCardText(recommendation.trajectoryStrategy),
-      detail: `${formatCardText(recommendation.pathBias)} 경로 읽기 · 탄도창, 바람, 플레이어 성향 반영`,
+      title: trajectoryLabel(recommendation.trajectoryStrategy),
+      detail: `${pathBiasLabel(recommendation.pathBias)} 경로 읽기 · 탄도창, 바람, 플레이어 성향 반영`,
       meta: '비행 라인',
     },
     {
