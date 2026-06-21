@@ -125,14 +125,38 @@ export function App() {
           <h2 id="analysis-title">상황별 샷 처방</h2>
         </div>
 
-        <h3>왜 이렇게 치나요?</h3>
-        <div className="analysis-card-grid" aria-label="처방 이유 네 가지">
-          {prescription.reasonCards.map((card) => (
-            <article className="analysis-card" key={card.id}>
-              <p className="card-label">{card.title}</p>
-              <strong>{card.summary}</strong>
-              <p>{card.detail}</p>
-            </article>
+        <label>
+          저장된 프리셋 불러오기
+          <select value={selectedPresetId} onChange={(event) => handlePresetSelection(event.target.value)}>
+            {selectablePresets.map((preset) => (
+              <option key={preset.id} value={preset.id}>
+                {preset.name} — 드라이버 {preset.anchorDistances.driver}m · 7번 {preset.anchorDistances.sevenIron}m · 피칭 웨지 {preset.anchorDistances.pitchingWedge}m
+              </option>
+            ))}
+          </select>
+        </label>
+
+        {savedPresets.length > 0 ? <p className="storage-note">이 기기에 저장됨: {savedPresets.map((preset) => preset.name).join(', ')}</p> : null}
+
+        <label>
+          프리셋 이름
+          <input value={activePreset.name} onChange={(event) => setActivePreset({ ...activePreset, name: event.target.value })} />
+        </label>
+
+        <div className="club-grid" aria-label="수정 가능한 캐리 거리">
+          {caddieClubOrder.map((club) => (
+            <label key={club}>
+              {caddieClubLabels[club]} 캐리 (m)
+              <input
+                type="text"
+                min="30"
+                max="330"
+                inputMode="numeric"
+                value={clubDistanceDrafts[club] ?? numericInputValue(distanceFor(activePreset, club))}
+                onChange={(event) => handleClubDistanceDraft(club, event.currentTarget.value)}
+                onBlur={() => handleClubDistanceBlur(club)}
+              />
+            </label>
           ))}
         </div>
         <section className="shot-dashboard" aria-labelledby="shot-dashboard-title">
@@ -160,7 +184,7 @@ export function App() {
           <label>
             남은 거리 (m)
             <input
-              type="number"
+              type="text"
               min="30"
               max="330"
               inputMode="numeric"
@@ -259,13 +283,13 @@ export function App() {
           <p className="eyebrow">지금 처방</p>
           <h2 id="analysis-title">{prescription.headline}</h2>
           <p>
-            추천 요약 · 클럽 {prescription.selectedClubLabel} · 스윙 {prescription.swingPercent}% · 플레이 거리 {prescription.playDistanceMeters}m
+            처방 요약 · 클럽 {prescription.selectedClubLabel} · 스윙 {prescription.swingPercent}% · 플레이 거리 {prescription.playDistanceMeters}m
           </p>
         </div>
 
         <h3>왜 이렇게 치나요?</h3>
-        <p>짧은 이유</p>
-        <div className="analysis-card-grid" aria-label="짧은 이유">
+        <p>상황별 이유</p>
+        <div className="analysis-card-grid" aria-label="상황별 이유">
           {prescription.reasonCards.map((card) => (
             <article className="analysis-card" key={card.id}>
               <p className="card-label">{card.title}</p>
@@ -275,7 +299,7 @@ export function App() {
           ))}
         </div>
 
-        <div className="adjustment-strip" aria-label="핵심 보정">
+        <div className="cue-strip" aria-label="핵심 보정">
           <span>
             <strong>조준</strong> {prescription.aimText}
           </span>
@@ -327,8 +351,8 @@ export function App() {
               <dd>{prescription.shotDashboard.trajectory}</dd>
             </div>
             <div>
-              <dt>추천</dt>
-              <dd>{prescription.shotDashboard.recommendation}</dd>
+              <dt>요약</dt>
+              <dd>{prescription.shotDashboard.shotSummary}</dd>
             </div>
           </dl>
         </section>

@@ -43,6 +43,7 @@ export type CaddieShotVisualState = {
   readonly ballPosition: string;
   readonly wind: string;
   readonly trajectory: string;
+  readonly shotSummary: string;
 };
 
 export type CaddieShotVisualState = {
@@ -301,6 +302,7 @@ function buildPrescription(preset: CaddieDistancePreset, scenario: CaddieScenari
   const selectedClubLabel = caddieClubLabels[selectedClub.selectedClub];
 
   return {
+    headline: `처방 ${selectedClubLabel} ${swingPercent}%, ${aimText}, ${trajectoryText} — ${warningText}.`,
     selectedClub: selectedClub.selectedClub,
     selectedClubLabel,
     swingPercent,
@@ -339,6 +341,7 @@ function buildPrescription(preset: CaddieDistancePreset, scenario: CaddieScenari
       ballPosition: `${lieLabels[scenario.lie]} · ${sideSlopeLabels[scenario.sideSlope]} · ${stanceSlopeLabels[scenario.stanceSlope]}`,
       wind: `${windDirectionLabels[scenario.windDirection]} · ${windStrengthLabels[scenario.windStrength]}`,
       trajectory: trajectoryText,
+      shotSummary: `${selectedClubLabel} ${swingPercent}% · ${playDistanceMeters}m`,
     },
   };
 }

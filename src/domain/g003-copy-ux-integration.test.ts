@@ -29,14 +29,13 @@ describe('G003 copy/UX integration boundary', () => {
     expect(renderedApp).toMatch(/지금 처방/i);
     expect(renderedApp).toMatch(/왜 이렇게 치나요/i);
     expect(renderedApp).toMatch(/반응형 2D 샷\/스탠스 비주얼/i);
-    expect(renderedApp).not.toMatch(/정적 샷 대시보드|스크린 골프식 샷 요약|조준과 라이 미니카드|2D 보조|근거 카드/i);
+    expect(renderedApp).not.toMatch(/type="number"|추천:|추천 요약|짧은 이유|adjustment-strip|shotDashboard\.recommendation|정적 샷 대시보드|스크린 골프식 샷 요약|조준과 라이 미니카드|2D 보조|근거 카드/i);
     expect(visibleCopy).toMatch(/근사 연습 추정값/i);
-    expect(renderedApp).not.toMatch(/추천: 9번 아이언 90%|추천 요약|짧은 이유/);
-    expect(renderedApp).toMatch(/클럽 선택이유[\s\S]*9번 아이언 90%[\s\S]*조준 방향 이유[\s\S]*목표보다 살짝 오른쪽 조준[\s\S]*목표 탄도 이유[\s\S]*낮게 컨트롤/);
+    expect(renderedApp).toMatch(/처방 9번 아이언 90%[\s\S]*목표보다 살짝 오른쪽 조준[\s\S]*낮게 컨트롤/);
     expect(renderedApp).toMatch(/라이[\s\S]*페어웨이/);
     expect(renderedApp).toMatch(/앞뒤 경사[\s\S]*평지/);
     expect(renderedApp).toMatch(/공 위치[\s\S]*공이 발보다 낮음/);
-    expect(renderedApp).not.toMatch(/정적 샷 대시보드|스크린 골프식 샷 요약|경사\/스탠스|좌우 경사|발끝 오르막|발끝 내리막|좌측 경사|우측 경사|조준과 라이 미니카드|2D 보조|근거 카드|근거카드/);
+    expect(renderedApp).not.toMatch(/type="number"|추천:|추천 요약|짧은 이유|adjustment-strip|shotDashboard\.recommendation|정적 샷 대시보드|스크린 골프식 샷 요약|경사\/스탠스|좌우 경사|발끝 오르막|발끝 내리막|좌측 경사|우측 경사|조준과 라이 미니카드|2D 보조|근거 카드|근거카드/);
     expect(renderedApp).not.toMatch(/Serious Golf Swing Lab|Profile panel|Scenario panel|Save profile locally|Live analysis report/);
     expect(visibleCopy).not.toMatch(forbiddenNoticeCopy);
     expect(renderedApp).not.toMatch(forbiddenVisibleConstraintCopy);

@@ -107,7 +107,7 @@ describe('App SSR/static harness contract', () => {
     expect(renderedApp).toContain('지금 처방');
     expect(renderedApp).toContain('1단계 · 거리 프리셋');
     expect(renderedApp).toContain('2단계 · 수동 샷 입력');
-    expect(renderedApp).toContain('추천 요약');
+    expect(renderedApp).toContain('처방 요약');
     expect(renderedApp).toContain('반응형 2D 샷/스탠스 비주얼');
     expect(renderedApp).toContain('발, 공, 조준선이 상황에 맞춰 움직입니다');
     expect(renderedApp).toContain('2D 샷/스탠스 상태');
@@ -122,7 +122,7 @@ describe('App SSR/static harness contract', () => {
     expect(renderedApp).toContain('왜 이렇게 치나요?');
     expect(renderedApp).toContain('반응형 2D 샷/스탠스 비주얼');
     expect(renderedApp).toContain('발, 공, 조준선이 상황에 맞춰 움직입니다');
-    expect(renderedApp).toContain('추천 요약');
+    expect(renderedApp).toContain('처방 요약');
     expect(renderedApp).toContain('공 위치');
     expect(renderedApp).not.toMatch(/Serious Golf Swing Lab|Profile panel|Scenario panel|Save profile locally|Live analysis report/);
     expect(renderedApp).not.toMatch(/GPS shot pins|room-flow|map-shell|invite-link room/i);
@@ -155,7 +155,7 @@ describe('App SSR/static harness contract', () => {
   it('SSR-renders the representative 100m result-first prescription fields', () => {
     const renderedApp = withPoisonedBrowserStorage(() => renderToString(createElement(App)));
 
-    expect(renderedApp).not.toContain('추천: 9번 아이언 90%');
+    expect(renderedApp).toContain('처방 9번 아이언 90%');
     expect(renderedApp).toContain('목표보다 살짝 오른쪽 조준');
     expect(renderedApp).toContain('낮게 컨트롤');
     expect(renderedApp).toContain('약함 맞바람은 공을 띄울수록 거리 편차가 커져 낮은 출발각으로 눌러 칩니다.');
@@ -170,8 +170,8 @@ describe('App SSR/static harness contract', () => {
   it('renders every required Korean caddie result card category from prescription output', () => {
     const renderedApp = withPoisonedBrowserStorage(() => renderToString(createElement(App)));
 
-    expect(renderedApp).toMatch(/지금 처방[\s\S]*추천 요약[\s\S]*클럽[\s\S]*스윙[\s\S]*플레이 거리/i);
-    expect(renderedApp).toMatch(/짧은 이유[\s\S]*9번 아이언 90%[\s\S]*목표보다 살짝 오른쪽 조준[\s\S]*낮게 컨트롤/i);
+    expect(renderedApp).toMatch(/지금 처방[\s\S]*처방 요약[\s\S]*클럽[\s\S]*스윙[\s\S]*플레이 거리/i);
+    expect(renderedApp).toMatch(/상황별 이유[\s\S]*9번 아이언 90%[\s\S]*목표보다 살짝 오른쪽 조준[\s\S]*낮게 컨트롤/i);
     expect(renderedApp).toMatch(/반응형 2D 샷\/스탠스 비주얼[\s\S]*조준선[\s\S]*공\/스탠스[\s\S]*바람[\s\S]*탄도/i);
     expect(renderedApp).not.toMatch(/\b(coach|must|should|need to|try to|guarantee|exact)\b|adjusted play|코치|보장|정확/i);
   });
@@ -273,7 +273,7 @@ describe('App SSR/static harness contract', () => {
     expect(appSessionSource).toMatch(/caddiePresets/);
     expect(appSource).toMatch(/shot-visual/);
     expect(appSource).toMatch(/shot-visual-metrics/);
-    expect(appSource).not.toMatch(/shot-dashboard|dashboard-metrics|visual-card-grid|visualCards/);
+    expect(appSource).not.toMatch(/type="number"|추천:|추천 요약|짧은 이유|adjustment-strip|shotDashboard\.recommendation|shot-dashboard|dashboard-metrics|visual-card-grid|visualCards/);
     expect(appSource).not.toMatch(/TrackMan|FlightScope|Foresight|GCQuad|logo|brand|asset|img src|<img/i);
   });
 
