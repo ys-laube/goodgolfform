@@ -325,7 +325,8 @@ select optgroup {
 .shot-visual-stage {
   --ball-position: 50%;
   --stance-tilt: 0deg;
-  --side-hill-offset: 0rem;
+  --side-hill-ground-offset: 0rem;
+  --side-hill-ball-offset: 0rem;
   position: relative;
   min-height: 10rem;
   overflow: hidden;
@@ -347,11 +348,13 @@ select optgroup {
 }
 
 .shot-visual-stage[data-side-hill="below-feet"] {
-  --side-hill-offset: 1rem;
+  --side-hill-ground-offset: 1rem;
+  --side-hill-ball-offset: -1rem;
 }
 
 .shot-visual-stage[data-side-hill="above-feet"] {
-  --side-hill-offset: -1rem;
+  --side-hill-ground-offset: -1rem;
+  --side-hill-ball-offset: 1rem;
 }
 
 .shot-visual-target-line,
@@ -438,12 +441,12 @@ select optgroup {
   height: 0.5rem;
   border-radius: 999px;
   background: rgba(154, 241, 180, 0.58);
-  transform: translateY(var(--side-hill-offset)) rotate(var(--stance-tilt));
+  transform: translateY(var(--side-hill-ground-offset)) rotate(var(--stance-tilt));
 }
 
 .shot-visual-rear .shot-visual-ball {
   left: calc(50% - 0.38rem);
-  bottom: calc(36% + var(--side-hill-offset));
+  bottom: calc(36% + var(--side-hill-ball-offset));
 }
 
 .shot-visual-evidence {

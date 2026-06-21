@@ -248,7 +248,9 @@ describe('App SSR/static harness contract', () => {
     expect(shotVisualSource).toMatch(/shot-visual-ball/);
     expect(stylesSource).toMatch(/data-handedness="right"[\s\S]*shot-visual-foot-lead[\s\S]*right: 16%/);
     expect(stylesSource).toMatch(/data-front-back="uphill"[\s\S]*--stance-tilt/);
-    expect(stylesSource).toMatch(/data-side-hill="below-feet"[\s\S]*--side-hill-offset/);
+    expect(stylesSource).toMatch(/data-side-hill="below-feet"[\s\S]*--side-hill-ball-offset: -1rem/);
+    expect(stylesSource).toMatch(/data-side-hill="above-feet"[\s\S]*--side-hill-ball-offset: 1rem/);
+    expect(stylesSource).toMatch(/bottom: calc\(36% \+ var\(--side-hill-ball-offset\)\)/);
     expect(stylesSource).not.toMatch(/data-trajectory|data-wind|shot-visual-arc|shot-visual-wind/);
   });
 

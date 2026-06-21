@@ -66,7 +66,7 @@ describe('G004 stale Swing Lab removal guard', () => {
     expect(stylesSource).not.toContain('.shot-visual-' + 'metrics');
     expect(stylesSource).not.toMatch(/shot-dashboard|dashboard-metrics|visual-card-grid|visual-card|visual-marker/);
     expect(stylesSource).toMatch(/data-front-back="uphill"[\s\S]*--stance-tilt/);
-    expect(stylesSource).toMatch(/data-side-hill="below-feet"[\s\S]*--side-hill-offset/);
+    expect(stylesSource).toMatch(/data-side-hill="below-feet"[\s\S]*--side-hill-ball-offset: -1rem/);
     expect(stylesSource).not.toMatch(/data-wind|data-trajectory|shot-visual-arc|shot-visual-wind/);
     expect(stylesSource).toContain('@media (min-width: 42rem)');
     expect(stylesSource).toContain('@media (min-width: 56rem)');
