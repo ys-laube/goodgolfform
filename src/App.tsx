@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { MapShell } from './components/MapShell';
-import { approximateDistanceDisclaimer, nonGoals, privacyNotes, productPrinciples } from './domain/copy';
+import { nonGoals, privacyNotes, productPrinciples } from './domain/copy';
 import { sampleCourseTargets } from './domain/courseTargets';
 import { targetDistances } from './domain/geo';
 import { buildMockMapModel } from './domain/mapAdapter';
@@ -115,7 +115,6 @@ export function App() {
       <section className="hero-card">
         <p className="eyebrow">Golf field GPS shot pins</p>
         <h1 id="app-title">FunGolf helps friends mark shots with approximate on-course context.</h1>
-        <p className="hero-copy">{approximateDistanceDisclaimer}</p>
         <div className="hero-actions" aria-label="Foundation actions">
           <a href="#room-flow" className="primary-action">
             Start room

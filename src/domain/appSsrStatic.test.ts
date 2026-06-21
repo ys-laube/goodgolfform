@@ -3,7 +3,6 @@ import { renderToString } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import indexHtml from '../../index.html?raw';
 import { App } from '../App';
-import { approximateDistanceDisclaimer } from './copy';
 
 function withPoisonedBrowserStorage<T>(assertions: () => T): T {
   const descriptors = {
@@ -42,7 +41,7 @@ describe('App SSR/static harness contract', () => {
     expect(renderedApp).toContain('id="room-flow"');
     expect(renderedApp).toContain('id="map-shell-title"');
     expect(renderedApp).toContain('aria-label="Golf course map with current location and course target markers"');
-    expect(renderedApp).toContain(approximateDistanceDisclaimer);
+    expect(renderedApp).not.toContain('Distance feel uses approximate practice estimates');
   });
 
   it('keeps the static HTML entrypoint ready for mobile SSR/static smoke checks', () => {

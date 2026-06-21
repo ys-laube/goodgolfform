@@ -7,7 +7,7 @@ import {
 } from './copy';
 
 describe('foundation product copy', () => {
-  it('keeps approximate distance copy visible without disclaimer-style wording', () => {
+  it('keeps approximate distance boundary copy available without disclaimer-style wording', () => {
     expect(approximateDistanceDisclaimer).toMatch(/approximate practice estimates/i);
     expect(approximateDistanceDisclaimer).not.toMatch(/official|rangefinder|safety-critical|disclaimer|legal notice/i);
   });
