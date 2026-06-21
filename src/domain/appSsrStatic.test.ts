@@ -3,7 +3,6 @@ import { renderToString } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import indexHtml from '../../index.html?raw';
 import packageJson from '../../package.json';
-import stylesSource from '../styles.css?inline';
 import appSource from '../App.tsx?raw';
 import browserEnvironmentSource from '../browserEnvironment.ts?raw';
 import caddieSessionSource from '../useCaddieSession.ts?raw';
@@ -14,6 +13,10 @@ import {
   serializeCaddiePresets,
   type StorageLike,
 } from './caddiePresets';
+
+const nodeFsSpecifier = 'node:fs';
+const { readFileSync } = (await import(nodeFsSpecifier)) as { readFileSync: (path: string, encoding: 'utf8') => string };
+const stylesSource = readFileSync(decodeURIComponent(new URL('../styles.css', import.meta.url).pathname), 'utf8');
 
 const packageDependencyNames = Object.keys(packageJson.dependencies);
 const runtimeSourceModules = import.meta.glob('../**/*.{ts,tsx}', {
