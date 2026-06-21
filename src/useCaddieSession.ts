@@ -38,6 +38,14 @@ export type CaddieReasonCard = {
   readonly detail: string;
 };
 
+export type CaddieShotDashboard = {
+  readonly targetLine: string;
+  readonly ballPosition: string;
+  readonly wind: string;
+  readonly trajectory: string;
+  readonly recommendation: string;
+};
+
 export type CaddiePrescription = {
   readonly headline: string;
   readonly selectedClub: CaddieClubKey;
@@ -48,6 +56,7 @@ export type CaddiePrescription = {
   readonly trajectoryText: string;
   readonly warningText: string;
   readonly reasonCards: readonly CaddieReasonCard[];
+  readonly shotDashboard: CaddieShotDashboard;
 };
 
 const defaultPreset = createCaddieDistancePreset({
@@ -237,24 +246,35 @@ function buildPrescription(preset: CaddieDistancePreset, scenario: CaddieScenari
       {
         id: 'club-selection-reason',
         title: '클럽 선택이유',
-        detail: `${selectedClubLabel} ${swingPercent}% — ${targetDistanceMeters}m에 바람·라이·핀을 더해 ${playDistanceMeters}m처럼 보고 컨트롤 스윙을 고릅니다.`,
+        summary: `${selectedClubLabel} ${swingPercent}%`,
+        detail: `${targetDistanceMeters}m에 바람·라이·핀을 더해 ${playDistanceMeters}m처럼 보고 컨트롤 스윙을 고릅니다.`,
       },
       {
         id: 'aim-direction-reason',
         title: '조준 방향 이유',
-        detail: `${aimText} — ${stanceSlopeLabels[scenario.stanceSlope]}과 ${sideSlopeLabels[scenario.sideSlope]} 때문에 시작 방향을 안전 쪽으로 둡니다.`,
+        summary: aimText,
+        detail: `${stanceSlopeLabels[scenario.stanceSlope]}과 ${sideSlopeLabels[scenario.sideSlope]} 때문에 시작 방향을 안전 쪽으로 둡니다.`,
       },
       {
         id: 'target-trajectory-reason',
         title: '목표 탄도 이유',
-        detail: `${trajectoryText} — ${windDirectionLabels[scenario.windDirection]} ${windStrengthLabels[scenario.windStrength]}·${pinPositionLabels[scenario.pinPosition]} 상황에서는 긴 설명보다 낮은 실행 처방이 빠릅니다.`,
+        summary: trajectoryText,
+        detail: `${windDirectionLabels[scenario.windDirection]} ${windStrengthLabels[scenario.windStrength]}·${pinPositionLabels[scenario.pinPosition]} 상황에서는 긴 설명보다 낮은 실행 처방이 빠릅니다.`,
       },
       {
         id: 'miss-warning-comment',
         title: '미스 경고 코멘트',
-        detail: `${warningText} — ${lieLabels[scenario.lie]} 라이에서 가장 큰 미스 하나만 먼저 지웁니다.`,
+        summary: warningText,
+        detail: `${lieLabels[scenario.lie]} 라이에서 가장 큰 미스 하나만 먼저 지웁니다.`,
       },
     ],
+    shotDashboard: {
+      targetLine: aimText,
+      ballPosition: `${lieLabels[scenario.lie]} · ${sideSlopeLabels[scenario.sideSlope]} · ${stanceSlopeLabels[scenario.stanceSlope]}`,
+      wind: `${windDirectionLabels[scenario.windDirection]} · ${windStrengthLabels[scenario.windStrength]}`,
+      trajectory: trajectoryText,
+      recommendation: `${selectedClubLabel} ${swingPercent}% · ${playDistanceMeters}m`,
+    },
   };
 }
 

@@ -103,25 +103,29 @@ export function App() {
           </div>
           <div className="dashboard-copy">
             <p className="eyebrow">정적 샷 대시보드</p>
-            <h3 id="shot-dashboard-title">스크린 골프식 샷 요약</h3>
-            <p>현재 처방을 필드형 숫자판처럼 고정 표시합니다.</p>
+            <h3 id="shot-dashboard-title">한 장으로 보는 타깃 라인</h3>
+            <p>스크린 골프식 샷 요약을 필드형 숫자판처럼 고정 표시합니다.</p>
           </div>
           <dl className="dashboard-metrics" aria-label="정적 샷 지표">
             <div>
-              <dt>플레이 거리</dt>
-              <dd>{prescription.playDistanceMeters}m</dd>
+              <dt>타깃 라인</dt>
+              <dd>{prescription.shotDashboard.targetLine}</dd>
             </div>
             <div>
-              <dt>클럽</dt>
-              <dd>{prescription.selectedClubLabel}</dd>
+              <dt>공 위치</dt>
+              <dd>{prescription.shotDashboard.ballPosition}</dd>
             </div>
             <div>
-              <dt>스윙</dt>
-              <dd>{prescription.swingPercent}%</dd>
+              <dt>바람</dt>
+              <dd>{prescription.shotDashboard.wind}</dd>
             </div>
             <div>
               <dt>탄도</dt>
-              <dd>{prescription.trajectoryText}</dd>
+              <dd>{prescription.shotDashboard.trajectory}</dd>
+            </div>
+            <div>
+              <dt>추천</dt>
+              <dd>{prescription.shotDashboard.recommendation}</dd>
             </div>
           </dl>
         </section>

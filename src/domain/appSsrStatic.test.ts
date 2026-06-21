@@ -249,8 +249,8 @@ describe('App SSR/static harness contract', () => {
   });
 
   it('imports the premium Korean webfont with system Korean fallbacks', () => {
-    expect(stylesSource).toContain('@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css");');
-    expect(stylesSource).toMatch(/font-family:[\s\S]*"Pretendard"[\s\S]*"Apple SD Gothic Neo"[\s\S]*"Malgun Gothic"[\s\S]*"Noto Sans KR"[\s\S]*ui-sans-serif[\s\S]*system-ui[\s\S]*sans-serif/);
+    expect(stylesSource).toContain('@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable.css");');
+    expect(stylesSource).toMatch(/font-family:[\s\S]*"Pretendard Variable"[\s\S]*Pretendard[\s\S]*"Apple SD Gothic Neo"[\s\S]*"Malgun Gothic"[\s\S]*"Noto Sans KR"[\s\S]*ui-sans-serif[\s\S]*system-ui[\s\S]*sans-serif/);
   });
 
   it('keeps the static HTML entrypoint ready for mobile Korean caddie smoke checks', () => {
