@@ -35,17 +35,19 @@ describe('G004 stale Swing Lab removal guard', () => {
     expect(appSource).toMatch(/prescription\.reasonCards/);
     expect(appSource).toMatch(/prescription\.shotVisual/);
     expect(appSource).toMatch(/shot-visual/);
-    expect(caddieSessionSource).toMatch(/buildPrescription/);
+    expect(caddieSessionSource).toMatch(/buildCaddiePrescription/);
     expect(caddieSessionSource).toMatch(/caddiePresets/);
     expect(caddieSessionSource).toMatch(/CaddieShotVisualState/);
     expect(caddieSessionSource).toMatch(/shotVisual:\s*\{/);
     expect(caddieSessionSource).not.toMatch(new RegExp(['CaddieShot' + 'Dashboard', 'shot' + 'Dashboard', 'recommendation:'].join('|')));
-    expect(`${appSource}\n${caddieSessionSource}`).not.toMatch(/SwingMotionViewer|motionParameters|useSwingLabSession|recommendShot|profilePresets|swingLabModels/);
+    expect(`${appSource}
+${caddieSessionSource}`).not.toMatch(/SwingMotionViewer|motionParameters|useSwingLabSession|recommendShot|profilePresets|swingLabModels/);
   });
 
   it('keeps semantic visual state free of recommendation, wind drawing, trajectory drawing, and swing summary fields', () => {
     const visualTypeBody = caddieSessionSource.match(/type CaddieShotVisualState = \{([\s\S]*?)\};/)?.[1] ?? '';
-    const visualStateBody = caddieSessionSource.match(/shotVisual:\s*\{([\s\S]*?)\n {4}\},/)?.[1] ?? '';
+    const visualStateBody = caddieSessionSource.match(/shotVisual:\s*\{([\s\S]*?)
+ {4}\},/)?.[1] ?? '';
 
     expect(visualTypeBody).toMatch(/handedness/);
     expect(visualTypeBody).toMatch(/clubGroup/);
@@ -54,7 +56,8 @@ describe('G004 stale Swing Lab removal guard', () => {
     expect(visualTypeBody).toMatch(/ballPositionPercent/);
     expect(visualTypeBody).toMatch(/frontBackSlope/);
     expect(visualTypeBody).toMatch(/sideHillRelation/);
-    expect(`${visualTypeBody}\n${visualStateBody}`).not.toMatch(
+    expect(`${visualTypeBody}
+${visualStateBody}`).not.toMatch(
       /recommendation|playDistanceMeters|swingPercent|selectedClubLabel|windDirection|windStrength|trajectory|추천|플레이 거리|스윙/,
     );
   });
