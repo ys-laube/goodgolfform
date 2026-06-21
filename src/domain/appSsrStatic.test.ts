@@ -54,7 +54,7 @@ describe('App SSR/static harness contract', () => {
     expect(renderedApp).toContain('Wind strength');
     expect(renderedApp).toContain('Desired window');
     expect(renderedApp).toContain('Live analysis report');
-    expect(renderedApp).toContain('Recommendation analysis report cards');
+    expect(renderedApp).toContain('Analysis report cards');
     expect(renderedApp).toContain('Club · distance feel');
     expect(renderedApp).toContain('Swing size · tempo');
     expect(renderedApp).toContain('Trajectory strategy');
@@ -64,7 +64,7 @@ describe('App SSR/static harness contract', () => {
     expect(renderedApp).toMatch(/adjusted target/i);
     expect(renderedApp).not.toMatch(/GPS shot pins|room-flow|map-shell|invite-link room/i);
     expect(renderedApp).not.toMatch(/\b(coach|caddie|caddy)\b/i);
-    expect(renderedApp).not.toMatch(/Build the shot|Read the swing card|Enter shot|Type the shot|choose a saved profile|get a deterministic|you should|let's|do this|next|now/i);
+    expect(renderedApp).not.toMatch(/Build the shot|Read the swing card|Enter shot|Type the shot|choose a saved profile|get a deterministic|becoming commands|adjusted play|you should|let's|do this|next|now/i);
   });
 
   it('SSR-renders the default analysis card fields without notice-style copy', () => {
@@ -74,10 +74,10 @@ describe('App SSR/static harness contract', () => {
     expect(renderedApp).toContain('controlled');
     expect(renderedApp).toContain('Plausibility');
     expect(renderedApp).toContain('Tempo');
-    expect(renderedApp).toContain('Flight read');
+    expect(renderedApp).toContain('Trajectory strategy');
     expect(renderedApp).toMatch(/fit score/i);
     expect(renderedApp).toMatch(/adjusted target/i);
-    expect(renderedApp).not.toMatch(/disclaimer|legal notice|official|rangefinder|must|guarantee|exact/i);
+    expect(renderedApp).not.toMatch(/disclaimer|legal notice|official|rangefinder|coach|caddie|caddy|must|should|need to|try to|hit|aim|guarantee|exact|adjusted play/i);
   });
 
 
@@ -90,7 +90,7 @@ describe('App SSR/static harness contract', () => {
     expect(renderedApp).toMatch(/Plausibility · game metrics[\s\S]*fit score/i);
     expect(renderedApp).toMatch(/Why this card[\s\S]*adjusted target/i);
     expect(renderedApp).toMatch(/Scenario adjustment reads|Why this card/i);
-    expect(renderedApp).not.toMatch(/\b(must|guarantee|exact)\b/i);
+    expect(renderedApp).not.toMatch(/\b(coach|caddie|caddy|must|should|need to|try to|hit|aim|guarantee|exact)\b|adjusted play/i);
   });
 
   it('restores saved profile presets through the App storage boundary when browser storage exists', () => {

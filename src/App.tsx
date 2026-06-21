@@ -59,7 +59,7 @@ function analysisCardsFor(recommendation: SwingRecommendation): readonly Analysi
       label: 'Club · distance feel',
       title: recommendation.clubLabel,
       detail: recommendation.distanceFeel,
-      meta: `${recommendation.adjustedDistanceMeters} m adjusted play`,
+      meta: `${recommendation.adjustedDistanceMeters} m adjusted context`,
     },
     {
       id: 'swing-size-tempo',
@@ -413,11 +413,11 @@ export function App() {
           <h2 id="analysis-title">{recommendation.clubLabel} · {recommendation.swingSizeLabel}</h2>
           <p>
             Serious game-card reads from the deterministic shot model: distance feel, swing load, flight lane, and scenario fit stay
-            profile-aware without becoming commands.
+            profile-aware without prescriptive wording.
           </p>
         </div>
 
-        <div className="analysis-card-grid" aria-label="Recommendation analysis report cards">
+        <div className="analysis-card-grid" aria-label="Analysis report cards">
           {analysisCards.map((card) => (
             <article className="analysis-card" key={card.id}>
               <p className="card-label">{card.label}</p>
