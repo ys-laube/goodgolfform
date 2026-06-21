@@ -105,11 +105,12 @@ describe('App SSR/static harness contract', () => {
     expect(renderedApp).toContain('캐디 한줄 처방');
     expect(renderedApp).toContain('남은 거리와 라이만 빠르게 넣고');
     expect(renderedApp).toContain('지금 처방');
-    expect(renderedApp).toContain('상황별 샷 처방');
-    expect(renderedApp).toContain('정적 샷 대시보드');
-    expect(renderedApp).toContain('스크린 골프식 샷 요약');
-    expect(renderedApp).not.toContain('추천 요약');
-    expect(renderedApp).not.toContain('정적 샷 지표');
+    expect(renderedApp).toContain('1단계 · 거리 프리셋');
+    expect(renderedApp).toContain('2단계 · 수동 샷 입력');
+    expect(renderedApp).toContain('추천 요약');
+    expect(renderedApp).toContain('반응형 2D 샷/스탠스 비주얼');
+    expect(renderedApp).toContain('발, 공, 조준선이 상황에 맞춰 움직입니다');
+    expect(renderedApp).toContain('2D 샷/스탠스 상태');
     expect(renderedApp).toContain('샷 상황 입력');
     expect(renderedApp).toContain('남은 거리 (m)');
     expect(renderedApp).toContain('앞뒤 경사');
@@ -119,10 +120,10 @@ describe('App SSR/static harness contract', () => {
     expect(renderedApp).toContain('그린 위험');
     expect(renderedApp).toContain('로컬 프리셋 저장');
     expect(renderedApp).toContain('왜 이렇게 치나요?');
-    expect(renderedApp).toContain('정적 샷 대시보드');
-    expect(renderedApp).toContain('한 장으로 보는 타깃 라인');
-    expect(renderedApp).toContain('처방 이유 네 가지');
-    expect(renderedApp).not.toContain('짧은 이유');
+    expect(renderedApp).toContain('반응형 2D 샷/스탠스 비주얼');
+    expect(renderedApp).toContain('발, 공, 조준선이 상황에 맞춰 움직입니다');
+    expect(renderedApp).toContain('추천 요약');
+    expect(renderedApp).toContain('공 위치');
     expect(renderedApp).not.toMatch(/Serious Golf Swing Lab|Profile panel|Scenario panel|Save profile locally|Live analysis report/);
     expect(renderedApp).not.toMatch(/GPS shot pins|room-flow|map-shell|invite-link room/i);
     expect(renderedApp).not.toMatch(/without GPS|No login|GPS shot pins|weather feeds?|invite-link room|backend setup|backend dependency/i);
@@ -169,10 +170,9 @@ describe('App SSR/static harness contract', () => {
   it('renders every required Korean caddie result card category from prescription output', () => {
     const renderedApp = withPoisonedBrowserStorage(() => renderToString(createElement(App)));
 
-    expect(renderedApp).toMatch(/지금 처방[\s\S]*상황별 샷 처방/i);
-    expect(renderedApp).toMatch(/처방 이유 네 가지[\s\S]*9번 아이언 90%[\s\S]*목표보다 살짝 오른쪽 조준[\s\S]*낮게 컨트롤/i);
-    expect(renderedApp).toMatch(/정적 샷 대시보드[\s\S]*한 장으로 보는 타깃 라인/i);
-    expect(renderedApp).not.toMatch(/추천 요약|짧은 이유|정적 샷 지표|플레이 거리/i);
+    expect(renderedApp).toMatch(/지금 처방[\s\S]*추천 요약[\s\S]*클럽[\s\S]*스윙[\s\S]*플레이 거리/i);
+    expect(renderedApp).toMatch(/짧은 이유[\s\S]*9번 아이언 90%[\s\S]*목표보다 살짝 오른쪽 조준[\s\S]*낮게 컨트롤/i);
+    expect(renderedApp).toMatch(/반응형 2D 샷\/스탠스 비주얼[\s\S]*조준선[\s\S]*공\/스탠스[\s\S]*바람[\s\S]*탄도/i);
     expect(renderedApp).not.toMatch(/\b(coach|must|should|need to|try to|guarantee|exact)\b|adjusted play|코치|보장|정확/i);
   });
 
@@ -216,6 +216,9 @@ describe('App SSR/static harness contract', () => {
     expect(caddieSessionSource).toMatch(/aimBias: aimBiasFor\(scenario\)/);
     expect(caddieSessionSource).toMatch(/ballHeight: ballHeightFor\(scenario\)/);
     expect(caddieSessionSource).toMatch(/trajectory: trajectoryVisualFor\(scenario\)/);
+    expect(appSource).toMatch(/data-ball-height=\{prescription\.shotVisual\.ballHeight\}/);
+    expect(appSource).toMatch(/data-stance=\{prescription\.shotVisual\.stanceTilt\}/);
+    expect(appSource).toMatch(/data-trajectory=\{prescription\.shotVisual\.trajectory\}/);
   });
 
   it('restores saved caddie distance presets through the App storage boundary when browser storage exists', () => {
@@ -258,9 +261,9 @@ describe('App SSR/static harness contract', () => {
     expect(appSessionSource).toMatch(/useCaddieSession/);
     expect(appSessionSource).toMatch(/buildPrescription/);
     expect(appSessionSource).toMatch(/caddiePresets/);
-    expect(appSource).toMatch(/shot-dashboard/);
-    expect(appSource).not.toMatch(/dashboard-metrics|adjustment-strip|추천 요약|짧은 이유/);
-    expect(appSource).not.toMatch(/visual-card-grid|visualCards/);
+    expect(appSource).toMatch(/shot-visual/);
+    expect(appSource).toMatch(/shot-visual-metrics/);
+    expect(appSource).not.toMatch(/shot-dashboard|dashboard-metrics|visual-card-grid|visualCards/);
     expect(appSource).not.toMatch(/TrackMan|FlightScope|Foresight|GCQuad|logo|brand|asset|img src|<img/i);
   });
 

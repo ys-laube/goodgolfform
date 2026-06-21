@@ -30,11 +30,11 @@ describe('G004 stale Swing Lab removal guard', () => {
     }
   });
 
-  it('keeps the app wired only to the Korean caddie session and visual-only shot state', () => {
+  it('keeps the app wired only to the Korean caddie session and reactive 2D shot visual', () => {
     expect(appSource).toMatch(/useCaddieSession/);
     expect(appSource).toMatch(/prescription\.reasonCards/);
-    expect(appSource).toMatch(/shot-dashboard/);
-    expect(appSource).not.toMatch(/prescription\.shotDashboard|dashboard-metrics/);
+    expect(appSource).toMatch(/prescription\.shotVisual/);
+    expect(appSource).toMatch(/shot-visual/);
     expect(caddieSessionSource).toMatch(/buildPrescription/);
     expect(caddieSessionSource).toMatch(/caddiePresets/);
     expect(caddieSessionSource).toMatch(/CaddieShotVisualState/);
@@ -56,9 +56,9 @@ describe('G004 stale Swing Lab removal guard', () => {
 
   it('removes motion-viewer styling while preserving responsive mobile layout', () => {
     expect(stylesSource).not.toMatch(/motion-viewer|motion-stage|motion-meter|swing-arc|swing-plane|swing-armature|perspective|preserve-3d|translateZ|rotateX|rotateY/i);
-    expect(stylesSource).toContain('.shot-dashboard');
-    expect(stylesSource).not.toContain('.dashboard-metrics');
-    expect(stylesSource).not.toMatch(/visual-card-grid|visual-card|visual-marker/);
+    expect(stylesSource).toContain('.shot-visual');
+    expect(stylesSource).toContain('.shot-visual-metrics');
+    expect(stylesSource).not.toMatch(/shot-dashboard|dashboard-metrics|visual-card-grid|visual-card|visual-marker/);
     expect(stylesSource).toContain('@media (min-width: 42rem)');
     expect(stylesSource).toContain('@media (min-width: 56rem)');
   });
