@@ -31,7 +31,8 @@ describe('G003 copy/UX integration boundary', () => {
     expect(renderedApp).toMatch(/스크린 골프식 샷 요약/i);
     expect(renderedApp).not.toMatch(/조준과 라이 미니카드|2D 보조|근거 카드/i);
     expect(visibleCopy).toMatch(/근사 연습 추정값/i);
-    expect(renderedApp).toMatch(/추천: 9번 아이언 90%[\s\S]*목표보다 살짝 오른쪽 조준[\s\S]*낮게 컨트롤/);
+    expect(renderedApp).not.toMatch(/추천: 9번 아이언 90%|추천 요약|짧은 이유/);
+    expect(renderedApp).toMatch(/클럽 선택이유[\s\S]*9번 아이언 90%[\s\S]*조준 방향 이유[\s\S]*목표보다 살짝 오른쪽 조준[\s\S]*목표 탄도 이유[\s\S]*낮게 컨트롤/);
     expect(renderedApp).toMatch(/라이[\s\S]*페어웨이/);
     expect(renderedApp).toMatch(/앞뒤 경사[\s\S]*평지/);
     expect(renderedApp).toMatch(/공 위치[\s\S]*공이 발보다 낮음/);
