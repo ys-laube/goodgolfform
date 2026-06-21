@@ -66,6 +66,16 @@ describe('current location state classification', () => {
 
     expect(state.status).toBe('denied');
     expect(state.message).toMatch(/permission was denied/i);
+    expect(state.message).toMatch(/remain available/i);
+    expect(state.message).not.toMatch(/you can|try again|should|need to/i);
+  });
+
+  it('returns timeout copy without retry-command language', () => {
+    const state = classifyLocationFailure({ code: 3, message: 'timeout' });
+
+    expect(state).toMatchObject({ status: 'unavailable', reason: 'timeout' });
+    expect(state.message).toMatch(/clearer sky view may help/i);
+    expect(state.message).not.toMatch(/try again|should|need to/i);
   });
 
   it('returns unavailable when the provider reports position unavailable', () => {

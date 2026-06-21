@@ -13,7 +13,7 @@ export type ShotPinCategoryOption = {
 export const shotPinCategories: readonly ShotPinCategoryOption[] = [
   { id: 'shot', label: 'Shot', emoji: '🏌️', commentHint: 'Good swing or memorable contact' },
   { id: 'lie', label: 'Lie', emoji: '🌲', commentHint: 'Tree, rough, sand, or awkward stance' },
-  { id: 'target', label: 'Target', emoji: '⛳', commentHint: 'Aim point, green, or safe miss' },
+  { id: 'target', label: 'Target', emoji: '⛳', commentHint: 'Target point, green, or safe miss' },
   { id: 'note', label: 'Note', emoji: '💬', commentHint: 'Friendly round note' },
 ] as const;
 
