@@ -115,7 +115,7 @@ export function SwingMotionViewer({ parameters, recommendation, forceReducedMoti
         <p className="eyebrow">Step 3 · Motion viewer</p>
         <h2 id="motion-viewer-title">Parameterized golfer motion</h2>
         <p>
-          SVG layers translate this card into visible swing size, path, tempo, plane, and trajectory changes. Swipe the stage for pseudo-3D rotation.
+          SVG layers translate this card into visible swing size, path, tempo, plane, and trajectory changes. Drag the stage to rotate the pseudo-3D view.
         </p>
       </div>
 
@@ -124,7 +124,7 @@ export function SwingMotionViewer({ parameters, recommendation, forceReducedMoti
         style={viewerStyle}
         role="img"
         tabIndex={0}
-        aria-label={`Golfer motion viewer: ${parameters.accessibleSummary}. ${visualState.poseLabel}. Swipe the stage for rotation.`}
+        aria-label={`Golfer motion viewer: ${parameters.accessibleSummary}. ${visualState.poseLabel}. Drag or swipe to rotate the stage.`}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={stopDrag}
