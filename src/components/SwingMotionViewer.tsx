@@ -27,21 +27,29 @@ function formatValue(value: string): string {
   return value.replaceAll('-', ' ');
 }
 
+function currentWindow(): Window | undefined {
+  const windowDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'window');
+
+  return windowDescriptor && 'value' in windowDescriptor ? (windowDescriptor.value as Window) : undefined;
+}
+
 function usePrefersReducedMotion(forceReducedMotion = false): boolean {
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(() => {
-    if (forceReducedMotion || typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+    const browserWindow = currentWindow();
+    if (forceReducedMotion || !browserWindow || typeof browserWindow.matchMedia !== 'function') {
       return forceReducedMotion;
     }
 
-    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    return browserWindow.matchMedia('(prefers-reduced-motion: reduce)').matches;
   });
 
   useEffect(() => {
-    if (forceReducedMotion || typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+    const browserWindow = currentWindow();
+    if (forceReducedMotion || !browserWindow || typeof browserWindow.matchMedia !== 'function') {
       return;
     }
 
-    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const mediaQuery = browserWindow.matchMedia('(prefers-reduced-motion: reduce)');
     const syncPreference = () => setPrefersReducedMotion(mediaQuery.matches);
     syncPreference();
     mediaQuery.addEventListener('change', syncPreference);
