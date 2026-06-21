@@ -197,6 +197,7 @@ describe('App SSR/static harness contract', () => {
     for (const category of categories) {
       expect(renderedApp.match(new RegExp(category, 'g'))?.length).toBe(1);
     }
+    expect(renderedApp.match(/class="analysis-card"/g)?.length).toBe(4);
     expect(renderedApp).toMatch(/클럽 선택이유[\s\S]*9번 아이언 90%/);
     expect(renderedApp).not.toMatch(/근거 카드|근거카드/);
   });
