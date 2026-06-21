@@ -93,6 +93,19 @@ describe('App SSR/static harness contract', () => {
     expect(renderedApp).not.toMatch(/\b(coach|caddie|caddy|must|should|need to|try to|hit|aim|guarantee|exact)\b|adjusted play/i);
   });
 
+
+  it('renders every required analysis report card category from recommendation output', () => {
+    const renderedApp = withPoisonedBrowserStorage(() => renderToString(createElement(App)));
+
+    expect(renderedApp).toMatch(/Club · distance feel[\s\S]*IRON/i);
+    expect(renderedApp).toMatch(/Swing size · tempo[\s\S]*(controlled|fuller stock)/i);
+    expect(renderedApp).toMatch(/Trajectory strategy[\s\S]*standard window/i);
+    expect(renderedApp).toMatch(/Plausibility · game metrics[\s\S]*fit score/i);
+    expect(renderedApp).toMatch(/Why this card[\s\S]*adjusted target/i);
+    expect(renderedApp).toMatch(/Scenario adjustment reads|Why this card/i);
+    expect(renderedApp).not.toMatch(/\b(must|guarantee|exact)\b/i);
+  });
+
   it('restores saved profile presets through the App storage boundary when browser storage exists', () => {
     const descriptor = Object.getOwnPropertyDescriptor(globalThis, 'window');
     const savedProfile = {
