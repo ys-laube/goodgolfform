@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useState } from 'react';
 import {
   type CurrentLocationState,
   type GeolocationPort,
@@ -14,11 +14,10 @@ export function useCurrentLocation(options: LocationOptions = defaultLocationOpt
     message: 'Location has not been requested yet.',
   });
 
-  const geolocation = useMemo(() => createBrowserGeolocationPort(), []);
-
   const requestLocation = useCallback(async () => {
     setState({ status: 'requesting', message: 'Requesting browser location…' });
 
+    const geolocation = createBrowserGeolocationPort();
     if (!geolocation) {
       setState({
         status: 'unavailable',
@@ -29,7 +28,7 @@ export function useCurrentLocation(options: LocationOptions = defaultLocationOpt
     }
 
     setState(await resolveCurrentLocation(geolocation, options));
-  }, [geolocation, options]);
+  }, [options]);
 
   return { state, requestLocation } as const;
 }
