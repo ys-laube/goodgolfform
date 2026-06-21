@@ -113,6 +113,8 @@ h2 {
 .form-grid,
 .club-grid,
 .metric-grid,
+.analysis-card-grid,
+.adjustment-strip,
 .status-strip {
   display: grid;
   gap: 0.85rem;
@@ -203,19 +205,56 @@ select optgroup {
   border-color: rgba(184, 255, 104, 0.3);
 }
 
-.metric-grid span {
+.metric-grid span,
+.analysis-card,
+.why-panel,
+.adjustment-strip span {
   display: grid;
-  gap: 0.15rem;
+  gap: 0.35rem;
   border-radius: 1.1rem;
   background: rgba(255, 255, 255, 0.09);
   padding: 1rem;
   color: #d8f9df;
 }
 
-.metric-grid strong {
+.metric-grid strong,
+.analysis-card strong,
+.adjustment-strip strong {
   color: #f7fff7;
   font-size: 1.05rem;
   text-transform: capitalize;
+}
+
+.analysis-card {
+  border: 1px solid rgba(184, 255, 104, 0.18);
+  min-height: 11rem;
+  align-content: space-between;
+}
+
+.analysis-card p,
+.why-panel p,
+.adjustment-strip span {
+  margin: 0;
+}
+
+.analysis-card span {
+  color: #b8ff68;
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.card-label {
+  color: #9af1b4;
+  font-size: 0.74rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.why-panel {
+  border: 1px solid rgba(154, 241, 180, 0.18);
 }
 
 .why-list {
@@ -237,6 +276,10 @@ select optgroup {
     grid-template-columns: repeat(3, 1fr);
   }
 
+  .analysis-card-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
   .hero-actions {
     grid-template-columns: repeat(2, max-content);
   }
@@ -250,5 +293,9 @@ select optgroup {
   .lab-panel,
   .analysis-preview {
     padding: 1.5rem;
+  }
+
+  .analysis-card-grid {
+    grid-template-columns: repeat(4, 1fr);
   }
 }

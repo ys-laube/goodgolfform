@@ -15,6 +15,7 @@ import type {
   ShotShape,
   ShotWindow,
   SwingLabProfile,
+  SwingRecommendation,
   TempoPreference,
   TrajectoryTendency,
   WindDirection,
@@ -38,6 +39,51 @@ const windStrengths: readonly WindStrength[] = ['calm', 'light', 'steady', 'stro
 const lieOptions: readonly LieCondition[] = ['tee', 'fairway', 'rough', 'bunker'];
 const windowOptions: readonly ShotWindow[] = ['standard', 'low', 'high'];
 const editableClubKeys: readonly ClubKey[] = ['driver', '7i', 'pw'];
+
+type AnalysisCard = {
+  readonly id: string;
+  readonly label: string;
+  readonly title: string;
+  readonly detail: string;
+  readonly meta: string;
+};
+
+function formatCardText(value: string): string {
+  return value.replaceAll('-', ' ');
+}
+
+function analysisCardsFor(recommendation: SwingRecommendation): readonly AnalysisCard[] {
+  return [
+    {
+      id: 'club-distance-feel',
+      label: 'Club · distance feel',
+      title: recommendation.clubLabel,
+      detail: recommendation.distanceFeel,
+      meta: `${recommendation.adjustedDistanceMeters} m adjusted play`,
+    },
+    {
+      id: 'swing-size-tempo',
+      label: 'Swing size · tempo',
+      title: `${recommendation.swingSizePercent}% ${recommendation.swingSizeLabel}`,
+      detail: `${formatCardText(recommendation.tempo)} tempo profile with ${recommendation.tempoRating} rhythm rating`,
+      meta: 'Motion meter',
+    },
+    {
+      id: 'trajectory-strategy',
+      label: 'Trajectory strategy',
+      title: formatCardText(recommendation.trajectoryStrategy),
+      detail: `${formatCardText(recommendation.pathBias)} path read shaped by window, wind, and player tendency`,
+      meta: 'Flight lane',
+    },
+    {
+      id: 'plausibility-game-metrics',
+      label: 'Plausibility · game metrics',
+      title: recommendation.gameMetricLabel,
+      detail: `${recommendation.confidenceScore}/100 fit score for this profile and scenario blend`,
+      meta: 'Scenario fit',
+    },
+  ];
+}
 
 function browserStorage(): StorageLike | undefined {
   const windowDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'window');
@@ -95,6 +141,7 @@ export function App() {
 
   const selectableProfiles = useMemo(() => [...builtInProfilePresets, ...savedProfiles], [savedProfiles]);
   const recommendation = useMemo(() => recommendShot(activeProfile, scenario), [activeProfile, scenario]);
+  const analysisCards = useMemo(() => analysisCardsFor(recommendation), [recommendation]);
 
   function selectProfile(profileId: string) {
     const nextProfile = selectableProfiles.find((profile) => profile.id === profileId) ?? builtInProfilePresets[0];
@@ -361,30 +408,46 @@ export function App() {
       </section>
 
       <section className="analysis-preview" aria-labelledby="analysis-title">
-        <div>
-          <p className="eyebrow">Live analysis preview</p>
+        <div className="section-heading">
+          <p className="eyebrow">Live analysis report</p>
           <h2 id="analysis-title">{recommendation.clubLabel} · {recommendation.swingSizeLabel}</h2>
-          <p>{recommendation.distanceFeel}</p>
+          <p>
+            Serious game-card reads from the deterministic shot model: distance feel, swing load, flight lane, and scenario fit stay
+            profile-aware without becoming commands.
+          </p>
         </div>
-        <div className="metric-grid">
-          <span>
-            <strong>{recommendation.gameMetricLabel}</strong>
-            Plausibility
-          </span>
-          <span>
-            <strong>{recommendation.tempo}</strong>
-            Tempo
-          </span>
-          <span>
-            <strong>{recommendation.trajectoryStrategy}</strong>
-            Flight read
-          </span>
-        </div>
-        <ul className="why-list">
-          {recommendation.why.map((reason) => (
-            <li key={reason}>{reason}</li>
+
+        <div className="analysis-card-grid" aria-label="Recommendation analysis report cards">
+          {analysisCards.map((card) => (
+            <article className="analysis-card" key={card.id}>
+              <p className="card-label">{card.label}</p>
+              <strong>{card.title}</strong>
+              <p>{card.detail}</p>
+              <span>{card.meta}</span>
+            </article>
           ))}
-        </ul>
+        </div>
+
+        {recommendation.adjustments.length > 0 ? (
+          <div className="adjustment-strip" aria-label="Scenario adjustment reads">
+            {recommendation.adjustments.map((adjustment) => (
+              <span key={adjustment.label}>
+                <strong>{adjustment.label}</strong> {adjustment.meters > 0 ? '+' : ''}{adjustment.meters} m · {adjustment.reason}
+              </span>
+            ))}
+          </div>
+        ) : null}
+
+        <div className="why-panel" aria-labelledby="why-title">
+          <p className="card-label" id="why-title">
+            Why this card
+          </p>
+          <ul className="why-list">
+            {recommendation.why.map((reason) => (
+              <li key={reason}>{reason}</li>
+            ))}
+          </ul>
+        </div>
       </section>
     </main>
   );

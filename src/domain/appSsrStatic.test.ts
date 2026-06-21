@@ -53,7 +53,15 @@ describe('App SSR/static harness contract', () => {
     expect(renderedApp).toContain('Wind direction');
     expect(renderedApp).toContain('Wind strength');
     expect(renderedApp).toContain('Desired window');
-    expect(renderedApp).toContain('Live analysis preview');
+    expect(renderedApp).toContain('Live analysis report');
+    expect(renderedApp).toContain('Recommendation analysis report cards');
+    expect(renderedApp).toContain('Club · distance feel');
+    expect(renderedApp).toContain('Swing size · tempo');
+    expect(renderedApp).toContain('Trajectory strategy');
+    expect(renderedApp).toContain('Plausibility · game metrics');
+    expect(renderedApp).toContain('Why this card');
+    expect(renderedApp).toMatch(/fit score/i);
+    expect(renderedApp).toMatch(/adjusted target/i);
     expect(renderedApp).not.toMatch(/GPS shot pins|room-flow|map-shell|invite-link room/i);
     expect(renderedApp).not.toMatch(/Build the shot|Read the swing card|Enter shot|Type the shot|choose a saved profile|get a deterministic/i);
   });
@@ -69,6 +77,19 @@ describe('App SSR/static harness contract', () => {
     expect(renderedApp).toMatch(/fit score/i);
     expect(renderedApp).toMatch(/adjusted target/i);
     expect(renderedApp).not.toMatch(/disclaimer|legal notice|official|rangefinder|must|guarantee|exact/i);
+  });
+
+
+  it('renders every required analysis report card category from recommendation output', () => {
+    const renderedApp = withPoisonedBrowserStorage(() => renderToString(createElement(App)));
+
+    expect(renderedApp).toMatch(/Club · distance feel[\s\S]*IRON/i);
+    expect(renderedApp).toMatch(/Swing size · tempo[\s\S]*(controlled|fuller stock)/i);
+    expect(renderedApp).toMatch(/Trajectory strategy[\s\S]*standard window/i);
+    expect(renderedApp).toMatch(/Plausibility · game metrics[\s\S]*fit score/i);
+    expect(renderedApp).toMatch(/Why this card[\s\S]*adjusted target/i);
+    expect(renderedApp).toMatch(/Scenario adjustment reads|Why this card/i);
+    expect(renderedApp).not.toMatch(/\b(must|guarantee|exact)\b/i);
   });
 
   it('restores saved profile presets through the App storage boundary when browser storage exists', () => {

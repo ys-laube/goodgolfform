@@ -21,6 +21,11 @@ describe('recommendation engine', () => {
     expect(recommendation.trajectoryStrategy).toBe('standard-window');
     expect(recommendation.why.join(' ')).toMatch(/adjusted target/i);
     expect(recommendation.gameMetricLabel).toMatch(/fit score/i);
+    expect(recommendation.distanceFeel).toContain(recommendation.clubLabel);
+    expect(recommendation.swingSizeLabel).toBeTruthy();
+    expect(recommendation.tempoRating).toBeGreaterThan(0);
+    expect(recommendation.confidenceScore).toBeGreaterThanOrEqual(52);
+    expect(recommendation.why).toHaveLength(3);
   });
 
   it('adjusts swing size for between-club distances', () => {
