@@ -2,6 +2,7 @@ import { createElement } from 'react';
 import { renderToString } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import indexHtml from '../../index.html?raw';
+import appSource from '../App.tsx?raw';
 import { App } from '../App';
 
 function withPoisonedBrowserStorage<T>(assertions: () => T): T {
@@ -34,22 +35,30 @@ function withPoisonedBrowserStorage<T>(assertions: () => T): T {
 }
 
 describe('App SSR/static harness contract', () => {
-  it('renders the app shell to a static string without browser storage globals', () => {
+  it('renders the swing lab shell to a static string without browser storage globals', () => {
     const renderedApp = withPoisonedBrowserStorage(() => renderToString(createElement(App)));
 
     expect(renderedApp).toContain('id="app-title"');
-    expect(renderedApp).toContain('id="room-flow"');
-    expect(renderedApp).toContain('id="map-shell-title"');
-    expect(renderedApp).toContain('aria-label="Golf course map with current location and course target markers"');
-    expect(renderedApp).not.toContain('Distance feel uses approximate practice estimates');
+    expect(renderedApp).toContain('id="profile-panel"');
+    expect(renderedApp).toContain('id="scenario-panel"');
+    expect(renderedApp).toContain('Serious Golf Swing Lab');
+    expect(renderedApp).toContain('Save profile locally');
+    expect(renderedApp).toContain('Target distance (m)');
+    expect(renderedApp).not.toMatch(/GPS shot pins|room-flow|map-shell|invite-link room/i);
   });
 
-  it('keeps the static HTML entrypoint ready for mobile SSR/static smoke checks', () => {
+  it('keeps App free of superseded GPS/map/room imports', () => {
+    expect(appSource).not.toMatch(/MapShell|useCurrentLocation|roomApi|roomRepository|shotPinFlow|courseTargets|mapAdapter/);
+    expect(appSource).toMatch(/profilePresets/);
+    expect(appSource).toMatch(/recommendShot/);
+  });
+
+  it('keeps the static HTML entrypoint ready for mobile swing lab smoke checks', () => {
     expect(indexHtml).toContain('<!doctype html>');
     expect(indexHtml).toContain('<html lang="en">');
     expect(indexHtml).toContain('<meta name="viewport" content="width=device-width, initial-scale=1.0" />');
     expect(indexHtml).toContain('<meta name="theme-color" content="#0b3d2e" />');
-    expect(indexHtml).toContain('mobile-first golf field GPS shot-pin prototype');
+    expect(indexHtml).toContain('mobile-first serious golf swing lab prototype');
     expect(indexHtml).toContain('<div id="root"></div>');
     expect(indexHtml).toContain('<script type="module" src="/src/main.tsx"></script>');
   });

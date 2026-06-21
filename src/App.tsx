@@ -1,299 +1,388 @@
 import { useMemo, useState } from 'react';
-import { MapShell } from './components/MapShell';
-import { nonGoals, privacyNotes, productPrinciples } from './domain/copy';
-import { sampleCourseTargets } from './domain/courseTargets';
-import { targetDistances } from './domain/geo';
-import { buildMockMapModel } from './domain/mapAdapter';
-import type { Coordinate, ShotPin, ShotPinCategory } from './domain/models';
-import { createRemoteRoomApiClient, createRoomApiClient, createRoomApiHandler } from './domain/roomApi';
-import { createRoomRepository, createSharedRoomBackend, type RoomMembership } from './domain/roomRepository';
-import { buildShotPinInput, findShotPinCategory, shotPinCategories, type ShotPinLocationSource } from './domain/shotPinFlow';
-import { useCurrentLocation } from './hooks/useCurrentLocation';
+import {
+  builtInProfilePresets,
+  loadSavedProfilePresets,
+  saveProfilePresets,
+  upsertProfilePreset,
+  type StorageLike,
+} from './domain/profilePresets';
+import { recommendShot } from './domain/recommendationEngine';
+import type {
+  ClubKey,
+  GolferLevel,
+  LieCondition,
+  ShotScenario,
+  ShotShape,
+  ShotWindow,
+  SwingLabProfile,
+  TempoPreference,
+  TrajectoryTendency,
+  WindDirection,
+  WindStrength,
+} from './domain/swingLabModels';
 
-const foundationCards = [
-  {
-    title: 'Create a round room',
-    body: 'Start with a lightweight invite-link concept for friends sharing the same round context.',
-  },
-  {
-    title: 'Add playful shot pins',
-    body: 'Drop emoji notes for memorable shots without turning the app into scoring or social feed software.',
-  },
-  {
-    title: 'Keep maps swappable',
-    body: 'This foundation intentionally avoids provider-specific map SDKs so a later adapter can be selected safely.',
-  },
-] as const;
+const defaultScenario: ShotScenario = {
+  targetDistanceMeters: 145,
+  windDirection: 'none',
+  windStrength: 'calm',
+  lie: 'fairway',
+  desiredWindow: 'standard',
+};
 
-const initialManualLocation = {
-  lat: sampleCourseTargets[0].lat,
-  lng: sampleCourseTargets[0].lng,
-} as const;
+const levelOptions: readonly GolferLevel[] = ['beginner', 'developing', 'single-digit', 'scratch'];
+const shotShapeOptions: readonly ShotShape[] = ['straight', 'draw', 'fade'];
+const trajectoryOptions: readonly TrajectoryTendency[] = ['low', 'mid', 'high'];
+const tempoOptions: readonly TempoPreference[] = ['smooth', 'neutral', 'assertive'];
+const windDirections: readonly WindDirection[] = ['none', 'headwind', 'tailwind', 'left-to-right', 'right-to-left'];
+const windStrengths: readonly WindStrength[] = ['calm', 'light', 'steady', 'strong'];
+const lieOptions: readonly LieCondition[] = ['tee', 'fairway', 'rough', 'bunker'];
+const windowOptions: readonly ShotWindow[] = ['standard', 'low', 'high'];
+const editableClubKeys: readonly ClubKey[] = ['driver', '7i', 'pw'];
+
+function browserStorage(): StorageLike | undefined {
+  const windowDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'window');
+  if (!windowDescriptor || !('value' in windowDescriptor)) {
+    return undefined;
+  }
+
+  try {
+    return (windowDescriptor.value as Window).localStorage;
+  } catch {
+    return undefined;
+  }
+}
+
+function initialSavedProfiles(): readonly SwingLabProfile[] {
+  return loadSavedProfilePresets(browserStorage());
+}
+
+function initialStorageMessage(profiles: readonly SwingLabProfile[]): string {
+  return profiles.length > 0
+    ? `${profiles.length} saved profile${profiles.length === 1 ? '' : 's'} restored from this device.`
+    : 'Built-in profiles are ready. Saved profiles load on this device only.';
+}
+
+function cloneProfile(profile: SwingLabProfile): SwingLabProfile {
+  return {
+    ...profile,
+    clubDistances: profile.clubDistances.map((distance) => ({ ...distance })),
+  };
+}
+
+function replaceClubDistance(profile: SwingLabProfile, club: ClubKey, carryMeters: number): SwingLabProfile {
+  return {
+    ...profile,
+    clubDistances: profile.clubDistances.map((distance) =>
+      distance.club === club ? { ...distance, carryMeters: Math.max(30, Math.round(carryMeters)) } : distance,
+    ),
+  };
+}
+
+function distanceFor(profile: SwingLabProfile, club: ClubKey): number {
+  return profile.clubDistances.find((distance) => distance.club === club)?.carryMeters ?? 0;
+}
+
+function presetSummary(profile: SwingLabProfile): string {
+  return `${profile.level} · ${profile.shotShape} · ${profile.trajectoryTendency} flight · ${profile.tempoPreference} tempo`;
+}
 
 export function App() {
-  const { state: locationState, requestLocation } = useCurrentLocation();
-  const [roomName, setRoomName] = useState('Saturday nine');
-  const [displayName, setDisplayName] = useState('Golf friend');
-  const [inviteToken, setInviteToken] = useState('');
-  const [membership, setMembership] = useState<RoomMembership>();
-  const [pins, setPins] = useState<readonly ShotPin[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState<ShotPinCategory>('shot');
-  const [comment, setComment] = useState('');
-  const [tappedLocation, setTappedLocation] = useState<Coordinate>(sampleCourseTargets[1]);
-  const [manualLocation, setManualLocation] = useState<Coordinate>(initialManualLocation);
-  const [flowMessage, setFlowMessage] = useState('Create or join a room to drop quick shot pins.');
-  const mapTileTemplate = import.meta.env.VITE_MAP_TILE_URL_TEMPLATE as string | undefined;
+  const [savedProfiles, setSavedProfiles] = useState<readonly SwingLabProfile[]>(initialSavedProfiles);
+  const [activeProfile, setActiveProfile] = useState<SwingLabProfile>(() => cloneProfile(builtInProfilePresets[0]));
+  const [selectedPresetId, setSelectedPresetId] = useState(builtInProfilePresets[0].id);
+  const [scenario, setScenario] = useState<ShotScenario>(defaultScenario);
+  const [storageMessage, setStorageMessage] = useState(() => initialStorageMessage(initialSavedProfiles()));
 
-  const roomApi = useMemo(() => {
-    const remoteBaseUrl = import.meta.env.VITE_ROOM_API_BASE_URL as string | undefined;
-    if (remoteBaseUrl) {
-      return createRemoteRoomApiClient(remoteBaseUrl);
-    }
+  const selectableProfiles = useMemo(() => [...builtInProfilePresets, ...savedProfiles], [savedProfiles]);
+  const recommendation = useMemo(() => recommendShot(activeProfile, scenario), [activeProfile, scenario]);
 
-    const handler = createRoomApiHandler(createRoomRepository(createSharedRoomBackend()));
-    return createRoomApiClient({ baseUrl: 'https://fungolf.local', fetch: handler });
-  }, []);
-
-  const currentLocation =
-    locationState.status === 'ready' || locationState.status === 'low_accuracy'
-      ? locationState.sample
-      : undefined;
-  const mapModel = buildMockMapModel({
-    targets: sampleCourseTargets,
-    currentLocation,
-    tileTemplate: mapTileTemplate,
-  });
-  const distances = currentLocation ? targetDistances(currentLocation, sampleCourseTargets) : [];
-  const activeCategory = findShotPinCategory(selectedCategory);
-  const canDropCurrentPin = Boolean(membership && currentLocation);
-  const canDropTappedPin = Boolean(membership && tappedLocation);
-  const canDropManualPin = Boolean(membership && Number.isFinite(manualLocation.lat) && Number.isFinite(manualLocation.lng));
-
-  async function createRoom() {
-    const nextMembership = await roomApi.createRoom({ name: roomName, hostDisplayName: displayName });
-    setMembership(nextMembership);
-    setInviteToken(nextMembership.room.inviteToken ?? '');
-    setPins(await roomApi.listPins(nextMembership));
-    setFlowMessage(`Room ready: ${nextMembership.room.name}. Share invite token ${nextMembership.room.inviteToken}.`);
+  function selectProfile(profileId: string) {
+    const nextProfile = selectableProfiles.find((profile) => profile.id === profileId) ?? builtInProfilePresets[0];
+    setSelectedPresetId(profileId);
+    setActiveProfile(cloneProfile(nextProfile));
+    setStorageMessage(`${nextProfile.name} loaded into the profile editor.`);
   }
 
-  async function joinRoom() {
-    const nextMembership = await roomApi.joinRoom({ inviteToken, displayName });
-    setMembership(nextMembership);
-    setPins(await roomApi.listPins(nextMembership));
-    setFlowMessage(`Joined ${nextMembership.room.name}. Pins refresh with loose freshness, not live tracking.`);
-  }
-
-  async function dropPin(source: ShotPinLocationSource) {
-    if (!membership) {
-      setFlowMessage('Create or join an invite-link room before dropping shot pins.');
-      return;
-    }
-
-    try {
-      const pin = await roomApi.createPin(
-        buildShotPinInput({
-          membership,
-          source,
-          category: selectedCategory,
-          comment,
-          currentLocation,
-          tappedLocation,
-          manualLocation,
-        }),
-      );
-      setPins(await roomApi.listPins(membership));
-      setComment('');
-      setFlowMessage(`${pin.emoji} ${pin.comment} saved from ${source} location as an approximate room pin.`);
-    } catch (error) {
-      setFlowMessage(error instanceof Error ? error.message : 'Shot pin could not be saved.');
-    }
+  function saveCurrentProfile() {
+    const storage = browserStorage();
+    const profileToSave: SwingLabProfile = {
+      ...activeProfile,
+      id: activeProfile.id.startsWith('preset-') ? `saved-${activeProfile.id}` : activeProfile.id,
+      name: activeProfile.name.trim() || 'Custom Swing Lab Profile',
+      archetype: activeProfile.archetype.trim() || 'Saved local player profile',
+    };
+    const nextSavedProfiles = upsertProfilePreset(savedProfiles, profileToSave);
+    const saved = saveProfilePresets(storage, nextSavedProfiles);
+    setSavedProfiles(nextSavedProfiles);
+    setSelectedPresetId(profileToSave.id);
+    setActiveProfile(cloneProfile(profileToSave));
+    setStorageMessage(
+      saved
+        ? `${profileToSave.name} saved locally and can be loaded from this preset list.`
+        : `${profileToSave.name} is staged in memory. Local storage is not available in this environment.`,
+    );
   }
 
   return (
     <main className="app-shell" aria-labelledby="app-title">
-      <section className="hero-card">
-        <p className="eyebrow">Golf field GPS shot pins</p>
-        <h1 id="app-title">FunGolf helps friends mark shots with approximate on-course context.</h1>
-        <div className="hero-actions" aria-label="Foundation actions">
-          <a href="#room-flow" className="primary-action">
-            Start room
+      <section className="hero-card swing-hero">
+        <p className="eyebrow">Serious Golf Swing Lab</p>
+        <h1 id="app-title">Preset a player. Build the shot. Read the swing card.</h1>
+        <p className="hero-copy">
+          A mobile-first practice lab for golf friends: choose a saved profile, tune core tendencies, type the shot in front of you,
+          and get a deterministic analysis card without GPS, maps, weather feeds, rooms, auth, or backend setup.
+        </p>
+        <div className="hero-actions" aria-label="Primary swing lab actions">
+          <a href="#profile-panel" className="primary-action">
+            Edit profile
           </a>
-          <a href="#privacy" className="secondary-action">
-            Privacy notes
+          <a href="#scenario-panel" className="secondary-action">
+            Enter shot
           </a>
         </div>
       </section>
 
-      <section className="status-strip" aria-label="MVP foundation constraints">
-        {productPrinciples.map((principle) => (
-          <span key={principle}>{principle}</span>
-        ))}
+      <section className="status-strip" aria-label="Swing lab constraints">
+        <span>No login, GPS, map, weather, room, or backend dependency</span>
+        <span>Versioned local presets stay on this device</span>
+        <span>Manual scenario inputs recompute the analysis instantly</span>
       </section>
 
-      <section id="room-flow" className="room-flow" aria-labelledby="room-flow-title">
-        <div className="room-card">
-          <p className="eyebrow">G003 invite room</p>
-          <h2 id="room-flow-title">Mobile room flow</h2>
-          <p>{flowMessage}</p>
-          <label>
-            Room name
-            <input value={roomName} onChange={(event) => setRoomName(event.target.value)} />
-          </label>
-          <label>
-            Your display name
-            <input value={displayName} onChange={(event) => setDisplayName(event.target.value)} />
-          </label>
-          <div className="split-actions">
-            <button type="button" className="primary-action button-action" onClick={() => void createRoom()}>
-              Create room
-            </button>
-            <button type="button" className="secondary-action button-action" onClick={() => void joinRoom()}>
-              Join token
-            </button>
-          </div>
-          <label>
-            Invite token
-            <input value={inviteToken} onChange={(event) => setInviteToken(event.target.value)} placeholder="Paste invite token" />
-          </label>
+      <section id="profile-panel" className="lab-panel" aria-labelledby="profile-title">
+        <div className="section-heading">
+          <p className="eyebrow">Step 1 · Profile preset</p>
+          <h2 id="profile-title">Load, edit, and save a golfer profile</h2>
+          <p>{storageMessage}</p>
         </div>
 
-        <div className="pin-card" aria-labelledby="quick-pin-title">
-          <p className="eyebrow">One-handed quick pins</p>
-          <h2 id="quick-pin-title">Emoji/comment categories</h2>
-          <div className="category-grid" aria-label="Shot pin categories">
-            {shotPinCategories.map((category) => (
-              <button
-                key={category.id}
-                type="button"
-                className={category.id === selectedCategory ? 'category-pill selected' : 'category-pill'}
-                onClick={() => setSelectedCategory(category.id)}
-              >
-                <span aria-hidden="true">{category.emoji}</span>
-                {category.label}
-              </button>
-            ))}
-          </div>
+        <label>
+          Profile preset
+          <select value={selectedPresetId} onChange={(event) => selectProfile(event.target.value)}>
+            <optgroup label="Built-in presets">
+              {builtInProfilePresets.map((profile) => (
+                <option key={profile.id} value={profile.id}>
+                  {profile.name} — {presetSummary(profile)}
+                </option>
+              ))}
+            </optgroup>
+            {savedProfiles.length > 0 ? (
+              <optgroup label="Saved on this device">
+                {savedProfiles.map((profile) => (
+                  <option key={profile.id} value={profile.id}>
+                    {profile.name} — {presetSummary(profile)}
+                  </option>
+                ))}
+              </optgroup>
+            ) : null}
+          </select>
+        </label>
+
+        <div className="form-grid two-column">
           <label>
-            Comment
-            <textarea
-              value={comment}
-              onChange={(event) => setComment(event.target.value)}
-              placeholder={activeCategory.commentHint}
-              rows={3}
+            Profile name
+            <input value={activeProfile.name} onChange={(event) => setActiveProfile({ ...activeProfile, name: event.target.value })} />
+          </label>
+          <label>
+            Archetype note
+            <input value={activeProfile.archetype} onChange={(event) => setActiveProfile({ ...activeProfile, archetype: event.target.value })} />
+          </label>
+          <label>
+            Height (cm)
+            <input
+              type="number"
+              min="120"
+              max="230"
+              value={activeProfile.heightCm}
+              onChange={(event) => setActiveProfile({ ...activeProfile, heightCm: Number(event.target.value) })}
             />
           </label>
-          <div className="quick-actions" aria-label="Drop shot pin from location source">
-            <button type="button" className="primary-action button-action" disabled={!canDropCurrentPin} onClick={() => void dropPin('current')}>
-              Use current
-            </button>
-            <button type="button" className="primary-action button-action" disabled={!canDropTappedPin} onClick={() => void dropPin('tapped')}>
-              Use tapped
-            </button>
-            <button type="button" className="primary-action button-action" disabled={!canDropManualPin} onClick={() => void dropPin('manual')}>
-              Use manual
-            </button>
-          </div>
-          <small className="privacy-copy">Pins use approximate room coordinates and are visible only inside this invite-link room.</small>
+          <label>
+            Weight (kg)
+            <input
+              type="number"
+              min="40"
+              max="160"
+              value={activeProfile.weightKg}
+              onChange={(event) => setActiveProfile({ ...activeProfile, weightKg: Number(event.target.value) })}
+            />
+          </label>
+          <label>
+            Handicap
+            <input
+              type="number"
+              min="-5"
+              max="54"
+              value={activeProfile.handicap}
+              onChange={(event) => setActiveProfile({ ...activeProfile, handicap: Number(event.target.value) })}
+            />
+          </label>
+          <label>
+            Level
+            <select
+              value={activeProfile.level}
+              onChange={(event) => setActiveProfile({ ...activeProfile, level: event.target.value as GolferLevel })}
+            >
+              {levelOptions.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Shot shape
+            <select
+              value={activeProfile.shotShape}
+              onChange={(event) => setActiveProfile({ ...activeProfile, shotShape: event.target.value as ShotShape })}
+            >
+              {shotShapeOptions.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Trajectory tendency
+            <select
+              value={activeProfile.trajectoryTendency}
+              onChange={(event) => setActiveProfile({ ...activeProfile, trajectoryTendency: event.target.value as TrajectoryTendency })}
+            >
+              {trajectoryOptions.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Tempo preference
+            <select
+              value={activeProfile.tempoPreference}
+              onChange={(event) => setActiveProfile({ ...activeProfile, tempoPreference: event.target.value as TempoPreference })}
+            >
+              {tempoOptions.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+
+        <div className="club-grid" aria-label="Editable carry distances">
+          {editableClubKeys.map((club) => (
+            <label key={club}>
+              {club.toUpperCase()} carry (m)
+              <input
+                type="number"
+                min="30"
+                max="330"
+                value={distanceFor(activeProfile, club)}
+                onChange={(event) => setActiveProfile(replaceClubDistance(activeProfile, club, Number(event.target.value)))}
+              />
+            </label>
+          ))}
+        </div>
+
+        <button type="button" className="primary-action button-action sticky-action" onClick={saveCurrentProfile}>
+          Save profile locally
+        </button>
+      </section>
+
+      <section id="scenario-panel" className="lab-panel" aria-labelledby="scenario-title">
+        <div className="section-heading">
+          <p className="eyebrow">Step 2 · Manual shot scenario</p>
+          <h2 id="scenario-title">Type the shot conditions</h2>
+          <p>Every input is manual and deterministic, so the primary flow works offline and in a static smoke test.</p>
+        </div>
+
+        <div className="form-grid two-column">
+          <label>
+            Target distance (m)
+            <input
+              type="number"
+              min="30"
+              max="330"
+              value={scenario.targetDistanceMeters}
+              onChange={(event) => setScenario({ ...scenario, targetDistanceMeters: Number(event.target.value) })}
+            />
+          </label>
+          <label>
+            Wind direction
+            <select
+              value={scenario.windDirection}
+              onChange={(event) => setScenario({ ...scenario, windDirection: event.target.value as WindDirection })}
+            >
+              {windDirections.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Wind strength
+            <select
+              value={scenario.windStrength}
+              onChange={(event) => setScenario({ ...scenario, windStrength: event.target.value as WindStrength })}
+            >
+              {windStrengths.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Lie
+            <select value={scenario.lie} onChange={(event) => setScenario({ ...scenario, lie: event.target.value as LieCondition })}>
+              {lieOptions.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Desired window
+            <select
+              value={scenario.desiredWindow}
+              onChange={(event) => setScenario({ ...scenario, desiredWindow: event.target.value as ShotWindow })}
+            >
+              {windowOptions.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
       </section>
 
-      <section className="geo-panel" aria-labelledby="location-title">
+      <section className="analysis-preview" aria-labelledby="analysis-title">
         <div>
-          <p className="eyebrow">G002 map/geolocation core</p>
-          <h2 id="location-title">Current location states and manual course targets</h2>
-          <p>{locationState.message}</p>
-          <button type="button" className="primary-action button-action" onClick={() => void requestLocation()}>
-            Use current location
-          </button>
+          <p className="eyebrow">Live analysis preview</p>
+          <h2 id="analysis-title">{recommendation.clubLabel} · {recommendation.swingSizeLabel}</h2>
+          <p>{recommendation.distanceFeel}</p>
         </div>
-        <div className={`location-badge ${locationState.status}`}>
-          <span>Status</span>
-          <strong>{locationState.status.replace('_', ' ')}</strong>
-          {'sample' in locationState ? <small>Accuracy ≈ {Math.round(locationState.sample.accuracyMeters)} m</small> : null}
+        <div className="metric-grid">
+          <span>
+            <strong>{recommendation.gameMetricLabel}</strong>
+            Plausibility
+          </span>
+          <span>
+            <strong>{recommendation.tempo}</strong>
+            Tempo
+          </span>
+          <span>
+            <strong>{recommendation.trajectoryStrategy}</strong>
+            Flight read
+          </span>
         </div>
-      </section>
-
-      <MapShell model={mapModel} />
-
-      <section className="detail-panel" aria-labelledby="targets-title">
-        <h2 id="targets-title">Tapped and manual targets</h2>
-        <p>Tap a sample target or type rough coordinates. These stay as approximate field notes for friendly practice context.</p>
-        <ul className="target-list">
-          {sampleCourseTargets.map((target) => {
-            const distance = distances.find((item) => item.target.id === target.id);
-            return (
-              <li key={target.id}>
-                <button type="button" className="target-button" onClick={() => setTappedLocation(target)}>
-                  <span>{target.type}</span>
-                  <strong>{target.label}</strong>
-                  <small>{distance ? distance.label : 'Request location for approximate distance'}</small>
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-        <div className="manual-grid" aria-label="Manual shot pin coordinate">
-          <label>
-            Manual lat
-            <input
-              type="number"
-              step="0.00001"
-              value={manualLocation.lat}
-              onChange={(event) => setManualLocation((location) => ({ ...location, lat: Number(event.target.value) }))}
-            />
-          </label>
-          <label>
-            Manual lng
-            <input
-              type="number"
-              step="0.00001"
-              value={manualLocation.lng}
-              onChange={(event) => setManualLocation((location) => ({ ...location, lng: Number(event.target.value) }))}
-            />
-          </label>
-        </div>
-      </section>
-
-      <section className="detail-panel" aria-labelledby="pins-title">
-        <h2 id="pins-title">Room shot pins</h2>
-        {membership ? <p>{membership.room.name} · {membership.participant.displayName} · loose freshness list</p> : <p>No room joined yet.</p>}
-        <ul className="pin-list">
-          {pins.map((pin) => (
-            <li key={pin.id}>
-              <span>{pin.emoji}</span>
-              <strong>{pin.comment}</strong>
-              <small>
-                {pin.category} · {pin.participantName} · {pin.lat.toFixed(5)}, {pin.lng.toFixed(5)}
-              </small>
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      <section id="foundation" className="card-grid" aria-label="Foundation capabilities">
-        {foundationCards.map((card) => (
-          <article key={card.title} className="info-card">
-            <h2>{card.title}</h2>
-            <p>{card.body}</p>
-          </article>
-        ))}
-      </section>
-
-      <section id="privacy" className="detail-panel" aria-labelledby="privacy-title">
-        <h2 id="privacy-title">Privacy and implementation boundaries</h2>
-        <ul>
-          {privacyNotes.map((note) => (
-            <li key={note}>{note}</li>
-          ))}
-        </ul>
-      </section>
-
-      <section className="detail-panel muted" aria-labelledby="non-goals-title">
-        <h2 id="non-goals-title">Non-goals for this foundation</h2>
-        <ul>
-          {nonGoals.map((nonGoal) => (
-            <li key={nonGoal}>{nonGoal}</li>
+        <ul className="why-list">
+          {recommendation.why.map((reason) => (
+            <li key={reason}>{reason}</li>
           ))}
         </ul>
       </section>
