@@ -30,14 +30,28 @@ describe('G004 stale Swing Lab removal guard', () => {
     }
   });
 
-  it('keeps the app wired only to the Korean caddie session and static shot dashboard', () => {
+  it('keeps the app wired only to the Korean caddie session and visual-only shot state', () => {
     expect(appSource).toMatch(/useCaddieSession/);
     expect(appSource).toMatch(/prescription\.reasonCards/);
     expect(appSource).toMatch(/shot-dashboard/);
     expect(appSource).not.toMatch(/prescription\.shotDashboard|dashboard-metrics/);
     expect(caddieSessionSource).toMatch(/buildPrescription/);
     expect(caddieSessionSource).toMatch(/caddiePresets/);
+    expect(caddieSessionSource).toMatch(/CaddieShotVisualState/);
+    expect(caddieSessionSource).toMatch(/shotVisualState: \{/);
+    expect(caddieSessionSource).not.toMatch(/CaddieShotDashboard|shotDashboard|recommendation:/);
     expect(`${appSource}\n${caddieSessionSource}`).not.toMatch(/SwingMotionViewer|motionParameters|useSwingLabSession|recommendShot|profilePresets|swingLabModels/);
+  });
+
+  it('keeps visual state free of recommendation, play-distance, and swing summary fields', () => {
+    const visualTypeBody = caddieSessionSource.match(/type CaddieShotVisualState = \{([\s\S]*?)\};/)?.[1] ?? '';
+    const visualStateBody = caddieSessionSource.match(/shotVisualState: \{([\s\S]*?)\n    \},/)?.[1] ?? '';
+
+    expect(visualTypeBody).toMatch(/targetLine/);
+    expect(visualTypeBody).toMatch(/ballPosition/);
+    expect(visualTypeBody).toMatch(/wind/);
+    expect(visualTypeBody).toMatch(/trajectory/);
+    expect(`${visualTypeBody}\n${visualStateBody}`).not.toMatch(/recommendation|playDistanceMeters|swingPercent|selectedClubLabel|추천|플레이 거리|스윙/);
   });
 
   it('removes motion-viewer styling while preserving responsive mobile layout', () => {

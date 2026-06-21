@@ -38,12 +38,11 @@ export type CaddieReasonCard = {
   readonly detail: string;
 };
 
-export type CaddieShotDashboard = {
+export type CaddieShotVisualState = {
   readonly targetLine: string;
   readonly ballPosition: string;
   readonly wind: string;
   readonly trajectory: string;
-  readonly recommendation: string;
 };
 
 export type CaddieShotVisualState = {
@@ -56,7 +55,6 @@ export type CaddieShotVisualState = {
 };
 
 export type CaddiePrescription = {
-  readonly headline: string;
   readonly selectedClub: CaddieClubKey;
   readonly selectedClubLabel: string;
   readonly swingPercent: number;
@@ -65,8 +63,7 @@ export type CaddiePrescription = {
   readonly trajectoryText: string;
   readonly warningText: string;
   readonly reasonCards: readonly CaddieReasonCard[];
-  readonly shotVisual: CaddieShotVisualState;
-  readonly shotDashboard: CaddieShotDashboard;
+  readonly shotVisualState: CaddieShotVisualState;
 };
 
 const defaultPreset = createCaddieDistancePreset({
@@ -304,7 +301,6 @@ function buildPrescription(preset: CaddieDistancePreset, scenario: CaddieScenari
   const selectedClubLabel = caddieClubLabels[selectedClub.selectedClub];
 
   return {
-    headline: `추천: ${selectedClubLabel} ${swingPercent}%, ${aimText}, ${trajectoryText} — ${warningText}.`,
     selectedClub: selectedClub.selectedClub,
     selectedClubLabel,
     swingPercent,
@@ -338,20 +334,11 @@ function buildPrescription(preset: CaddieDistancePreset, scenario: CaddieScenari
         detail: `${lieLabels[scenario.lie]} 라이에서 가장 큰 미스 하나만 먼저 지웁니다.`,
       },
     ],
-    shotVisual: {
-      aimBias: aimBiasFor(scenario),
-      ballHeight: ballHeightFor(scenario),
-      stanceTilt: scenario.stanceSlope,
-      windDirection: scenario.windDirection,
-      windStrength: scenario.windStrength,
-      trajectory: trajectoryVisualFor(scenario),
-    },
-    shotDashboard: {
+    shotVisualState: {
       targetLine: aimText,
       ballPosition: `${lieLabels[scenario.lie]} · ${sideSlopeLabels[scenario.sideSlope]} · ${stanceSlopeLabels[scenario.stanceSlope]}`,
       wind: `${windDirectionLabels[scenario.windDirection]} · ${windStrengthLabels[scenario.windStrength]}`,
       trajectory: trajectoryText,
-      recommendation: `${selectedClubLabel} ${swingPercent}% · ${playDistanceMeters}m`,
     },
   };
 }
