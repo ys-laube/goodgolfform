@@ -63,6 +63,16 @@ describe('semantic caddie shot visual state', () => {
     expect(leftHandedDriver.ballPositionPercent).toBe(18);
   });
 
+  it('keeps long clubs closer to the rendered lead side than the trail side', () => {
+    const rightHandedDriver = createCaddieShotVisualState('driver', { ...baseScenario, handedness: 'right' });
+    const rightHandedWedge = createCaddieShotVisualState('sw', { ...baseScenario, handedness: 'right' });
+    const leftHandedDriver = createCaddieShotVisualState('driver', { ...baseScenario, handedness: 'left' });
+
+    expect(rightHandedDriver.ballPositionPercent).toBeGreaterThan(50);
+    expect(rightHandedWedge.ballPositionPercent).toBeLessThan(50);
+    expect(leftHandedDriver.ballPositionPercent).toBeLessThan(50);
+  });
+
   it('keeps front-back slope independent from side-hill relation', () => {
     expect(
       createCaddieShotVisualState('7i', {

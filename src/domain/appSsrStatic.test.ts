@@ -237,10 +237,14 @@ describe('App SSR/static harness contract', () => {
     expect(appSource).toMatch(/--ball-position/);
     expect(appSource).toMatch(/data-front-back=\{prescription\.shotVisual\.frontBackSlope\}/);
     expect(appSource).toMatch(/data-side-hill=\{prescription\.shotVisual\.sideHillRelation\}/);
+    expect(appSource).toMatch(/sideHillRelationLabels\[prescription\.shotVisual\.sideHillRelation\]/);
     expect(appSource).toMatch(/위에서 본 스탠스 \/ 공 위치/);
     expect(appSource).toMatch(/뒤에서 본 라이 \/ 경사/);
+    expect(appSource).toMatch(/<summary>근거 보기<\/summary>/);
+    expect(appSource).toMatch(/드라이버는 리드발 안쪽/);
     expect(appSource).toMatch(/shot-visual-foot/);
     expect(appSource).toMatch(/shot-visual-ball/);
+    expect(stylesSource).toMatch(/data-handedness="right"[\s\S]*shot-visual-foot-lead[\s\S]*right: 16%/);
     expect(stylesSource).toMatch(/data-front-back="uphill"[\s\S]*--stance-tilt/);
     expect(stylesSource).toMatch(/data-side-hill="below-feet"[\s\S]*--side-hill-offset/);
     expect(stylesSource).not.toMatch(/data-trajectory|data-wind|shot-visual-arc|shot-visual-wind/);

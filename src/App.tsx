@@ -10,6 +10,7 @@ import {
   lieLabels,
   pinPositionLabels,
   replaceClubDistance,
+  sideHillRelationLabels,
   sideSlopeLabels,
   stanceSlopeLabels,
   useCaddieSession,
@@ -322,10 +323,20 @@ export function App() {
                 <span className="shot-visual-ball" />
               </div>
               <p>
-                앞뒤 경사 {stanceSlopeLabels[prescription.shotVisual.frontBackSlope]} · 공 위치 {sideSlopeLabels[scenario.sideSlope]}
+                앞뒤 경사 {stanceSlopeLabels[prescription.shotVisual.frontBackSlope]} · 공 위치{' '}
+                {sideHillRelationLabels[prescription.shotVisual.sideHillRelation]}
               </p>
             </figure>
           </div>
+
+          <details className="shot-visual-evidence">
+            <summary>근거 보기</summary>
+            <ul>
+              <li>드라이버는 리드발 안쪽, 짧은 클럽일수록 중앙 쪽으로 공 위치를 이동합니다.</li>
+              <li>미들 아이언은 대체로 스탠스 중앙 기준으로 보고, 롱 아이언과 우드는 약간 리드발 쪽을 봅니다.</li>
+              <li>오르막·내리막은 앞뒤 경사로, 공이 발보다 높거나 낮은 상태는 발끝 라이로 분리해서 봅니다.</li>
+            </ul>
+          </details>
         </section>
       </section>
     </main>

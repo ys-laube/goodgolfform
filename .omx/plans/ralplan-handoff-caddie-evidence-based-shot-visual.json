@@ -3,86 +3,56 @@
   "workflow": "ralplan",
   "slug": "caddie-evidence-based-shot-visual",
   "status": "complete",
-  "completed_at": "2026-06-21T11:34:00Z",
-  "leader_owned_ultragoal_context": {
-    "goal_id": "G001-semantic-visual-state-tests",
-    "goal_name": "Semantic visual state and tests",
-    "workers_do_not_mutate_ultragoal": true,
-    "leader_checkpoint_required": true
-  },
   "planning_artifacts": {
     "prd": ".omx/plans/prd-caddie-evidence-based-shot-visual.md",
-    "test_spec": ".omx/plans/test-spec-caddie-evidence-based-shot-visual.md"
+    "test_spec": ".omx/plans/test-spec-caddie-evidence-based-shot-visual.md",
+    "source_spec": ".omx/specs/deep-interview-caddie-evidence-based-shot-visual.md",
+    "context_snapshot": ".omx/context/caddie-evidence-based-shot-visual-20260621T110539Z.md"
   },
-  "source_evidence": {
-    "implementation_surfaces": [
-      "src/useCaddieSession.ts",
-      "src/App.tsx",
-      "src/styles.css"
-    ],
-    "test_surfaces": [
-      "src/domain/appSsrStatic.test.ts",
-      "src/domain/g004-motion-viewer-static.test.ts",
-      "src/domain/g002-ssr-static-import-scan.test.ts",
-      "src/domain/copy.test.ts",
-      "src/domain/g003-copy-ux-integration.test.ts"
-    ],
-    "related_prior_plan": ".omx/plans/ralplan-handoff-caddie-usability-cleanup.json"
+  "ralplan_architect_review": {
+    "order": 1,
+    "verdict": "APPROVE",
+    "summary": "Handedness ownership, frontBackSlope/sideHillRelation split, canonical club mapping, and no-3D boundary approved."
   },
-  "ralplan_summary": {
-    "decision": "Use a visual-only semantic state contract for the caddie shot visual, with tests proving scenario-derived visual drivers and preventing recommendation summary leakage.",
-    "chosen_option": "Option B — Formalize a visual-only semantic state contract and test every driver.",
-    "principles": [
-      "Evidence-first visual state",
-      "Visual-only contract",
-      "One explanation hierarchy",
-      "SSR/static testability",
-      "Dependency guardrail"
+  "ralplan_critic_review": {
+    "order": 2,
+    "verdict": "APPROVE",
+    "summary": "Plan approved with actual 근거 보기 accordion and README/project-note evidence mapping required."
+  },
+  "ralplan_consensus_gate": {
+    "complete": true,
+    "required_order": "architect_then_critic",
+    "ready_for_execution": true
+  },
+  "execution_contract": {
+    "semantic_fields": [
+      "handedness",
+      "clubGroup",
+      "ballPositionSlot",
+      "ballPositionPercentRightHanded",
+      "ballPositionPercent",
+      "frontBackSlope",
+      "sideHillRelation"
+    ],
+    "removed_visual_hooks": [
+      ".shot-visual-arc",
+      ".shot-visual-wind",
+      "data-trajectory",
+      "data-wind",
+      "data-wind-strength"
+    ],
+    "required_ui": [
+      "위에서 본 스탠스 / 공 위치",
+      "뒤에서 본 라이 / 경사",
+      "근거 보기 collapsed details accordion",
+      "우타/좌타 handedness toggle"
+    ],
+    "non_goals": [
+      "3D runtime",
+      "canvas dependency",
+      "GPS/map/weather/backend/auth/social/betting/external service"
     ]
   },
-  "execution_stories": [
-    "Visual-only state contract",
-    "Evidence mapping from scenario to visual state",
-    "Rendered semantic hooks",
-    "Regression tests for semantic coverage",
-    "Product copy and documentation alignment"
-  ],
-  "test_requirements": [
-    "Assert the visual state exposes aimBias, ballHeight, stanceTilt, windDirection, windStrength, and trajectory.",
-    "Assert summary-bearing fields and copy do not leak into the visual state or visual subtree.",
-    "Cover scenario-to-visual mappings for ball height, aim bias, stance tilt, wind, and trajectory.",
-    "Assert rendered data hooks and feet/stance/ball primitives exist at runtime or component-render level where practical.",
-    "Preserve guardrails against backend/API/auth/GPS/map/weather/external services/canvas/3D/motion-viewer dependencies."
-  ],
-  "verification_required": [
-    "npm test",
-    "npm run typecheck",
-    "npm run lint",
-    "npm run build",
-    "git diff --check"
-  ],
-  "coordination": {
-    "mode": "coordinated",
-    "activation_reasons": [
-      "cross_boundary_or_handoff_language"
-    ],
-    "shared_mental_model": "Task JSON, inbox, completed PRD/test-spec artifacts, and leader-owned G001 ultragoal audit are authoritative.",
-    "closed_loop_readback": "Worker-1 acknowledged that Task 3 owns only the handoff artifact and must reference completed planning artifacts without mutating .omx/ultragoal.",
-    "boundaries_checked": [
-      "PRD artifact exists and is scoped to evidence-based shot visual product contract.",
-      "Test spec artifact exists and includes required subagent-integrated coverage gaps.",
-      "Handoff references leader checkpoint requirements but does not create or mutate ultragoal state."
-    ],
-    "integration_risks": [
-      "Implementation should prefer a testable visual-state helper or prop-driven visual component before relying solely on source regex.",
-      "Leader must perform aggregate quality gates before any G001 ultragoal checkpoint."
-    ]
-  },
-  "recommended_execution": {
-    "default": "$ultragoal leader checkpoint for G001 after integrating team evidence",
-    "implementation_owner": "executor",
-    "test_review_owner": "test-engineer or verifier if semantic coverage is disputed",
-    "designer_review_owner": "designer only if the visual remains hard to understand after semantic tests pass"
-  },
-  "completion_evidence_expected": "Coordination protocol: coordinated - handoff boundaries checked against PRD, test spec, task JSON, and leader-owned G001 audit."
+  "recommended_follow_up": "$ultragoal",
+  "parallel_follow_up": "$team $ultragoal"
 }

@@ -1,134 +1,69 @@
 # PRD — Caddie Evidence-Based Shot Visual
 
 ## Source of truth
-- Current implementation evidence: `src/useCaddieSession.ts`, `src/App.tsx`, `src/styles.css`.
-- Current regression evidence: `src/domain/appSsrStatic.test.ts`, `src/domain/g004-motion-viewer-static.test.ts`.
-- Related prior plan: `.omx/plans/prd-caddie-usability-cleanup.md`.
-- Goal context: `G001-semantic-visual-state-tests` — semantic visual state and tests.
+- Approved interview spec: `.omx/specs/deep-interview-caddie-evidence-based-shot-visual.md`.
+- Current implementation surfaces: `src/useCaddieSession.ts`, `src/App.tsx`, `src/styles.css`.
+- Regression evidence: `src/domain/caddieShotVisualState.test.ts`, `src/domain/appSsrStatic.test.ts`, `src/domain/g004-motion-viewer-static.test.ts`.
+- Active durable context: `.omx/ultragoal/goals.json`.
 
 ## Product goal
-Make the caddie shot visual explain the same evidence used by the prescription, not decorate it. The visible 2D stance/shot picture must be driven by semantic state derived from the selected scenario and must stay free of duplicated recommendation metrics.
+Replace the old decorative shot picture with a Korean, mobile-first, evidence-based 2D setup visual that explains stance, ball position, and lie/slope relationships without duplicating the four prescription reason cards.
 
-## Problem
-The app already computes club choice, swing percent, play distance, reason cards, and a reactive 2D visual. The remaining product risk is semantic drift: the visual can look reactive while silently becoming a hard-coded graphic, a summary card in disguise, or a separate interpretation that contradicts the four reason cards.
+## Chosen contract
+The result visual is a **visual-only semantic projection** of the caddie prescription.
 
-## Users and use context
-- Primary user: a golfer using the Korean caddie flow on a phone at the range, screen-golf bay, or course-side practice context.
-- User need: quickly see why the prescription changed when lie, slope, wind, pin, or risk changes.
-- Constraint: the visual must remain lightweight, readable, and testable without map/GPS/weather/backend/3D dependencies.
+### Semantic visual state
+`CaddieShotVisualState` must expose setup semantics only:
+- `handedness`
+- `clubGroup`
+- `ballPositionSlot`
+- `ballPositionPercentRightHanded`
+- `ballPositionPercent`
+- `frontBackSlope`
+- `sideHillRelation`
 
-## RALPLAN-DR Summary
+It must not expose wind/trajectory drawing fields or recommendation summaries such as `selectedClubLabel`, `playDistanceMeters`, `swingPercent`, `recommendation`, `data-wind`, `data-trajectory`, or equivalent compact recommendation copy.
 
-### Principles
-1. **Evidence-first visual state:** every rendered visual driver comes from scenario or prescription state, never from decorative constants alone.
-2. **Visual-only contract:** visual state may expose geometry and environmental semantics; it must not expose recommendation summaries such as selected club, play distance, or swing percent.
-3. **One explanation hierarchy:** the four reason cards explain the prescription textually; the visual explains spatial shot conditions.
-4. **SSR/static testability:** semantic driver coverage must be provable without browser-only APIs.
-5. **Dependency guardrail:** keep the visual in React/HTML/CSS/SVG-style primitives; no canvas engine, 3D surface, external service, GPS, map, or weather integration.
+### Club-group mapping
+- driver → driver, 82% right-handed lead-side position.
+- 3w/5w → fairway wood, 72%.
+- 4i/5i → long iron, 62%.
+- 6i/7i/8i → mid iron, 50%.
+- 9i/pw/gw/sw → wedge, 42%.
+- Left-handed rendering mirrors `ballPositionPercent` as `100 - ballPositionPercentRightHanded`.
 
-### Decision drivers
-1. Prevent the 2D visual from regressing into a static/decorative graphic.
-2. Prevent duplicated recommendation copy outside the four reason cards.
-3. Give tests stable semantic hooks for all visual drivers.
-4. Preserve mobile performance and simple maintenance.
-
-### Viable options
-#### Option A — Keep current visual with broad static assertions only
-- Pros: smallest immediate effort.
-- Cons: weak proof that all scenario drivers are covered; easy for visual state to drift.
-- Status: rejected because the goal specifically targets semantic visual state and tests.
-
-#### Option B — Formalize a visual-only semantic state contract and test every driver (chosen)
-- Pros: binds UI to scenario evidence, keeps the visual lightweight, and prevents summary leakage.
-- Cons: requires source/static and behavior-oriented tests for multiple scenario combinations.
-
-#### Option C — Build a richer visual model/component abstraction
-- Pros: could enable future animation or reusable diagrams.
-- Cons: unnecessary abstraction for the current single caddie flow; increases surface area.
-- Status: deferred until real reuse appears.
-
-## Chosen plan
-Implement Option B.
-
-### Story 1 — Visual-only state contract
-- Keep or introduce a named visual state type equivalent to `CaddieShotVisualState`.
-- The state must include only semantic visual drivers:
-  - `aimBias`
-  - `ballHeight`
-  - `stanceTilt`
-  - `windDirection`
-  - `windStrength`
-  - `trajectory`
-- The visual state must not include or render: `recommendation`, `selectedClubLabel`, `playDistanceMeters`, `swingPercent`, `추천`, `플레이 거리`, `스윙 %`, or an equivalent compact recommendation summary.
-
-### Story 2 — Evidence mapping from scenario to visual state
-- Map side slope to ball height:
-  - left-slope → below-feet.
-  - right-slope → above-feet.
-  - none → level.
-- Map side slope and crosswind to aim bias:
-  - left-slope or right-to-left wind → right aim.
-  - right-slope or left-to-right wind → left aim.
-  - otherwise → center.
-- Map front/back stance slope directly to stance tilt.
-- Map wind direction and strength directly to visible wind semantics.
-- Map trajectory from shot evidence:
-  - headwind, front pin, or short-danger → low.
-  - tailwind or long-danger → soft-landing.
-  - otherwise → neutral.
-
-### Story 3 — Rendered semantic hooks
-- Render stable data attributes or equivalent props/classes for each visual driver.
-- Include visible or accessible copy that names the visual as a 2D shot/stance visual and describes the five drivers.
-- Preserve explicit feet/stance and ball primitives in the DOM or component tree.
-- Keep the visual read-only: changing the visual must follow scenario input changes, not introduce a second input channel.
-
-### Story 4 — Regression tests for semantic coverage
-- Add or preserve tests proving every visual driver is present in the visual state type and rendered state hooks.
-- Add multi-scenario coverage proving each driver can vary from its default value.
-- Add negative tests proving recommendation/play-distance/swing summary fields do not leak into the visual state or visual subtree.
-- Add boundary tests proving the caddie flow remains free of motion-viewer, 3D, canvas, map, GPS, weather, backend, auth, and external-service dependencies.
-
-### Story 5 — Product copy and documentation alignment
-- Use consistent terminology: `반응형 2D 샷/스탠스 비주얼` or equivalent.
-- Do not reintroduce `정적 샷 대시보드`, `샷 대시보드`, `추천 요약`, or metric-card terminology.
-- README/docs should describe the visual as scenario-evidence visualization, not as an independent recommendation engine.
-
-## Acceptance criteria
-1. The app exposes a visual-only semantic state shape with the six approved drivers.
-2. The rendered visual has semantic hooks for all six state fields and includes feet/stance plus ball primitives.
-3. At least one test exercises non-default values for ball height, stance tilt, aim bias, trajectory, wind direction, and wind strength.
-4. Tests prove summary-bearing fields/copy are absent from visual state and visual rendering.
-5. Existing caddie prescription reason cards still render exactly four explanation categories.
-6. No new dependencies or browser-only service integrations are introduced.
+### Rendered UI
+- Top-down view: `위에서 본 스탠스 / 공 위치`, feet, lead/trail labels, target direction, club group, and ball marker.
+- Rear view: `뒤에서 본 라이 / 경사`, front-back slope and sidehill relation separated.
+- Handedness toggle: 우타/좌타, default 우타.
+- Evidence accordion: real collapsed-by-default `<details><summary>근거 보기</summary>` with concise Korean rationale.
 
 ## Non-goals
-- No new official coaching, medical, legal, betting, weather, GPS, map, backend, auth, social, or telemetry feature.
-- No canvas/3D/motion-viewer rebuild.
-- No second recommendation summary outside the reason cards.
-- No full browser automation requirement for this pass; SSR/static/unit coverage is acceptable.
+- No 3D runtime, three.js, canvas, swing animation, GPS, maps, weather API, backend, auth, social, betting, or external provider SDK.
+- No second recommendation summary outside the four reason cards.
+- No lab-grade precision claim; visual geometry is instructional.
+
+## Acceptance criteria
+1. Runtime visual no longer renders `.shot-visual-arc`, `.shot-visual-wind`, `data-trajectory`, `data-wind`, or `data-wind-strength` drawing hooks.
+2. `CaddieShotVisualState` contains the seven semantic setup fields listed above and no wind/trajectory drawing fields.
+3. Club mapping and left-handed mirroring are tested.
+4. Right-handed driver/wood positions render closer to the lead side; wedges move toward the trail side.
+5. Rear-view copy and data hooks consume `frontBackSlope` and `sideHillRelation`, not raw scenario-only interpretation.
+6. UI renders two Korean named views and a real collapsed `근거 보기` accordion.
+7. README or project note records the evidence mapping and no-3D non-goal.
+8. Exactly four reason cards remain: 클럽 선택이유, 조준 방향 이유, 목표 탄도 이유, 미스 경고 코멘트.
+9. No new runtime dependency is added.
+10. `npm test`, `npm run typecheck`, `npm run lint`, `npm run build`, `git diff --check`, stale hook scan, and 3D dependency scan pass.
 
 ## ADR
+Decision: keep a dependency-free 2D semantic setup visual now and defer a dedicated 3D/rotatable renderer until the 2D model is user-validated.
 
-### Decision
-Treat the shot visual as a visual-only projection of semantic scenario evidence. Tests must verify both positive driver coverage and negative summary leakage.
+Alternatives considered:
+- Keep old trajectory/wind visual: rejected as user explicitly disliked it.
+- Inline/SVG/CSS 2D semantic visual: chosen.
+- 3D runtime: rejected for this pass by explicit scope and complexity.
 
-### Consequences
-- Developers must update tests when adding a new visual driver.
-- Product copy stays concise and avoids duplicating recommendation metrics.
-- The visual can evolve cosmetically as long as semantic hooks and no-summary constraints remain intact.
-
-### Verification required
-- `npm test`
-- `npm run typecheck`
-- `npm run lint`
-- `npm run build`
-- `git diff --check`
-
-## Follow-up staffing guidance
-- Implementation owner: `executor` for local code/test changes.
-- Test review: `test-engineer` or `verifier` if semantic coverage is disputed.
-- Design review: `designer` only if the visual becomes hard to understand visually after semantic tests pass.
-
-## Completion note for team integration
-This PRD is intentionally scoped to `.omx/plans/prd-caddie-evidence-based-shot-visual.md`. It defines the product contract for downstream test-spec and handoff artifacts without mutating `.omx/ultragoal` leader-owned state.
+Consequences:
+- The visual remains approximate but fast and testable.
+- Future 3D can reuse the semantic state contract.
+- Tests must guard against stale trajectory/wind visual hooks returning.

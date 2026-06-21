@@ -393,21 +393,21 @@ select optgroup {
   font-weight: 900;
 }
 
-.shot-visual-foot-lead {
-  left: 16%;
-}
-
-.shot-visual-foot-trail {
+.shot-visual-stage[data-handedness="right"] .shot-visual-foot-lead,
+.shot-visual-stage[data-handedness="left"] .shot-visual-foot-trail {
   right: 16%;
 }
 
-.shot-visual-stage[data-handedness="right"] .shot-visual-foot-lead::before,
-.shot-visual-stage[data-handedness="left"] .shot-visual-foot-trail::before {
+.shot-visual-stage[data-handedness="right"] .shot-visual-foot-trail,
+.shot-visual-stage[data-handedness="left"] .shot-visual-foot-lead {
+  left: 16%;
+}
+
+.shot-visual-foot-lead::before {
   content: "리드";
 }
 
-.shot-visual-stage[data-handedness="right"] .shot-visual-foot-trail::before,
-.shot-visual-stage[data-handedness="left"] .shot-visual-foot-lead::before {
+.shot-visual-foot-trail::before {
   content: "트레일";
 }
 
@@ -444,6 +444,29 @@ select optgroup {
 .shot-visual-rear .shot-visual-ball {
   left: calc(50% - 0.38rem);
   bottom: calc(36% + var(--side-hill-offset));
+}
+
+.shot-visual-evidence {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 0.9rem;
+  background: rgba(0, 0, 0, 0.16);
+  padding: 0.75rem 0.85rem;
+  color: #dfffe4;
+}
+
+.shot-visual-evidence summary {
+  cursor: pointer;
+  color: #b8ff68;
+  font-weight: 900;
+}
+
+.shot-visual-evidence ul {
+  margin: 0.7rem 0 0;
+  padding-left: 1.1rem;
+}
+
+.shot-visual-evidence li + li {
+  margin-top: 0.45rem;
 }
 
 @media (min-width: 42rem) {

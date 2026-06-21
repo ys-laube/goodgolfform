@@ -13,6 +13,12 @@ This prototype includes:
 - An evidence-based 2D setup visual for top-down stance/ball position, handedness, and rear-view lie/slope relationships without trajectory arcs, wind markers, 3D, maps, backend, weather, or provider SDK dependencies.
 - Vitest, TypeScript, ESLint, and production build scripts.
 
+## Setup visual evidence mapping
+
+- Club setup uses a five-group ball-position model: driver near the lead-foot instep, fairway woods forward of center, long irons slightly forward, mid irons near center, and short irons/wedges slightly back toward the trail side.
+- Lie setup separates front-back slope from sidehill relation: 오르막/내리막 changes the rear-view ground line, while 공이 발보다 높음/낮음 changes the ball position relative to the foot plane.
+- The visual is intentionally a lightweight 2D setup guide. It does not add a 3D runtime, swing animation, GPS/map/weather data, or a second recommendation engine.
+
 ## Explicit non-goals
 
 - No backend, hosted persistence, database, 응용 인터페이스 server, or remote sync.

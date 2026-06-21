@@ -156,12 +156,18 @@ export const clubGroupLabels = {
 } satisfies Record<CaddieClubGroup, string>;
 
 export const ballPositionSlotLabels = {
-  forward: '왼발 뒤쪽',
+  forward: '리드발 안쪽',
   'slightly-forward': '중앙보다 앞',
   'center-forward': '중앙-앞',
   center: '중앙',
   'slightly-back': '중앙보다 뒤',
 } satisfies Record<CaddieBallPositionSlot, string>;
+
+export const sideHillRelationLabels = {
+  'below-feet': '공이 발보다 낮음',
+  level: '발과 비슷함',
+  'above-feet': '공이 발보다 높음',
+} satisfies Record<CaddieShotVisualState['sideHillRelation'], string>;
 
 function initialSavedPresets(): readonly CaddieDistancePreset[] {
   return loadCaddiePresets(availableLocalStorage());
