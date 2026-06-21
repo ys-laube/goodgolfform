@@ -76,8 +76,8 @@ export function App() {
         <div className="analysis-card-grid" aria-label="짧은 이유">
           {prescription.reasonCards.map((card) => (
             <article className="analysis-card" key={card.id}>
-              <p className="card-label">근거 카드</p>
-              <strong>{card.title}</strong>
+              <p className="card-label">{card.title}</p>
+              <strong>{card.summary}</strong>
               <p>{card.detail}</p>
             </article>
           ))}
@@ -95,13 +95,35 @@ export function App() {
           </span>
         </div>
 
+        <section className="shot-dashboard" aria-labelledby="shot-dashboard-title">
+          <div className="dashboard-copy">
+            <p className="eyebrow">정적 샷 대시보드</p>
+            <h3 id="shot-dashboard-title">한 장으로 보는 타깃 라인</h3>
+            <p>타깃 라인, 공 위치, 바람, 탄도, 추천 요약을 한 패널에 모았습니다.</p>
+          </div>
+          <div className="dashboard-stage" aria-hidden="true">
+            <span className="target-pin" />
+            <span className="target-line" />
+            <span className="trajectory-arc" />
+            <span className="ball-marker" />
+            <span className="wind-arrow">WIND</span>
+          </div>
+          <div className="dashboard-metrics" aria-label="샷 대시보드 요약">
+            <span><strong>추천 요약</strong>{prescription.shotDashboard.recommendationSummary}</span>
+            <span><strong>공 위치</strong>{prescription.shotDashboard.ballHeightSummary}</span>
+            <span><strong>앞뒤 경사</strong>{prescription.shotDashboard.slopeSummary}</span>
+            <span><strong>바람</strong>{prescription.shotDashboard.windSummary}</span>
+            <span><strong>탄도</strong>{prescription.shotDashboard.trajectorySummary}</span>
+            <span><strong>라이</strong>{prescription.shotDashboard.lieSummary}</span>
+          </div>
+        </section>
       </section>
 
       <section id="shot-panel" className="lab-panel caddie-input-panel" aria-labelledby="scenario-title">
         <div className="section-heading">
           <p className="eyebrow">1단계 · 수동 샷 입력</p>
           <h2 id="scenario-title">남은 거리, 라이, 바람</h2>
-          <p>현장에서 보이는 조건만 직접 넣습니다. 대표값은 100m · 페어웨이 · 발끝 내리막 · 약한 맞바람입니다.</p>
+          <p>현장에서 보이는 조건만 직접 넣습니다. 대표값은 100m · 페어웨이 · 공이 발보다 낮음 · 약한 맞바람입니다.</p>
         </div>
 
         <div className="form-grid two-column">
@@ -126,7 +148,7 @@ export function App() {
             </select>
           </label>
           <label>
-            경사/스탠스
+            앞뒤 경사
             <select
               value={scenario.stanceSlope}
               onChange={(event) => setScenario({ ...scenario, stanceSlope: event.target.value as CaddieStanceSlope })}
@@ -139,7 +161,7 @@ export function App() {
             </select>
           </label>
           <label>
-            좌우 경사
+            공 위치 높이
             <select value={scenario.sideSlope} onChange={(event) => setScenario({ ...scenario, sideSlope: event.target.value as CaddieSideSlope })}>
               {sideSlopeOptions.map((option) => (
                 <option key={option} value={option}>

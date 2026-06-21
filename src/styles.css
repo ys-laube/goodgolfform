@@ -1,11 +1,10 @@
-@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css");
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable.css");
 
 :root {
   color: #f7fff7;
   background: #071f19;
   font-family:
-    "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", ui-sans-serif, system-ui, -apple-system,
-    BlinkMacSystemFont, "Segoe UI", sans-serif;
+    "Pretendard Variable", Pretendard, "Apple SD Gothic Neo", "Noto Sans KR", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -282,14 +281,6 @@ select optgroup {
   max-width: 18rem;
 }
 
-.analysis-card span {
-  color: #b8ff68;
-  font-size: 0.78rem;
-  font-weight: 900;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
 .card-label {
   color: #9af1b4;
   font-size: 0.74rem;
@@ -323,6 +314,129 @@ select optgroup {
     rgba(255, 255, 255, 0.08);
 }
 
+ .shot-dashboard {
+  display: grid;
+  gap: 1rem;
+  overflow: hidden;
+  border: 1px solid rgba(83, 209, 255, 0.26);
+  border-radius: 1.35rem;
+  background:
+    radial-gradient(circle at 50% 18%, rgba(83, 209, 255, 0.18), transparent 12rem),
+    linear-gradient(145deg, rgba(8, 45, 39, 0.96), rgba(6, 20, 24, 0.96));
+  padding: 1rem;
+}
+
+.dashboard-copy h3 {
+  margin: 0.25rem 0 0.45rem;
+  font-size: clamp(1.2rem, 5vw, 1.8rem);
+}
+
+.dashboard-stage {
+  position: relative;
+  min-height: 15rem;
+  overflow: hidden;
+  border: 1px solid rgba(216, 249, 223, 0.14);
+  border-radius: 1.15rem;
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.06) 1px, transparent 1px),
+    linear-gradient(0deg, rgba(255, 255, 255, 0.06) 1px, transparent 1px),
+    radial-gradient(circle at 50% 12%, rgba(184, 255, 104, 0.18), transparent 5rem),
+    linear-gradient(180deg, rgba(12, 58, 67, 0.86), rgba(13, 78, 47, 0.88));
+  background-size: 2.2rem 2.2rem, 2.2rem 2.2rem, auto, auto;
+}
+
+.target-pin,
+.ball-marker,
+.target-line,
+.trajectory-arc,
+.wind-arrow {
+  position: absolute;
+}
+
+.target-pin {
+  top: 1.45rem;
+  left: 50%;
+  width: 0.95rem;
+  height: 0.95rem;
+  border-radius: 999px;
+  background: #ffef86;
+  box-shadow: 0 0 0 0.55rem rgba(255, 239, 134, 0.14), 0 0 2rem rgba(255, 239, 134, 0.5);
+  transform: translateX(-50%);
+}
+
+.target-line {
+  top: 2.5rem;
+  left: 50%;
+  bottom: 2.65rem;
+  width: 2px;
+  background: linear-gradient(180deg, rgba(255, 239, 134, 0.85), rgba(184, 255, 104, 0.08));
+  transform: translateX(-50%);
+}
+
+.trajectory-arc {
+  left: 19%;
+  right: 19%;
+  bottom: 3.15rem;
+  height: 7.8rem;
+  border-top: 3px solid rgba(184, 255, 104, 0.82);
+  border-radius: 50% 50% 0 0;
+  transform: rotate(-5deg);
+  box-shadow: 0 -0.25rem 1.2rem rgba(184, 255, 104, 0.18);
+}
+
+.ball-marker {
+  left: 50%;
+  bottom: 2rem;
+  width: 1.35rem;
+  height: 1.35rem;
+  border-radius: 999px;
+  background: #f7fff7;
+  box-shadow: 0 0 0 0.5rem rgba(247, 255, 247, 0.12), 0 0 1.4rem rgba(247, 255, 247, 0.5);
+  transform: translateX(-50%);
+}
+
+.wind-arrow {
+  top: 48%;
+  right: 1rem;
+  color: #53d1ff;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+}
+
+.wind-arrow::before {
+  content: "";
+  display: inline-block;
+  width: 3.5rem;
+  height: 2px;
+  margin-right: 0.45rem;
+  vertical-align: middle;
+  background: #53d1ff;
+  box-shadow: 0 0 1rem rgba(83, 209, 255, 0.5);
+}
+
+.dashboard-metrics {
+  display: grid;
+  gap: 0.65rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.dashboard-metrics span {
+  display: grid;
+  gap: 0.2rem;
+  border: 1px solid rgba(216, 249, 223, 0.13);
+  border-radius: 0.9rem;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 0.75rem;
+  color: #f7fff7;
+}
+
+.dashboard-metrics strong {
+  color: #9af1b4;
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+}
+
 @media (min-width: 42rem) {
   .app-shell {
     padding: 2rem;
@@ -338,8 +452,14 @@ select optgroup {
     grid-template-columns: repeat(2, 1fr);
   }
 
-  .adjustment-strip {
+  .adjustment-strip,
+  .shot-dashboard {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dashboard-copy,
+  .dashboard-metrics {
+    grid-column: span 2;
   }
 
   .hero-actions {
@@ -360,8 +480,16 @@ select optgroup {
   .analysis-card-grid {
     grid-template-columns: repeat(4, 1fr);
   }
-}
 
+  .shot-dashboard {
+    grid-template-columns: minmax(0, 0.8fr) minmax(18rem, 1.2fr);
+  }
+
+  .dashboard-copy,
+  .dashboard-metrics {
+    grid-column: auto;
+  }
+}
 
 @media (prefers-reduced-motion: reduce) {
   html {
