@@ -93,12 +93,13 @@ describe('App SSR/static harness contract', () => {
     const renderedApp = withPoisonedBrowserStorage(() => renderToString(createElement(App)));
 
     expect(renderedApp).toContain('id="app-title"');
+    expect(renderedApp).toContain('id="analysis-panel"');
     expect(renderedApp).toContain('id="profile-panel"');
     expect(renderedApp).toContain('id="scenario-panel"');
     expect(renderedApp).toContain('진지한 골프 스윙 랩');
     expect(renderedApp).toContain('플레이어 프로필과 상황을 넣으면 분석 카드가 바로 준비됩니다.');
-    expect(renderedApp).toContain('프로필 패널');
-    expect(renderedApp).toContain('상황 패널');
+    expect(renderedApp).toContain('분석 리포트');
+    expect(renderedApp).toContain('프로필 조정');
     expect(renderedApp).toContain('프로필 로컬 저장');
     expect(renderedApp).toContain('목표 거리 (m)');
     expect(renderedApp).toContain('바람 방향');
@@ -116,6 +117,8 @@ describe('App SSR/static harness contract', () => {
     expect(renderedApp).toMatch(/골퍼 모션 뷰어:/);
     expect(renderedApp).toMatch(/적합도/i);
     expect(renderedApp).toMatch(/보정 목표/i);
+    expect(renderedApp.indexOf('id="analysis-panel"')).toBeLessThan(renderedApp.indexOf('id="profile-panel"'));
+    expect(renderedApp.indexOf('id="analysis-panel"')).toBeLessThan(renderedApp.indexOf('id="scenario-panel"'));
     expect(renderedApp).toMatch(/균형형 메이커[\s\S]*싱글 핸디캡[\s\S]*스트레이트[\s\S]*중간 탄도[\s\S]*중립 템포/);
     expect(renderedApp).not.toMatch(/single-digit · straight · mid 탄도 · neutral 템포|developing · draw · high 탄도 · smooth 템포|scratch · fade · low 탄도 · assertive 템포/);
     expect(renderedApp).not.toMatch(/Serious Golf Swing Lab|Profile panel|Scenario panel|Save profile locally|Live analysis report/);
@@ -151,6 +154,28 @@ describe('App SSR/static harness contract', () => {
     expect(renderedApp).not.toMatch(/\b(coach|caddie|caddy|must|should|need to|try to|hit|aim|guarantee|exact)\b|adjusted play/i);
   });
 
+  it('covers a representative 100m Korean recommendation and motion render', () => {
+    const recommendation = recommendShot(builtInProfilePresets[0], {
+      targetDistanceMeters: 100,
+      windDirection: 'none',
+      windStrength: 'calm',
+      lie: 'fairway',
+      desiredWindow: 'standard',
+    });
+    const motionParameters = motionParametersFromRecommendation(recommendation);
+    const renderedViewer = renderToString(createElement(SwingMotionViewer, { parameters: motionParameters, recommendation }));
+
+    expect(recommendation.adjustedDistanceMeters).toBe(100);
+    expect(recommendation.selectedClub).toBe('pw');
+    expect(recommendation.distanceFeel).toContain('피칭 웨지 94% 프로필 거리창');
+    expect(recommendation.gameMetricLabel).toMatch(/적합도/);
+    expect(renderedViewer).toContain('파라미터 기반 골퍼 모션');
+    expect(renderedViewer).toContain('94');
+    expect(renderedViewer).toMatch(/골퍼 모션 뷰어:/);
+    expect(renderedViewer).not.toMatch(/coach|caddie|must|should|exact|캐디|코치|보장|정확/i);
+  });
+
+
   it('restores saved profile presets through the App storage boundary when browser storage exists', () => {
     const descriptor = Object.getOwnPropertyDescriptor(globalThis, 'window');
     const savedProfile = {
@@ -175,6 +200,8 @@ describe('App SSR/static harness contract', () => {
       expect(renderedApp).toContain('이 기기에서 저장 프로필 1개를 불러왔습니다.');
       expect(renderedApp).toContain('이 기기에 저장됨');
       expect(renderedApp).toContain('저장된 부드러운 드로');
+      expect(renderedApp).toContain('성장 중 · 드로 · 높은 탄도 · 부드러운 템포');
+      expect(renderedApp).not.toMatch(/developing · draw · high 탄도 · smooth 템포/);
     } finally {
       if (descriptor) {
         Object.defineProperty(globalThis, 'window', descriptor);
