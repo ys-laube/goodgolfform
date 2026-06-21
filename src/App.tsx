@@ -1,273 +1,93 @@
-import { SwingMotionViewer } from './components/SwingMotionViewer';
-import { builtInProfilePresets } from './domain/profilePresets';
-import type {
-  ClubKey,
-  GolferLevel,
-  LieCondition,
-  ShotShape,
-  ShotWindow,
-  TempoPreference,
-  TrajectoryTendency,
-  WindDirection,
-  WindStrength,
-} from './domain/swingLabModels';
-import { distanceFor, presetSummary, replaceClubDistance, useSwingLabSession } from './useSwingLabSession';
+import {
+  caddieClubLabels,
+  distanceFor,
+  greenRiskLabels,
+  lieLabels,
+  pinPositionLabels,
+  replaceClubDistance,
+  sideSlopeLabels,
+  stanceSlopeLabels,
+  useCaddieSession,
+  windDirectionLabels,
+  windStrengthLabels,
+  type CaddieGreenRisk,
+  type CaddieLie,
+  type CaddiePinPosition,
+  type CaddieSideSlope,
+  type CaddieStanceSlope,
+  type CaddieWindDirection,
+  type CaddieWindStrength,
+} from './useCaddieSession';
 
-const levelOptions: readonly GolferLevel[] = ['beginner', 'developing', 'single-digit', 'scratch'];
-const shotShapeOptions: readonly ShotShape[] = ['straight', 'draw', 'fade'];
-const trajectoryOptions: readonly TrajectoryTendency[] = ['low', 'mid', 'high'];
-const tempoOptions: readonly TempoPreference[] = ['smooth', 'neutral', 'assertive'];
-const windDirections: readonly WindDirection[] = ['none', 'headwind', 'tailwind', 'left-to-right', 'right-to-left'];
-const windStrengths: readonly WindStrength[] = ['calm', 'light', 'steady', 'strong'];
-const lieOptions: readonly LieCondition[] = ['tee', 'fairway', 'rough', 'bunker'];
-const windowOptions: readonly ShotWindow[] = ['standard', 'low', 'high'];
-const editableClubKeys: readonly ClubKey[] = ['driver', '7i', 'pw'];
-
-const levelLabels = {
-  beginner: '입문',
-  developing: '성장 중',
-  'single-digit': '싱글 핸디캡',
-  scratch: '스크래치',
-} satisfies Record<GolferLevel, string>;
-
-const shotShapeLabels = {
-  straight: '스트레이트',
-  draw: '드로',
-  fade: '페이드',
-} satisfies Record<ShotShape, string>;
-
-const trajectoryLabels = {
-  low: '낮은 탄도',
-  mid: '중간 탄도',
-  high: '높은 탄도',
-} satisfies Record<TrajectoryTendency, string>;
-
-const tempoLabels = {
-  smooth: '부드러운 템포',
-  neutral: '중립 템포',
-  assertive: '과감한 템포',
-} satisfies Record<TempoPreference, string>;
-
-const windDirectionLabels = {
-  none: '무풍',
-  headwind: '맞바람',
-  tailwind: '뒷바람',
-  'left-to-right': '왼쪽에서 오른쪽',
-  'right-to-left': '오른쪽에서 왼쪽',
-} satisfies Record<WindDirection, string>;
-
-const windStrengthLabels = {
-  calm: '잔잔함',
-  light: '약함',
-  steady: '꾸준함',
-  strong: '강함',
-} satisfies Record<WindStrength, string>;
-
-const lieLabels = {
-  tee: '티',
-  fairway: '페어웨이',
-  rough: '러프',
-  bunker: '벙커',
-} satisfies Record<LieCondition, string>;
-
-const windowLabels = {
-  standard: '표준 탄도창',
-  low: '낮은 탄도창',
-  high: '높은 탄도창',
-} satisfies Record<ShotWindow, string>;
-
-function clubLabel(club: ClubKey): string {
-  const labels = { driver: '드라이버', '3w': '3번 우드', '5w': '5번 우드', '4i': '4번 아이언', '5i': '5번 아이언', '6i': '6번 아이언', '7i': '7번 아이언', '8i': '8번 아이언', '9i': '9번 아이언', pw: '피칭 웨지', gw: '갭 웨지', sw: '샌드 웨지' } satisfies Record<ClubKey, string>;
-  return labels[club];
-}
+const lieOptions = Object.keys(lieLabels) as readonly CaddieLie[];
+const stanceSlopeOptions = Object.keys(stanceSlopeLabels) as readonly CaddieStanceSlope[];
+const sideSlopeOptions = Object.keys(sideSlopeLabels) as readonly CaddieSideSlope[];
+const windDirectionOptions = Object.keys(windDirectionLabels) as readonly CaddieWindDirection[];
+const windStrengthOptions = Object.keys(windStrengthLabels) as readonly CaddieWindStrength[];
+const pinPositionOptions = Object.keys(pinPositionLabels) as readonly CaddiePinPosition[];
+const greenRiskOptions = Object.keys(greenRiskLabels) as readonly CaddieGreenRisk[];
 
 export function App() {
   const {
-    activeProfile,
-    analysisCards,
-    motionParameters,
-    recommendation,
-    savedProfiles,
+    activePreset,
+    caddieClubOrder,
+    prescription,
+    savedPresets,
     scenario,
+    selectablePresets,
     selectedPresetId,
-    setActiveProfile,
+    setActivePreset,
     setScenario,
-    selectProfile,
-    saveCurrentProfile,
+    selectPreset,
+    saveCurrentPreset,
     storageMessage,
-  } = useSwingLabSession();
+  } = useCaddieSession();
 
   return (
-    <main className="app-shell" aria-labelledby="app-title">
-      <section className="hero-card swing-hero">
-        <p className="eyebrow">진지한 골프 스윙 랩</p>
-        <h1 id="app-title">플레이어 프로필과 상황을 넣으면 분석 카드가 바로 준비됩니다.</h1>
-        <p className="hero-copy">
-          골프 친구들을 위한 모바일 우선 연습 랩입니다. 저장한 프로필, 핵심 성향, 수동 샷 상황으로
-          결정적 분석 카드와 모션 뷰어 상태, 진지한 연습 읽기를 만듭니다.
-        </p>
-        <div className="hero-actions" aria-label="주요 스윙 랩 동작">
-          <a href="#profile-panel" className="primary-action">
-            프로필 패널
+    <main className="app-shell caddie-app" aria-labelledby="app-title">
+      <section className="hero-card caddie-hero">
+        <p className="eyebrow">한국어 모바일 필드 도구</p>
+        <h1 id="app-title">캐디 한줄 처방</h1>
+        <p className="hero-copy">남은 거리와 라이만 빠르게 넣고, 지금 칠 클럽·조준·탄도를 먼저 확인하세요.</p>
+        <div className="hero-actions" aria-label="주요 입력 이동">
+          <a href="#shot-panel" className="primary-action">
+            샷 상황 입력
           </a>
-          <a href="#scenario-panel" className="secondary-action">
-            상황 패널
+          <a href="#preset-panel" className="secondary-action">
+            프리셋 저장
           </a>
         </div>
       </section>
 
-      <section id="profile-panel" className="lab-panel" aria-labelledby="profile-title">
-        <div className="section-heading">
-          <p className="eyebrow">1단계 · 프로필 프리셋</p>
-          <h2 id="profile-title">골퍼 프로필 정보</h2>
-          <p>{storageMessage}</p>
-        </div>
-
-        <label>
-          프로필 프리셋
-          <select value={selectedPresetId} onChange={(event) => selectProfile(event.target.value)}>
-            <optgroup label="기본 프리셋">
-              {builtInProfilePresets.map((profile) => (
-                <option key={profile.id} value={profile.id}>
-                  {profile.name} — {presetSummary(profile)}
-                </option>
-              ))}
-            </optgroup>
-            {savedProfiles.length > 0 ? (
-              <optgroup label="이 기기에 저장됨">
-                {savedProfiles.map((profile) => (
-                  <option key={profile.id} value={profile.id}>
-                    {profile.name} — {presetSummary(profile)}
-                  </option>
-                ))}
-              </optgroup>
-            ) : null}
-          </select>
-        </label>
-
-        <div className="form-grid two-column">
-          <label>
-            프로필 이름
-            <input value={activeProfile.name} onChange={(event) => setActiveProfile({ ...activeProfile, name: event.target.value })} />
-          </label>
-          <label>
-            아키타입 메모
-            <input value={activeProfile.archetype} onChange={(event) => setActiveProfile({ ...activeProfile, archetype: event.target.value })} />
-          </label>
-          <label>
-            키 (cm)
-            <input
-              type="number"
-              min="120"
-              max="230"
-              value={activeProfile.heightCm}
-              onChange={(event) => setActiveProfile({ ...activeProfile, heightCm: Number(event.target.value) })}
-            />
-          </label>
-          <label>
-            몸무게 (kg)
-            <input
-              type="number"
-              min="40"
-              max="160"
-              value={activeProfile.weightKg}
-              onChange={(event) => setActiveProfile({ ...activeProfile, weightKg: Number(event.target.value) })}
-            />
-          </label>
-          <label>
-            핸디캡
-            <input
-              type="number"
-              min="-5"
-              max="54"
-              value={activeProfile.handicap}
-              onChange={(event) => setActiveProfile({ ...activeProfile, handicap: Number(event.target.value) })}
-            />
-          </label>
-          <label>
-            레벨
-            <select
-              value={activeProfile.level}
-              onChange={(event) => setActiveProfile({ ...activeProfile, level: event.target.value as GolferLevel })}
-            >
-              {levelOptions.map((option) => (
-                <option key={option} value={option}>
-                  {levelLabels[option]}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            구질
-            <select
-              value={activeProfile.shotShape}
-              onChange={(event) => setActiveProfile({ ...activeProfile, shotShape: event.target.value as ShotShape })}
-            >
-              {shotShapeOptions.map((option) => (
-                <option key={option} value={option}>
-                  {shotShapeLabels[option]}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            탄도 성향
-            <select
-              value={activeProfile.trajectoryTendency}
-              onChange={(event) => setActiveProfile({ ...activeProfile, trajectoryTendency: event.target.value as TrajectoryTendency })}
-            >
-              {trajectoryOptions.map((option) => (
-                <option key={option} value={option}>
-                  {trajectoryLabels[option]}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            템포 선호
-            <select
-              value={activeProfile.tempoPreference}
-              onChange={(event) => setActiveProfile({ ...activeProfile, tempoPreference: event.target.value as TempoPreference })}
-            >
-              {tempoOptions.map((option) => (
-                <option key={option} value={option}>
-                  {tempoLabels[option]}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
-
-        <div className="club-grid" aria-label="수정 가능한 캐리 거리">
-          {editableClubKeys.map((club) => (
-            <label key={club}>
-              {clubLabel(club)} 캐리 (m)
-              <input
-                type="number"
-                min="30"
-                max="330"
-                value={distanceFor(activeProfile, club)}
-                onChange={(event) => setActiveProfile(replaceClubDistance(activeProfile, club, Number(event.target.value)))}
-              />
-            </label>
-          ))}
-        </div>
-
-        <button type="button" className="primary-action button-action sticky-action" onClick={saveCurrentProfile}>
-          프로필 로컬 저장
-        </button>
+      <section className="result-first prescription-card" aria-labelledby="prescription-title">
+        <p className="eyebrow">지금 처방</p>
+        <h2 id="prescription-title">{prescription.headline}</h2>
+        <dl className="prescription-metrics" aria-label="추천 요약">
+          <div>
+            <dt>클럽</dt>
+            <dd>{prescription.selectedClubLabel}</dd>
+          </div>
+          <div>
+            <dt>스윙</dt>
+            <dd>{prescription.swingPercent}%</dd>
+          </div>
+          <div>
+            <dt>플레이 거리</dt>
+            <dd>{prescription.playDistanceMeters}m</dd>
+          </div>
+        </dl>
       </section>
 
-      <section id="scenario-panel" className="lab-panel" aria-labelledby="scenario-title">
+      <section id="shot-panel" className="lab-panel caddie-input-panel" aria-labelledby="shot-title">
         <div className="section-heading">
-          <p className="eyebrow">2단계 · 수동 샷 상황</p>
-          <h2 id="scenario-title">수동 샷 조건</h2>
-          <p>모든 입력은 수동이며 결정적이어서 주요 흐름은 오프라인과 정적 스모크 테스트에서도 동작합니다.</p>
+          <p className="eyebrow">1단계 · 수동 샷 입력</p>
+          <h2 id="shot-title">남은 거리, 라이, 바람</h2>
+          <p>GPS나 날씨 API 없이 현장에서 보이는 조건만 직접 넣습니다.</p>
         </div>
 
         <div className="form-grid two-column">
           <label>
-            목표 거리 (m)
+            남은 거리 (m)
             <input
               type="number"
               min="30"
@@ -277,12 +97,48 @@ export function App() {
             />
           </label>
           <label>
+            라이
+            <select value={scenario.lie} onChange={(event) => setScenario({ ...scenario, lie: event.target.value as CaddieLie })}>
+              {lieOptions.map((option) => (
+                <option key={option} value={option}>
+                  {lieLabels[option]}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            경사/스탠스
+            <select
+              value={scenario.stanceSlope}
+              onChange={(event) => setScenario({ ...scenario, stanceSlope: event.target.value as CaddieStanceSlope })}
+            >
+              {stanceSlopeOptions.map((option) => (
+                <option key={option} value={option}>
+                  {stanceSlopeLabels[option]}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            좌우 경사
+            <select
+              value={scenario.sideSlope}
+              onChange={(event) => setScenario({ ...scenario, sideSlope: event.target.value as CaddieSideSlope })}
+            >
+              {sideSlopeOptions.map((option) => (
+                <option key={option} value={option}>
+                  {sideSlopeLabels[option]}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
             바람 방향
             <select
               value={scenario.windDirection}
-              onChange={(event) => setScenario({ ...scenario, windDirection: event.target.value as WindDirection })}
+              onChange={(event) => setScenario({ ...scenario, windDirection: event.target.value as CaddieWindDirection })}
             >
-              {windDirections.map((option) => (
+              {windDirectionOptions.map((option) => (
                 <option key={option} value={option}>
                   {windDirectionLabels[option]}
                 </option>
@@ -293,9 +149,9 @@ export function App() {
             바람 세기
             <select
               value={scenario.windStrength}
-              onChange={(event) => setScenario({ ...scenario, windStrength: event.target.value as WindStrength })}
+              onChange={(event) => setScenario({ ...scenario, windStrength: event.target.value as CaddieWindStrength })}
             >
-              {windStrengths.map((option) => (
+              {windStrengthOptions.map((option) => (
                 <option key={option} value={option}>
                   {windStrengthLabels[option]}
                 </option>
@@ -303,24 +159,27 @@ export function App() {
             </select>
           </label>
           <label>
-            라이
-            <select value={scenario.lie} onChange={(event) => setScenario({ ...scenario, lie: event.target.value as LieCondition })}>
-              {lieOptions.map((option) => (
+            핀 위치
+            <select
+              value={scenario.pinPosition}
+              onChange={(event) => setScenario({ ...scenario, pinPosition: event.target.value as CaddiePinPosition })}
+            >
+              {pinPositionOptions.map((option) => (
                 <option key={option} value={option}>
-                  {lieLabels[option]}
+                  {pinPositionLabels[option]}
                 </option>
               ))}
             </select>
           </label>
           <label>
-            원하는 탄도창
+            그린 위험
             <select
-              value={scenario.desiredWindow}
-              onChange={(event) => setScenario({ ...scenario, desiredWindow: event.target.value as ShotWindow })}
+              value={scenario.greenRisk}
+              onChange={(event) => setScenario({ ...scenario, greenRisk: event.target.value as CaddieGreenRisk })}
             >
-              {windowOptions.map((option) => (
+              {greenRiskOptions.map((option) => (
                 <option key={option} value={option}>
-                  {windowLabels[option]}
+                  {greenRiskLabels[option]}
                 </option>
               ))}
             </select>
@@ -328,50 +187,93 @@ export function App() {
         </div>
       </section>
 
-      <section className="analysis-preview" aria-labelledby="analysis-title">
+      <section id="preset-panel" className="lab-panel caddie-preset-panel" aria-labelledby="preset-title">
         <div className="section-heading">
-          <p className="eyebrow">실시간 분석 리포트</p>
-          <h2 id="analysis-title">{recommendation.clubLabel} · {recommendation.swingSizeLabel}</h2>
-          <p>
-            결정적 샷 모델에서 나온 진지한 게임 카드 읽기입니다. 거리감, 스윙 부하, 비행 라인, 상황 적합도를
-            지시형 문구 없이 프로필에 맞춰 보여줍니다.
-          </p>
+          <p className="eyebrow">2단계 · 로컬 거리 프리셋</p>
+          <h2 id="preset-title">프리셋</h2>
+          <p>{storageMessage}</p>
         </div>
 
-        <div className="analysis-card-grid" aria-label="분석 리포트 카드">
-          {analysisCards.map((card) => (
-            <article className="analysis-card" key={card.id}>
-              <p className="card-label">{card.label}</p>
-              <strong>{card.title}</strong>
-              <p>{card.detail}</p>
-              <span>{card.meta}</span>
-            </article>
+        <label>
+          저장된 프리셋 불러오기
+          <select value={selectedPresetId} onChange={(event) => selectPreset(event.target.value)}>
+            {selectablePresets.map((preset) => (
+              <option key={preset.id} value={preset.id}>
+                {preset.name}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label>
+          프리셋 이름
+          <input value={activePreset.name} onChange={(event) => setActivePreset({ ...activePreset, name: event.target.value })} />
+        </label>
+
+        <div className="anchor-grid" aria-label="기준 3개 클럽 거리">
+          {(['driver', '7i', 'pw'] as const).map((club) => (
+            <label key={club}>
+              {caddieClubLabels[club]} 기준 거리 (m)
+              <input
+                type="number"
+                min="30"
+                max="330"
+                value={distanceFor(activePreset, club)}
+                onChange={(event) => setActivePreset(replaceClubDistance(activePreset, club, Number(event.target.value)))}
+              />
+            </label>
           ))}
         </div>
 
-        {recommendation.adjustments.length > 0 ? (
-          <div className="adjustment-strip" aria-label="상황 보정 읽기">
-            {recommendation.adjustments.map((adjustment) => (
-              <span key={adjustment.label}>
-                <strong>{adjustment.label}</strong> {adjustment.meters > 0 ? '+' : ''}{adjustment.meters} m · {adjustment.reason}
-              </span>
-            ))}
-          </div>
-        ) : null}
-
-        <div className="why-panel" aria-labelledby="why-title">
-          <p className="card-label" id="why-title">
-            이 카드의 이유
-          </p>
-          <ul className="why-list">
-            {recommendation.why.map((reason) => (
-              <li key={reason}>{reason}</li>
-            ))}
-          </ul>
+        <div className="club-grid" aria-label="추정 및 수정 가능한 전체 클럽 거리">
+          {caddieClubOrder.map((club) => (
+            <label key={club}>
+              {caddieClubLabels[club]}
+              <input
+                type="number"
+                min="30"
+                max="330"
+                value={distanceFor(activePreset, club)}
+                onChange={(event) => setActivePreset(replaceClubDistance(activePreset, club, Number(event.target.value)))}
+              />
+            </label>
+          ))}
         </div>
+
+        <button type="button" className="primary-action button-action sticky-action" onClick={saveCurrentPreset}>
+          로컬 프리셋 저장
+        </button>
+        {savedPresets.length > 0 ? <p className="save-note">저장된 프리셋 {savedPresets.length}개를 이 기기에서 불러올 수 있습니다.</p> : null}
       </section>
 
-      <SwingMotionViewer parameters={motionParameters} recommendation={recommendation} />
+      <section className="reason-card-grid" aria-labelledby="reason-title">
+        <div className="section-heading">
+          <p className="eyebrow">짧은 이유</p>
+          <h2 id="reason-title">왜 이렇게 치나요?</h2>
+        </div>
+        {prescription.reasonCards.map((card) => (
+          <article className="reason-card" key={card.id}>
+            <h3>{card.title}</h3>
+            <p>{card.detail}</p>
+          </article>
+        ))}
+      </section>
+
+      <section className="visual-card-grid" aria-labelledby="visual-title">
+        <div className="section-heading">
+          <p className="eyebrow">2D 보조</p>
+          <h2 id="visual-title">조준과 라이 미니카드</h2>
+        </div>
+        {prescription.visualCards.map((card) => (
+          <article className={`visual-card ${card.marker}`} key={card.id}>
+            <div className="mini-map" aria-hidden="true">
+              <span />
+            </div>
+            <h3>{card.title}</h3>
+            <p>{card.detail}</p>
+          </article>
+        ))}
+      </section>
     </main>
   );
 }
