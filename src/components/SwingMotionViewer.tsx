@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type CSSProperties, type PointerEvent } from 'react';
+import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import { currentMatchMedia } from '../browserEnvironment';
 import type { MotionParameters, SwingRecommendation } from '../domain/swingLabModels';
 
@@ -8,21 +8,6 @@ type SwingMotionViewerProps = {
   readonly forceReducedMotion?: boolean;
 };
 
-type Rotation = {
-  readonly x: number;
-  readonly y: number;
-};
-
-type DragState = {
-  readonly pointerId: number;
-  readonly startX: number;
-  readonly startY: number;
-  readonly origin: Rotation;
-};
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(max, Math.max(min, value));
-}
 
 function formatValue(value: string): string {
   return value.replaceAll('-', ' ');
@@ -57,9 +42,6 @@ function usePrefersReducedMotion(forceReducedMotion = false): boolean {
 
 export function SwingMotionViewer({ parameters, recommendation, forceReducedMotion = false }: SwingMotionViewerProps) {
   const prefersReducedMotion = usePrefersReducedMotion(forceReducedMotion);
-  const [rotation, setRotation] = useState<Rotation>({ x: -10, y: 18 });
-  const [dragState, setDragState] = useState<DragState | null>(null);
-
   const visualState = useMemo(() => {
     const amplitude = parameters.arcDegrees / 2;
     const backswingRotation = -amplitude;
@@ -77,8 +59,6 @@ export function SwingMotionViewer({ parameters, recommendation, forceReducedMoti
   }, [parameters, prefersReducedMotion]);
 
   const viewerStyle = {
-    '--viewer-rotate-x': `${rotation.x}deg`,
-    '--viewer-rotate-y': `${rotation.y}deg`,
     '--swing-arc': `${parameters.arcDegrees}deg`,
     '--backswing-rotation': `${visualState.backswingRotation}deg`,
     '--finish-rotation': `${visualState.finishRotation}deg`,
@@ -89,37 +69,13 @@ export function SwingMotionViewer({ parameters, recommendation, forceReducedMoti
     '--swing-duration': `${parameters.animationDurationMs}ms`,
   } as CSSProperties;
 
-  function handlePointerDown(event: PointerEvent<HTMLDivElement>) {
-    event.currentTarget.setPointerCapture(event.pointerId);
-    setDragState({ pointerId: event.pointerId, startX: event.clientX, startY: event.clientY, origin: rotation });
-  }
-
-  function handlePointerMove(event: PointerEvent<HTMLDivElement>) {
-    if (!dragState || dragState.pointerId !== event.pointerId) {
-      return;
-    }
-
-    const deltaX = event.clientX - dragState.startX;
-    const deltaY = event.clientY - dragState.startY;
-    setRotation({
-      x: clamp(dragState.origin.x - deltaY * 0.22, -28, 18),
-      y: clamp(dragState.origin.y + deltaX * 0.28, -48, 48),
-    });
-  }
-
-  function stopDrag(event: PointerEvent<HTMLDivElement>) {
-    if (dragState?.pointerId === event.pointerId) {
-      setDragState(null);
-    }
-  }
-
   return (
     <section className="motion-viewer-panel" aria-labelledby="motion-viewer-title">
       <div className="section-heading motion-viewer-heading">
         <p className="eyebrow">Step 3 · Motion viewer</p>
         <h2 id="motion-viewer-title">Parameterized golfer motion</h2>
         <p>
-          SVG layers translate this card into visible swing size, path, tempo, plane, and trajectory changes. Drag the stage to rotate the pseudo-3D view.
+          SVG layers translate this card into visible swing size, path, tempo, plane, and trajectory changes in a flat 2D view.
         </p>
       </div>
 
@@ -128,11 +84,7 @@ export function SwingMotionViewer({ parameters, recommendation, forceReducedMoti
         style={viewerStyle}
         role="img"
         tabIndex={0}
-        aria-label={`Golfer motion viewer: ${parameters.accessibleSummary}. ${visualState.poseLabel}. Drag or swipe to rotate the stage.`}
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={stopDrag}
-        onPointerCancel={stopDrag}
+        aria-label={`Golfer motion viewer: ${parameters.accessibleSummary}. ${visualState.poseLabel}. Flat 2D stage.`}
       >
         <div className="motion-stage-depth">
           <svg className="swing-arc-svg" viewBox="0 0 360 320" aria-hidden="true">

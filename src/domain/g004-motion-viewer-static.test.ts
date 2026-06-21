@@ -46,7 +46,7 @@ describe('G004 parameterized motion viewer static contract', () => {
     expect(renderedViewer).toContain('class="swing-arc-svg"');
     expect(renderedViewer).toContain('role="img"');
     expect(renderedViewer).toMatch(/Golfer motion viewer: .* tempo, .* path, .* launch/i);
-    expect(renderedViewer).toContain('Drag the stage to rotate the pseudo-3D view');
+    expect(renderedViewer).toContain('flat 2D view');
     expect(renderedViewer).toContain('Current motion parameters');
     expect(renderedViewer).not.toMatch(/canvas|webgl|three|@react-three/i);
   });
@@ -101,12 +101,10 @@ describe('G004 parameterized motion viewer static contract', () => {
     expect(renderedApp).not.toMatch(/disclaimer|legal notice|official|rangefinder|coach|caddie|caddy|must|should|guarantee|exact/i);
   });
 
-  it('keeps pointer rotation handlers and mobile viewer styles source-visible for manual QA', () => {
-    expect(viewerSource).toMatch(/onPointerDown=\{handlePointerDown\}/);
-    expect(viewerSource).toMatch(/onPointerMove=\{handlePointerMove\}/);
-    expect(viewerSource).toMatch(/setPointerCapture/);
+  it('keeps the flat viewer free of 3D interaction and transform CSS while preserving mobile styles', () => {
+    expect(viewerSource).not.toMatch(/onPointerDown|onPointerMove|setPointerCapture|pseudo-3D|rotate the stage/i);
+    expect(stylesSource).not.toMatch(/perspective|preserve-3d|translateZ|rotateX|rotateY/);
     expect(stylesSource).toContain('.motion-stage-wrap');
-    expect(stylesSource).toContain('touch-action: none');
     expect(stylesSource).toContain('.motion-meter-grid');
     expect(stylesSource).toContain('@media (min-width: 42rem)');
   });
