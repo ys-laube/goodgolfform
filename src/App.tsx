@@ -1,9 +1,12 @@
-import { useState } from 'react';
+import { useState, type CSSProperties } from 'react';
 
 import {
   caddieClubLabels,
   distanceFor,
   greenRiskLabels,
+  ballPositionSlotLabels,
+  clubGroupLabels,
+  handednessLabels,
   lieLabels,
   pinPositionLabels,
   replaceClubDistance,
@@ -13,6 +16,7 @@ import {
   windDirectionLabels,
   windStrengthLabels,
   type CaddieGreenRisk,
+  type CaddieHandedness,
   type CaddieLie,
   type CaddiePinPosition,
   type CaddieSideSlope,
@@ -28,6 +32,9 @@ const windDirectionOptions = Object.keys(windDirectionLabels) as readonly Caddie
 const windStrengthOptions = Object.keys(windStrengthLabels) as readonly CaddieWindStrength[];
 const pinPositionOptions = Object.keys(pinPositionLabels) as readonly CaddiePinPosition[];
 const greenRiskOptions = Object.keys(greenRiskLabels) as readonly CaddieGreenRisk[];
+const handednessOptions = Object.keys(handednessLabels) as readonly CaddieHandedness[];
+
+type ShotVisualStyle = CSSProperties & { readonly '--ball-position': string };
 
 type DistanceDrafts = Record<string, string>;
 
@@ -240,6 +247,21 @@ export function App() {
               ))}
             </select>
           </label>
+          <fieldset className="segmented-control" aria-label="타석 방향">
+            <legend>타석 방향</legend>
+            {handednessOptions.map((option) => (
+              <label key={option}>
+                <input
+                  type="radio"
+                  name="handedness"
+                  value={option}
+                  checked={scenario.handedness === option}
+                  onChange={() => setScenario({ ...scenario, handedness: option })}
+                />
+                <span>{handednessLabels[option]}</span>
+              </label>
+            ))}
+          </fieldset>
         </div>
       </section>
 
@@ -260,27 +282,49 @@ export function App() {
         </div>
 
         <section className="shot-visual" aria-labelledby="shot-visual-title">
-          <div
-            className="shot-visual-stage"
-            data-aim={prescription.shotVisual.aimBias}
-            data-ball-height={prescription.shotVisual.ballHeight}
-            data-stance={prescription.shotVisual.stanceTilt}
-            data-trajectory={prescription.shotVisual.trajectory}
-            data-wind={prescription.shotVisual.windDirection}
-            data-wind-strength={prescription.shotVisual.windStrength}
-            aria-hidden="true"
-          >
-            <span className="shot-visual-aim-line" />
-            <span className="shot-visual-arc" />
-            <span className="shot-visual-feet" />
-            <span className="shot-visual-stance" />
-            <span className="shot-visual-ball" />
-            <span className="shot-visual-wind" />
-          </div>
           <div className="shot-visual-copy">
-            <p className="eyebrow">반응형 2D 샷/스탠스 비주얼</p>
-            <h3 id="shot-visual-title">발, 공, 조준선이 상황에 맞춰 움직입니다</h3>
-            <p>공 위치 높이·앞뒤 경사·조준·탄도·바람을 한 장의 2D 샷/스탠스 그림으로 보여줍니다.</p>
+            <p className="eyebrow">한국형 2D 셋업 비주얼</p>
+            <h3 id="shot-visual-title">발, 공, 라이를 두 시점으로 나눠 확인합니다</h3>
+            <p>탄도·바람 그림 대신 클럽군, 우타/좌타, 공 위치와 경사 관계만 셋업 정보로 보여줍니다.</p>
+          </div>
+
+          <div className="shot-visual-views" aria-label="셋업 비주얼">
+            <figure className="shot-visual-view shot-visual-top">
+              <figcaption>위에서 본 스탠스 / 공 위치</figcaption>
+              <div
+                className="shot-visual-stage"
+                data-handedness={prescription.shotVisual.handedness}
+                data-club-group={prescription.shotVisual.clubGroup}
+                style={{ '--ball-position': `${prescription.shotVisual.ballPositionPercent}%` } as ShotVisualStyle}
+                aria-hidden="true"
+              >
+                <span className="shot-visual-target-line">타깃 방향</span>
+                <span className="shot-visual-foot shot-visual-foot-lead" />
+                <span className="shot-visual-foot shot-visual-foot-trail" />
+                <span className="shot-visual-ball" />
+              </div>
+              <p>
+                {handednessLabels[prescription.shotVisual.handedness]} · {clubGroupLabels[prescription.shotVisual.clubGroup]} ·{' '}
+                {ballPositionSlotLabels[prescription.shotVisual.ballPositionSlot]}
+              </p>
+            </figure>
+
+            <figure className="shot-visual-view shot-visual-rear">
+              <figcaption>뒤에서 본 라이 / 경사</figcaption>
+              <div
+                className="shot-visual-stage"
+                data-front-back={prescription.shotVisual.frontBackSlope}
+                data-side-hill={prescription.shotVisual.sideHillRelation}
+                aria-hidden="true"
+              >
+                <span className="shot-visual-horizon" />
+                <span className="shot-visual-slope" />
+                <span className="shot-visual-ball" />
+              </div>
+              <p>
+                앞뒤 경사 {stanceSlopeLabels[prescription.shotVisual.frontBackSlope]} · 공 위치 {sideSlopeLabels[scenario.sideSlope]}
+              </p>
+            </figure>
           </div>
         </section>
       </section>
