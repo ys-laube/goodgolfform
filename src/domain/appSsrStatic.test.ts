@@ -63,7 +63,8 @@ describe('App SSR/static harness contract', () => {
     expect(renderedApp).toMatch(/fit score/i);
     expect(renderedApp).toMatch(/adjusted target/i);
     expect(renderedApp).not.toMatch(/GPS shot pins|room-flow|map-shell|invite-link room/i);
-    expect(renderedApp).not.toMatch(/Build the shot|Read the swing card|Enter shot|Type the shot|choose a saved profile|get a deterministic/i);
+    expect(renderedApp).not.toMatch(/\b(coach|caddie|caddy)\b/i);
+    expect(renderedApp).not.toMatch(/Build the shot|Read the swing card|Enter shot|Type the shot|choose a saved profile|get a deterministic|you should|let's|do this|next|now/i);
   });
 
   it('SSR-renders the default analysis card fields without notice-style copy', () => {

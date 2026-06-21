@@ -14,7 +14,7 @@ export const nonGoals = [
 ] as const;
 
 export const privacyNotes = [
-  'Location permission should be requested only when a round feature needs it.',
+  'Location permission is requested only when a round feature uses it.',
   'MVP sharing is scoped to invite-link rooms.',
   'Shared persistence is MVP-critical later, but this foundation does not implement backend storage.',
 ] as const;

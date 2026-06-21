@@ -24,6 +24,7 @@ describe('mobile shot pin flow', () => {
     expect(shotPinCategories.map((category) => category.id)).toEqual(['shot', 'lie', 'target', 'note']);
     expect(shotPinCategories.map((category) => category.emoji)).toEqual(['🏌️', '🌲', '⛳', '💬']);
     expect(JSON.stringify(shotPinCategories)).not.toMatch(/score|bet|wager|rules|follower|feed/i);
+    expect(JSON.stringify(shotPinCategories)).not.toMatch(/\b(coach|caddie|caddy|must|should|need to|try|try to|aim|aim to|hit|hit a|play|take|choose a)\b/i);
   });
 
   it('builds current-location shot pins for the G003 createPin boundary', () => {
@@ -63,7 +64,7 @@ describe('mobile shot pin flow', () => {
         comment: ' ',
         tappedLocation: { lat: 37.42312, lng: -122.08523 },
       }),
-    ).toMatchObject({ category: 'target', emoji: '⛳', comment: 'Aim point, green, or safe miss' });
+    ).toMatchObject({ category: 'target', emoji: '⛳', comment: 'Target point, green, or safe miss' });
 
     expect(
       buildShotPinInput({

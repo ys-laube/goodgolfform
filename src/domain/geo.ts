@@ -97,7 +97,7 @@ export function classifyLocationFailure(error: GeolocationFailure): CurrentLocat
     return {
       status: 'denied',
       reason: 'denied',
-      message: 'Location permission was denied. You can still use manually entered course targets.',
+      message: 'Location permission was denied. Manually entered course targets remain available.',
     };
   }
 
@@ -105,7 +105,7 @@ export function classifyLocationFailure(error: GeolocationFailure): CurrentLocat
     return {
       status: 'unavailable',
       reason: 'timeout',
-      message: 'Location timed out. Try again outside with a clearer sky view.',
+      message: 'Location timed out. A clearer sky view may help.',
     };
   }
 

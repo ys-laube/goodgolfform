@@ -100,7 +100,8 @@ describe('recommendation engine', () => {
       ...recommendation.adjustments.map((adjustment) => adjustment.reason),
     ].join(' ');
 
-    expect(copy).not.toMatch(/\b(must|should|need to|try|take|play|hit|aim|choose|use|recommend|guarantee|exact)\b/i);
+    expect(copy).not.toMatch(/\b(coach|caddie|caddy|command|instruct|order)\b/i);
+    expect(copy).not.toMatch(/\b(must|should|need to|try|try to|take|play|hit|aim|choose|use|recommend|guarantee|exact)\b/i);
     expect(copy).not.toMatch(/\b(club up|club down|go for)\b/i);
   });
 });
