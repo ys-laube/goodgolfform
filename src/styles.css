@@ -322,14 +322,13 @@ select optgroup {
   box-shadow: 0 0 0 0.25rem rgba(184, 255, 104, 0.3);
 }
 
-.motion-stage-depth {
+.motion-stage-frame {
   width: min(100%, 30rem);
 }
 
 .swing-arc-svg {
   display: block;
   width: 100%;
-  filter: drop-shadow(0 1.5rem 1.8rem rgba(0, 0, 0, 0.38));
 }
 
 .ground-ring {
@@ -354,7 +353,7 @@ select optgroup {
   animation: swing-plane-pulse var(--swing-duration) ease-in-out infinite;
 }
 
-.swing-plane-shadow {
+.swing-plane-guide {
   stroke: rgba(83, 209, 255, 0.42);
   stroke-dasharray: 14 12;
   stroke-width: 4;
@@ -462,7 +461,7 @@ select optgroup {
     scroll-behavior: auto;
   }
 
-  .motion-stage-depth,
+  .motion-stage-frame,
   .swing-plane,
   .swing-armature {
     animation: none;

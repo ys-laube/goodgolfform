@@ -103,7 +103,8 @@ describe('G004 parameterized motion viewer static contract', () => {
 
   it('keeps the flat viewer free of 3D interaction and transform CSS while preserving mobile styles', () => {
     expect(viewerSource).not.toMatch(/onPointerDown|onPointerMove|setPointerCapture|pseudo-3D|rotate the stage/i);
-    expect(stylesSource).not.toMatch(/perspective|preserve-3d|translateZ|rotateX|rotateY/);
+    expect(viewerSource).not.toMatch(/motion-stage-depth|swing-plane-shadow/i);
+    expect(stylesSource).not.toMatch(/perspective|preserve-3d|translateZ|rotateX|rotateY|drop-shadow|motion-stage-depth|swing-plane-shadow/);
     expect(stylesSource).toContain('.motion-stage-wrap');
     expect(stylesSource).toContain('.motion-meter-grid');
     expect(stylesSource).toContain('@media (min-width: 42rem)');
