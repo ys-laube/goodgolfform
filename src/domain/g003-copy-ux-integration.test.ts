@@ -10,6 +10,11 @@ const forbiddenNoticeCopy = /disclaimer|legal notice|official|rangefinder|safety
 const forbiddenCommandCopy = /\b(must|should|need to|try to|guarantee|exact|hit this|play this|aim at|take this club|use this club|caddie|caddy|coach|go for|club up|club down)\b|adjusted play/i;
 const forbiddenAppImports = /MapShell|useCurrentLocation|roomApi|roomRepository|shotPinFlow|courseTargets|mapAdapter|auth|weather|multiplayer/i;
 const forbiddenRuntimeDeps = /supabase|firebase|mapbox|leaflet|auth0|clerk|weather|socket\.io/i;
+const forbiddenRuntimeFiles = /(?:MapShell|useCurrentLocation|roomApi|roomRepository|shotPinFlow|courseTargets|geo|mapAdapter|fieldReadiness)\.(?:ts|tsx)$/;
+const sourceFilePaths = Object.keys(import.meta.glob('../**/*.{ts,tsx}', {
+  query: '?raw',
+  import: 'default',
+}));
 
 describe('G003 copy/UX integration boundary', () => {
   it('keeps the SSR-visible swing analysis surface serious, bounded, and non-commanding', () => {
@@ -37,4 +42,10 @@ describe('G003 copy/UX integration boundary', () => {
     expect(importSurface).not.toMatch(forbiddenAppImports);
     expect(packageJson).not.toMatch(forbiddenRuntimeDeps);
   });
+
+
+  it('removes superseded backend, GPS, map, weather, room, and multiplayer implementation files from runtime source', () => {
+    expect(sourceFilePaths).not.toEqual(expect.arrayContaining([expect.stringMatching(forbiddenRuntimeFiles)]));
+  });
+
 });

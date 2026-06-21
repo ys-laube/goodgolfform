@@ -10,11 +10,11 @@ export const nonGoals = [
   'No authentication, accounts, invite rooms, multiplayer, or shared state.',
   'No GPS, browser geolocation, maps, map tiles, weather feeds, forecasts, or location permissions.',
   'No scorecards, betting, public social feed, followers, or discovery.',
-  'No official rules, rulings, rangefinder-grade precision promises, or command-style coaching.',
+  'No rulings, rules advice, precision promises, or prescriptive instruction panels.',
 ] as const;
 
 export const privacyNotes = [
-  'Saved profiles use local device storage only when the browser provides it.',
+  'Saved profiles stay in local device storage only when the browser provides it.',
   'Manual shot context stays in React state unless a profile is saved locally.',
   'The prototype does not create remote accounts or transmit player context.',
 ] as const;

@@ -20,16 +20,16 @@ describe('foundation product copy', () => {
     expect(copySource).not.toMatch(/Disclaimer|LegalNotice|legal notice|disclaimer/i);
   });
 
-  it('documents privacy and deferred shared persistence boundaries', () => {
-    expect(privacyNotes.join(' ')).toMatch(/invite-link rooms/i);
-    expect(privacyNotes.join(' ')).toMatch(/does not implement backend storage/i);
-    expect(privacyNotes.join(' ')).not.toMatch(/\bshould\b/i);
+  it('documents local-only privacy boundaries without shared persistence promises', () => {
+    expect(privacyNotes.join(' ')).toMatch(/local device storage/i);
+    expect(privacyNotes.join(' ')).toMatch(/does not create remote accounts or transmit player context/i);
+    expect(privacyNotes.join(' ')).not.toMatch(/invite-link|shared persistence|backend storage|\bshould\b/i);
   });
 
   it('locks MVP non-goals out of the foundation scope', () => {
     expect(nonGoals.join(' ')).toMatch(/No scorecards/i);
-    expect(nonGoals.join(' ')).toMatch(/No public social feed/i);
-    expect(productPrinciples.join(' ')).toMatch(/Shot pins stay playful/i);
+    expect(nonGoals.join(' ')).toMatch(/No scorecards, betting, public social feed/i);
+    expect(productPrinciples.join(' ')).toMatch(/Manual scenario inputs/i);
     const joinedCopy = [...productPrinciples, ...nonGoals, ...privacyNotes, approximateDistanceCopy].join(' ');
 
     expect(joinedCopy).not.toMatch(/official|rangefinder|safety-critical|disclaimer|legal notice/i);
