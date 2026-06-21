@@ -345,7 +345,7 @@ export function useCaddieSession() {
   const [activePreset, setActivePreset] = useState<CaddieDistancePreset>(() => clonePreset(defaultPreset));
   const [selectedPresetId, setSelectedPresetId] = useState(defaultPreset.id);
   const [scenario, setScenario] = useState<CaddieScenario>(defaultScenario);
-  const [storageMessage, setStorageMessage] = useState(() => initialStorageMessage(initialSavedPresets()));
+  const [storageMessage, setStorageMessage] = useState(() => initialStorageMessage(savedPresets));
 
   const selectablePresets = useMemo(() => [defaultPreset, ...savedPresets], [savedPresets]);
   const prescription = useMemo(() => buildPrescription(activePreset, scenario), [activePreset, scenario]);
