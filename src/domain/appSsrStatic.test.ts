@@ -3,6 +3,7 @@ import { renderToString } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import indexHtml from '../../index.html?raw';
 import appSource from '../App.tsx?raw';
+import { builtInProfilePresets, serializeProfilePresets, type StorageLike } from './profilePresets';
 import { App } from '../App';
 
 function withPoisonedBrowserStorage<T>(assertions: () => T): T {
@@ -47,6 +48,40 @@ describe('App SSR/static harness contract', () => {
     expect(renderedApp).toContain('Save profile locally');
     expect(renderedApp).toContain('Target distance (m)');
     expect(renderedApp).not.toMatch(/GPS shot pins|room-flow|map-shell|invite-link room/i);
+  });
+
+
+  it('restores saved profile presets through the App storage boundary when browser storage exists', () => {
+    const descriptor = Object.getOwnPropertyDescriptor(globalThis, 'window');
+    const savedProfile = {
+      ...builtInProfilePresets[1],
+      id: 'saved-smooth-draw-player',
+      name: 'Saved Smooth Draw',
+    };
+    const storage: StorageLike = {
+      getItem: () => serializeProfilePresets([savedProfile]),
+      setItem: () => undefined,
+      removeItem: () => undefined,
+    };
+
+    Object.defineProperty(globalThis, 'window', {
+      configurable: true,
+      value: { localStorage: storage },
+    });
+
+    try {
+      const renderedApp = renderToString(createElement(App));
+
+      expect(renderedApp).toContain('1 saved profile restored from this device.');
+      expect(renderedApp).toContain('Saved on this device');
+      expect(renderedApp).toContain('Saved Smooth Draw');
+    } finally {
+      if (descriptor) {
+        Object.defineProperty(globalThis, 'window', descriptor);
+      } else {
+        Reflect.deleteProperty(globalThis, 'window');
+      }
+    }
   });
 
   it('keeps App free of superseded GPS/map/room imports', () => {
