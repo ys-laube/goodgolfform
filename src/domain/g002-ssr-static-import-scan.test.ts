@@ -55,7 +55,7 @@ describe('G002 profile/scenario SSR/static import boundaries', () => {
     }
   });
 
-  it('keeps the profile/scenario source slice free of full analysis-card and 3D-viewer surfaces', () => {
+  it('keeps the profile/scenario source slice free of full analysis-card and rich motion-viewer surfaces', () => {
     const combinedSource = g002SwingFlowModules.map((modulePath) => sourceModules[modulePath]).join('\n');
 
     expect(combinedSource).not.toMatch(/analysis\s*card|analysis-card|three\.?js|@react-three|webgl|canvas/i);
