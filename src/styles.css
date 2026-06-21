@@ -280,7 +280,7 @@ select optgroup {
 }
 
 
-.shot-dashboard {
+ .shot-visual {
   display: grid;
   gap: 1rem;
   border: 1px solid rgba(184, 255, 104, 0.24);
@@ -291,9 +291,14 @@ select optgroup {
   padding: 1rem;
 }
 
-.dashboard-display {
+.shot-visual-stage {
+  --aim-offset: 0%;
+  --ball-offset: 0rem;
+  --stance-tilt: 0deg;
+  --arc-height: 58%;
+  --wind-shift: 0%;
   position: relative;
-  min-height: 9rem;
+  min-height: 10rem;
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 1rem;
@@ -304,31 +309,96 @@ select optgroup {
   background-size: 2.5rem 2.5rem, 2.5rem 2.5rem, cover;
 }
 
-.dashboard-target-line,
-.dashboard-shot-arc,
-.dashboard-ball-dot {
+.shot-visual-stage[data-aim="left"] {
+  --aim-offset: -14%;
+}
+
+.shot-visual-stage[data-aim="right"] {
+  --aim-offset: 14%;
+}
+
+.shot-visual-stage[data-ball-height="below-feet"] {
+  --ball-offset: -1rem;
+}
+
+.shot-visual-stage[data-ball-height="above-feet"] {
+  --ball-offset: 1rem;
+}
+
+.shot-visual-stage[data-stance="uphill"] {
+  --stance-tilt: -8deg;
+}
+
+.shot-visual-stage[data-stance="downhill"] {
+  --stance-tilt: 8deg;
+}
+
+.shot-visual-stage[data-trajectory="low"] {
+  --arc-height: 36%;
+}
+
+.shot-visual-stage[data-trajectory="soft-landing"] {
+  --arc-height: 72%;
+}
+
+.shot-visual-stage[data-wind="left-to-right"],
+.shot-visual-stage[data-wind="tailwind"] {
+  --wind-shift: 18%;
+}
+
+.shot-visual-stage[data-wind="right-to-left"],
+.shot-visual-stage[data-wind="headwind"] {
+  --wind-shift: -18%;
+}
+
+.shot-visual-aim-line,
+.shot-visual-arc,
+.shot-visual-feet,
+.shot-visual-stance,
+.shot-visual-ball,
+.shot-visual-wind {
   position: absolute;
   display: block;
 }
 
-.dashboard-target-line {
-  inset: 12% 50% 16%;
+.shot-visual-aim-line {
+  inset: 12% calc(50% - var(--aim-offset)) 16%;
   border-left: 2px dashed rgba(255, 255, 255, 0.34);
 }
 
-.dashboard-shot-arc {
-  left: 18%;
-  right: 18%;
-  bottom: 18%;
-  height: 58%;
+.shot-visual-arc {
+  left: calc(18% + var(--wind-shift));
+  right: calc(18% - var(--wind-shift));
+  bottom: 22%;
+  height: var(--arc-height);
   border: 3px solid rgba(83, 209, 255, 0.64);
   border-bottom: 0;
   border-radius: 999px 999px 0 0;
 }
 
-.dashboard-ball-dot {
-  left: calc(50% - 0.38rem);
-  bottom: 14%;
+.shot-visual-feet {
+  left: 26%;
+  right: 26%;
+  bottom: 12%;
+  height: 0.45rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.28);
+  transform: rotate(var(--stance-tilt));
+}
+
+.shot-visual-stance {
+  left: 37%;
+  right: 37%;
+  bottom: 15%;
+  height: 2.2rem;
+  border-left: 2px solid rgba(154, 241, 180, 0.7);
+  border-right: 2px solid rgba(154, 241, 180, 0.7);
+  transform: rotate(var(--stance-tilt));
+}
+
+.shot-visual-ball {
+  left: calc(50% + var(--ball-offset) - 0.38rem);
+  bottom: 18%;
   width: 0.76rem;
   height: 0.76rem;
   border-radius: 999px;
@@ -336,15 +406,49 @@ select optgroup {
   box-shadow: 0 0 1.2rem rgba(184, 255, 104, 0.82);
 }
 
-.dashboard-copy h3 {
+.shot-visual-wind {
+  top: 1rem;
+  left: calc(50% + var(--wind-shift) - 1.2rem);
+  width: 2.4rem;
+  height: 0.34rem;
+  border-radius: 999px;
+  background: rgba(83, 209, 255, 0.72);
+  box-shadow: 0 0.7rem 0 rgba(83, 209, 255, 0.34);
+}
+
+.shot-visual-copy h3 {
   margin: 0.2rem 0 0.4rem;
 }
 
-.dashboard-copy p:last-child {
+.shot-visual-copy p:last-child {
   margin: 0;
   color: #9af1b4;
 }
 
+.shot-visual-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.7rem;
+  margin: 0;
+}
+
+.shot-visual-metrics div {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 0.8rem;
+}
+
+.shot-visual-metrics dt {
+  color: #9af1b4;
+  font-size: 0.78rem;
+}
+
+.shot-visual-metrics dd {
+  margin: 0.25rem 0 0;
+  font-size: 1.1rem;
+  font-weight: 800;
+}
 
 @media (min-width: 42rem) {
   .app-shell {
@@ -359,12 +463,18 @@ select optgroup {
   .analysis-card-grid {
     grid-template-columns: repeat(2, 1fr);
   }
-  .shot-dashboard {
+
+  .adjustment-strip,
+  .shot-visual {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .shot-visual {
     grid-template-columns: 1.1fr 0.9fr;
     align-items: center;
   }
 
-  .dashboard-display {
+  .shot-visual-stage {
     grid-row: span 2;
   }
 
@@ -387,11 +497,12 @@ select optgroup {
     grid-template-columns: repeat(4, 1fr);
   }
 
-  .shot-dashboard {
+  .shot-visual {
     grid-template-columns: minmax(0, 0.8fr) minmax(18rem, 1.2fr);
   }
 
-  .dashboard-copy {
+  .shot-visual-copy,
+  .shot-visual-metrics {
     grid-column: auto;
   }
 }
