@@ -17,6 +17,6 @@ export function motionParametersFromRecommendation(recommendation: SwingRecommen
     launchAngleDegrees,
     followThroughHeight,
     reducedMotionPose: recommendation.swingSizePercent < 76 ? 'compact' : recommendation.swingSizePercent > 94 ? 'extended' : 'balanced',
-    accessibleSummary: `${recommendation.swingSizeLabel} ${recommendation.tempo} tempo, ${recommendation.pathBias} path, ${recommendation.trajectoryStrategy} launch`,
+    accessibleSummary: `${recommendation.swingSizeLabel} · ${recommendation.tempo} 템포 · ${recommendation.pathBias} 경로 · ${recommendation.trajectoryStrategy} 탄도`,
   };
 }

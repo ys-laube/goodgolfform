@@ -2,8 +2,8 @@ import { SwingMotionViewer } from './components/SwingMotionViewer';
 import { builtInProfilePresets } from './domain/profilePresets';
 import type {
   ClubKey,
-  Golfer레벨,
-  라이Condition,
+  GolferLevel,
+  LieCondition,
   ShotShape,
   ShotWindow,
   TempoPreference,
@@ -13,13 +13,13 @@ import type {
 } from './domain/swingLabModels';
 import { distanceFor, presetSummary, replaceClubDistance, useSwingLabSession } from './useSwingLabSession';
 
-const levelOptions: readonly Golfer레벨[] = ['beginner', 'developing', 'single-digit', 'scratch'];
+const levelOptions: readonly GolferLevel[] = ['beginner', 'developing', 'single-digit', 'scratch'];
 const shotShapeOptions: readonly ShotShape[] = ['straight', 'draw', 'fade'];
 const trajectoryOptions: readonly TrajectoryTendency[] = ['low', 'mid', 'high'];
 const tempoOptions: readonly TempoPreference[] = ['smooth', 'neutral', 'assertive'];
 const windDirections: readonly WindDirection[] = ['none', 'headwind', 'tailwind', 'left-to-right', 'right-to-left'];
 const windStrengths: readonly WindStrength[] = ['calm', 'light', 'steady', 'strong'];
-const lieOptions: readonly 라이Condition[] = ['tee', 'fairway', 'rough', 'bunker'];
+const lieOptions: readonly LieCondition[] = ['tee', 'fairway', 'rough', 'bunker'];
 const windowOptions: readonly ShotWindow[] = ['standard', 'low', 'high'];
 const editableClubKeys: readonly ClubKey[] = ['driver', '7i', 'pw'];
 
@@ -28,7 +28,7 @@ const levelLabels = {
   developing: '성장 중',
   'single-digit': '싱글 핸디캡',
   scratch: '스크래치',
-} satisfies Record<Golfer레벨, string>;
+} satisfies Record<GolferLevel, string>;
 
 const shotShapeLabels = {
   straight: '스트레이트',
@@ -68,7 +68,7 @@ const lieLabels = {
   fairway: '페어웨이',
   rough: '러프',
   bunker: '벙커',
-} satisfies Record<라이Condition, string>;
+} satisfies Record<LieCondition, string>;
 
 const windowLabels = {
   standard: '표준 탄도창',
@@ -188,11 +188,11 @@ export function App() {
             레벨
             <select
               value={activeProfile.level}
-              onChange={(event) => setActiveProfile({ ...activeProfile, level: event.target.value as Golfer레벨 })}
+              onChange={(event) => setActiveProfile({ ...activeProfile, level: event.target.value as GolferLevel })}
             >
               {levelOptions.map((option) => (
-                <option key={levelLabels[option]} value={shotShapeLabels[option]}>
-                  {trajectoryLabels[option]}
+                <option key={option} value={option}>
+                  {levelLabels[option]}
                 </option>
               ))}
             </select>
@@ -204,8 +204,8 @@ export function App() {
               onChange={(event) => setActiveProfile({ ...activeProfile, shotShape: event.target.value as ShotShape })}
             >
               {shotShapeOptions.map((option) => (
-                <option key={tempoLabels[option]} value={windDirectionLabels[option]}>
-                  {windStrengthLabels[option]}
+                <option key={option} value={option}>
+                  {shotShapeLabels[option]}
                 </option>
               ))}
             </select>
@@ -217,8 +217,8 @@ export function App() {
               onChange={(event) => setActiveProfile({ ...activeProfile, trajectoryTendency: event.target.value as TrajectoryTendency })}
             >
               {trajectoryOptions.map((option) => (
-                <option key={lieLabels[option]} value={windowLabels[option]}>
-                  {option}
+                <option key={option} value={option}>
+                  {trajectoryLabels[option]}
                 </option>
               ))}
             </select>
@@ -231,7 +231,7 @@ export function App() {
             >
               {tempoOptions.map((option) => (
                 <option key={option} value={option}>
-                  {option}
+                  {tempoLabels[option]}
                 </option>
               ))}
             </select>
@@ -284,7 +284,7 @@ export function App() {
             >
               {windDirections.map((option) => (
                 <option key={option} value={option}>
-                  {option}
+                  {windDirectionLabels[option]}
                 </option>
               ))}
             </select>
@@ -297,17 +297,17 @@ export function App() {
             >
               {windStrengths.map((option) => (
                 <option key={option} value={option}>
-                  {option}
+                  {windStrengthLabels[option]}
                 </option>
               ))}
             </select>
           </label>
           <label>
             라이
-            <select value={scenario.lie} onChange={(event) => setScenario({ ...scenario, lie: event.target.value as 라이Condition })}>
+            <select value={scenario.lie} onChange={(event) => setScenario({ ...scenario, lie: event.target.value as LieCondition })}>
               {lieOptions.map((option) => (
                 <option key={option} value={option}>
-                  {option}
+                  {lieLabels[option]}
                 </option>
               ))}
             </select>
@@ -320,7 +320,7 @@ export function App() {
             >
               {windowOptions.map((option) => (
                 <option key={option} value={option}>
-                  {option}
+                  {windowLabels[option]}
                 </option>
               ))}
             </select>
