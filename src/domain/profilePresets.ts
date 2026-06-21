@@ -37,8 +37,8 @@ function scaleDistances(scale: number): readonly ClubDistance[] {
 export const builtInProfilePresets: readonly SwingLabProfile[] = [
   {
     id: 'preset-balanced-maker',
-    name: 'Balanced Maker',
-    archetype: 'Single-digit friend with stock mid-flight windows',
+    name: '균형형 메이커',
+    archetype: '중간 탄도창을 선호하는 싱글 핸디캡 친구',
     heightCm: 178,
     weightKg: 76,
     level: 'single-digit',
@@ -50,8 +50,8 @@ export const builtInProfilePresets: readonly SwingLabProfile[] = [
   },
   {
     id: 'preset-smooth-draw',
-    name: 'Smooth Draw Player',
-    archetype: 'Tempo-first player who prefers a right-to-left window',
+    name: '부드러운 드로 플레이어',
+    archetype: '오른쪽에서 왼쪽으로 휘는 탄도창을 선호하는 템포 우선 플레이어',
     heightCm: 172,
     weightKg: 68,
     level: 'developing',
@@ -63,8 +63,8 @@ export const builtInProfilePresets: readonly SwingLabProfile[] = [
   },
   {
     id: 'preset-flight-control',
-    name: 'Flight Control Striker',
-    archetype: 'Assertive striker who likes flatter flight and firm contact',
+    name: '탄도 컨트롤 스트라이커',
+    archetype: '낮은 탄도와 단단한 임팩트를 좋아하는 과감한 스트라이커',
     heightCm: 184,
     weightKg: 84,
     level: 'scratch',

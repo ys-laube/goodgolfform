@@ -138,7 +138,7 @@ export function SwingMotionViewer({ parameters, recommendation, forceReducedMoti
         </span>
         <span>
           <strong>{parameters.launchAngleDegrees}°</strong>
-          {formatValue(recommendation.탄도Strategy)} 탄도
+          {formatValue(recommendation.trajectoryStrategy)} 탄도
         </span>
       </div>
     </section>
