@@ -28,11 +28,15 @@ describe('G003 copy/UX integration boundary', () => {
     expect(renderedApp).toMatch(/캐디 한줄 처방/i);
     expect(renderedApp).toMatch(/지금 처방/i);
     expect(renderedApp).toMatch(/왜 이렇게 치나요/i);
-    expect(renderedApp).not.toMatch(/조준과 라이 미니카드|2D 보조|근거 카드/i);
+    expect(renderedApp).toMatch(/정적 샷 대시보드/i);
+    expect(renderedApp).toMatch(/앞뒤 경사/i);
+    expect(renderedApp).toMatch(/공 위치 높이/i);
     expect(visibleCopy).toMatch(/근사 연습 추정값/i);
     expect(renderedApp).toMatch(/추천: 9번 아이언 90%[\s\S]*목표보다 살짝 오른쪽 조준[\s\S]*낮게 컨트롤/);
-    expect(renderedApp).toContain('대표값은 100m · 페어웨이 · 발끝 내리막 · 약한 맞바람입니다.');
-    expect(renderedApp).toContain('좌측 경사');
+    expect(renderedApp).toMatch(/라이[\s\S]*페어웨이/);
+    expect(renderedApp).toMatch(/앞뒤 경사[\s\S]*평지/);
+    expect(renderedApp).toMatch(/공 위치[\s\S]*공이 발보다 낮음/);
+    expect(renderedApp).not.toMatch(/경사\/스탠스|좌우 경사|발끝 오르막|발끝 내리막|좌측 경사|우측 경사|조준과 라이 미니카드|2D 보조|근거 카드|근거카드/);
     expect(renderedApp).not.toMatch(/Serious Golf Swing Lab|Profile panel|Scenario panel|Save profile locally|Live analysis report/);
     expect(visibleCopy).not.toMatch(forbiddenNoticeCopy);
     expect(renderedApp).not.toMatch(forbiddenVisibleConstraintCopy);

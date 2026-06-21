@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import readmeSource from '../../README.md?raw';
 import copySource from './copy.ts?raw';
 import {
   approximateDistanceCopy,
@@ -29,10 +30,17 @@ describe('foundation product copy', () => {
   it('locks MVP non-goals out of the foundation scope', () => {
     expect(nonGoals.join(' ')).toMatch(/스코어카드/);
     expect(nonGoals.join(' ')).toMatch(/스코어카드, 베팅, 공개 소셜 피드/);
-    expect(productPrinciples.join(' ')).toMatch(/남은 거리, 라이, 경사, 바람, 핀/);
+    expect(productPrinciples.join(' ')).toMatch(/남은 거리, 라이, 앞뒤 경사, 공 위치 높이, 바람, 핀/);
     const joinedCopy = [...productPrinciples, ...nonGoals, ...privacyNotes, approximateDistanceCopy].join(' ');
 
     expect(joinedCopy).not.toMatch(/official|rangefinder|safety-critical|disclaimer|legal notice|공식|거리측정기|면책|법적 고지|안전 필수/i);
     expect(joinedCopy).not.toMatch(commandLikeCopyPattern);
+  });
+
+  it('keeps docs and product copy on the refined dashboard terminology', () => {
+    const docsAndCopy = `${readmeSource}\n${copySource}\n${productPrinciples.join(' ')}`;
+
+    expect(docsAndCopy).toMatch(/static shot dashboard|정적 샷 대시보드/);
+    expect(docsAndCopy).not.toMatch(/2D mini cards|2D aim\/lie mini cards|미니카드|경사\/스탠스|좌우 경사|발끝 오르막|발끝 내리막|좌측 경사|우측 경사/);
   });
 });
