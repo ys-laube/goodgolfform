@@ -3,6 +3,7 @@ import { renderToString } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import packageJson from '../../package.json?raw';
 import appSource from '../App.tsx?raw';
+import swingLabSessionSource from '../useSwingLabSession.ts?raw';
 import { App } from '../App';
 import { approximateDistanceCopy, nonGoals, privacyNotes, productPrinciples } from './copy';
 
@@ -34,9 +35,11 @@ describe('G003 copy/UX integration boundary', () => {
   });
 
   it('guards G003 against backend, auth, GPS, map, weather, and multiplayer imports or dependencies', () => {
-    expect(appSource).toMatch(/recommendShot/);
-    expect(appSource).toMatch(/profilePresets/);
-    const importSurface = appSource
+    const appSessionSource = `${appSource}\n${swingLabSessionSource}`;
+
+    expect(appSessionSource).toMatch(/recommendShot/);
+    expect(appSessionSource).toMatch(/profilePresets/);
+    const importSurface = appSessionSource
       .split('\n')
       .filter((line) => line.startsWith('import '))
       .join('\n');

@@ -12,6 +12,20 @@ import {
   type StorageLike,
 } from './profilePresets';
 
+class ThrowingStorage implements StorageLike {
+  getItem(): string | null {
+    throw new Error('storage read blocked');
+  }
+
+  setItem(): void {
+    throw new Error('storage write blocked');
+  }
+
+  removeItem(): void {
+    throw new Error('storage clear blocked');
+  }
+}
+
 class MemoryStorage implements StorageLike {
   private readonly values = new Map<string, string>();
 
@@ -67,6 +81,32 @@ describe('profile presets', () => {
     expect(loadSavedProfilePresets(storage)).toEqual([]);
 
     storage.setItem(profilePresetStorageKey, JSON.stringify({ version: 1, profiles: [{ id: 'broken' }] }));
+    expect(loadSavedProfilePresets(storage)).toEqual([]);
+  });
+
+  it('handles storage read, write, and clear exceptions without crashing the app flow', () => {
+    const storage = new ThrowingStorage();
+
+    expect(loadSavedProfilePresets(storage)).toEqual([]);
+    expect(saveProfilePresets(storage, [builtInProfilePresets[0]])).toBe(false);
+    expect(clearSavedProfilePresets(storage)).toBe(false);
+  });
+
+  it('rejects corrupted club distance payloads outside the supported domain', () => {
+    const storage = new MemoryStorage();
+    const corruptedClub = {
+      ...builtInProfilePresets[0],
+      clubDistances: [{ club: 'alien-wedge', carryMeters: 120 }],
+    };
+    const corruptedDistance = {
+      ...builtInProfilePresets[0],
+      clubDistances: [{ club: '7i', carryMeters: Number.NaN }],
+    };
+
+    storage.setItem(profilePresetStorageKey, JSON.stringify({ version: profilePresetStorageVersion, profiles: [corruptedClub] }));
+    expect(loadSavedProfilePresets(storage)).toEqual([]);
+
+    storage.setItem(profilePresetStorageKey, JSON.stringify({ version: profilePresetStorageVersion, profiles: [corruptedDistance] }));
     expect(loadSavedProfilePresets(storage)).toEqual([]);
   });
 

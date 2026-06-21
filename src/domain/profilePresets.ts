@@ -1,4 +1,4 @@
-import type { ClubDistance, SwingLabProfile } from './swingLabModels';
+import type { ClubDistance, ClubKey, SwingLabProfile } from './swingLabModels';
 
 export const profilePresetStorageKey = 'serious-golf-swing-lab:profile-presets:v1';
 export const profilePresetStorageVersion = 1;
@@ -9,6 +9,8 @@ type StoredProfilePresetPayload = {
   readonly version: typeof profilePresetStorageVersion;
   readonly profiles: readonly SwingLabProfile[];
 };
+
+const clubKeys: readonly ClubKey[] = ['driver', '3w', '5w', '4i', '5i', '6i', '7i', '8i', '9i', 'pw', 'gw', 'sw'];
 
 const baselineDistances: readonly ClubDistance[] = [
   { club: 'driver', carryMeters: 220 },
@@ -101,7 +103,11 @@ export function loadSavedProfilePresets(storage: StorageLike | undefined): reado
     return [];
   }
 
-  return deserializeProfilePresets(storage.getItem(profilePresetStorageKey));
+  try {
+    return deserializeProfilePresets(storage.getItem(profilePresetStorageKey));
+  } catch {
+    return [];
+  }
 }
 
 export function saveProfilePresets(storage: StorageLike | undefined, profiles: readonly SwingLabProfile[]): boolean {
@@ -109,8 +115,12 @@ export function saveProfilePresets(storage: StorageLike | undefined, profiles: r
     return false;
   }
 
-  storage.setItem(profilePresetStorageKey, serializeProfilePresets(profiles));
-  return true;
+  try {
+    storage.setItem(profilePresetStorageKey, serializeProfilePresets(profiles));
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export function clearSavedProfilePresets(storage: StorageLike | undefined): boolean {
@@ -118,8 +128,12 @@ export function clearSavedProfilePresets(storage: StorageLike | undefined): bool
     return false;
   }
 
-  storage.removeItem(profilePresetStorageKey);
-  return true;
+  try {
+    storage.removeItem(profilePresetStorageKey);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export function upsertProfilePreset(
@@ -157,7 +171,14 @@ function isSwingLabProfile(value: unknown): value is SwingLabProfile {
 }
 
 function isClubDistance(value: unknown): value is ClubDistance {
-  return isRecord(value) && typeof value.club === 'string' && typeof value.carryMeters === 'number' && value.carryMeters > 0;
+  return (
+    isRecord(value) &&
+    isOneOf(value.club, clubKeys) &&
+    typeof value.carryMeters === 'number' &&
+    Number.isFinite(value.carryMeters) &&
+    value.carryMeters >= 30 &&
+    value.carryMeters <= 330
+  );
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

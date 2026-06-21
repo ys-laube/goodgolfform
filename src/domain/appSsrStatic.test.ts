@@ -4,8 +4,10 @@ import { describe, expect, it } from 'vitest';
 import indexHtml from '../../index.html?raw';
 import packageJson from '../../package.json';
 import { SwingMotionViewer } from '../components/SwingMotionViewer';
+import browserEnvironmentSource from '../browserEnvironment.ts?raw';
 import swingMotionViewerSource from '../components/SwingMotionViewer.tsx?raw';
 import appSource from '../App.tsx?raw';
+import swingLabSessionSource from '../useSwingLabSession.ts?raw';
 import { motionParametersFromRecommendation } from './motionParameters';
 import { builtInProfilePresets, serializeProfilePresets, type StorageLike } from './profilePresets';
 import { recommendShot } from './recommendationEngine';
@@ -177,9 +179,11 @@ describe('App SSR/static harness contract', () => {
 
   it('keeps App free of superseded GPS/map/room imports', () => {
     expect(appSource).not.toMatch(/MapShell|useCurrentLocation|roomApi|roomRepository|shotPinFlow|courseTargets|mapAdapter/);
-    expect(appSource).toMatch(/profilePresets/);
-    expect(appSource).toMatch(/recommendShot/);
-    expect(appSource).toMatch(/motionParametersFromRecommendation/);
+    const appSessionSource = `${appSource}\n${swingLabSessionSource}`;
+
+    expect(appSessionSource).toMatch(/profilePresets/);
+    expect(appSessionSource).toMatch(/recommendShot/);
+    expect(appSessionSource).toMatch(/motionParametersFromRecommendation/);
     expect(appSource).toMatch(/SwingMotionViewer/);
   });
 
@@ -239,15 +243,17 @@ describe('App SSR/static harness contract', () => {
   });
 
   it('keeps the motion-viewer static contract dependency-free and SSR-safe', () => {
-    const scannedSources = [appSource, motionParametersSource, swingMotionViewerSource].join('\n');
+    const scannedSources = [appSource, swingLabSessionSource, motionParametersSource, swingMotionViewerSource].join('\n');
 
     expect(packageDependencyNames).toEqual(['@vitejs/plugin-react', 'vite', 'typescript', 'react', 'react-dom']);
     expect(scannedSources).not.toMatch(/three|@react-three|webgl|canvas|getContext|requestAnimationFrame/i);
     expect(scannedSources).not.toMatch(/navigator\.geolocation|VITE_MAP_|VITE_ROOM_API_|mapbox|maplibre|leaflet|firebase|supabase/i);
     expect(motionParametersSource).toMatch(/accessibleSummary/);
     expect(motionParametersSource).toMatch(/reducedMotionPose/);
-    expect(swingMotionViewerSource).toMatch(/Object\.getOwnPropertyDescriptor\(globalThis, 'window'\)/);
+    expect(browserEnvironmentSource).toMatch(/browserWindow\(\)\?\.localStorage/);
+    expect(browserEnvironmentSource).toMatch(/browserWindow\(\)\?\.matchMedia/);
+    expect(scannedSources).not.toMatch(/Object\.getOwnPropertyDescriptor\(globalThis, 'window'\)/);
     expect(swingMotionViewerSource).toMatch(/forceReducedMotion/);
-    expect(appSource).toMatch(/Motion meter/);
+    expect(swingLabSessionSource).toMatch(/Motion meter/);
   });
 });

@@ -3,6 +3,7 @@ import { renderToStaticMarkup, renderToString } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { SwingMotionViewer } from '../components/SwingMotionViewer';
 import appSource from '../App.tsx?raw';
+import swingLabSessionSource from '../useSwingLabSession.ts?raw';
 import viewerSource from '../components/SwingMotionViewer.tsx?raw';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -92,7 +93,7 @@ describe('G004 parameterized motion viewer static contract', () => {
   it('wires the App recommendation output into the viewer without new rendering dependencies or notice copy', () => {
     const renderedApp = renderToString(createElement(App));
 
-    expect(appSource).toMatch(/motionParametersFromRecommendation/);
+    expect(swingLabSessionSource).toMatch(/motionParametersFromRecommendation/);
     expect(appSource).toMatch(/<SwingMotionViewer parameters=\{motionParameters\} recommendation=\{recommendation\}/);
     expect(renderedApp).toContain('Parameterized golfer motion');
     expect(renderedApp).toContain('Current motion parameters');

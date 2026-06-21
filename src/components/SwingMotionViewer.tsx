@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type CSSProperties, type PointerEvent } from 'react';
+import { currentMatchMedia } from '../browserEnvironment';
 import type { MotionParameters, SwingRecommendation } from '../domain/swingLabModels';
 
 type SwingMotionViewerProps = {
@@ -27,29 +28,23 @@ function formatValue(value: string): string {
   return value.replaceAll('-', ' ');
 }
 
-function currentWindow(): Window | undefined {
-  const windowDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'window');
-
-  return windowDescriptor && 'value' in windowDescriptor ? (windowDescriptor.value as Window) : undefined;
-}
-
 function usePrefersReducedMotion(forceReducedMotion = false): boolean {
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(() => {
-    const browserWindow = currentWindow();
-    if (forceReducedMotion || !browserWindow || typeof browserWindow.matchMedia !== 'function') {
+    const matchMedia = currentMatchMedia();
+    if (forceReducedMotion || typeof matchMedia !== 'function') {
       return forceReducedMotion;
     }
 
-    return browserWindow.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    return matchMedia('(prefers-reduced-motion: reduce)').matches;
   });
 
   useEffect(() => {
-    const browserWindow = currentWindow();
-    if (forceReducedMotion || !browserWindow || typeof browserWindow.matchMedia !== 'function') {
+    const matchMedia = currentMatchMedia();
+    if (forceReducedMotion || typeof matchMedia !== 'function') {
       return;
     }
 
-    const mediaQuery = browserWindow.matchMedia('(prefers-reduced-motion: reduce)');
+    const mediaQuery = matchMedia('(prefers-reduced-motion: reduce)');
     const syncPreference = () => setPrefersReducedMotion(mediaQuery.matches);
     syncPreference();
     mediaQuery.addEventListener('change', syncPreference);
