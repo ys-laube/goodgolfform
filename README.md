@@ -19,11 +19,11 @@ This prototype includes:
 - No authentication, accounts, invite rooms, multiplayer, or shared state.
 - No GPS, browser geolocation, maps, map tiles, weather feeds, forecasts, or location permissions.
 - No scorecards, betting, public social feed, followers, or discovery.
-- No official rules, rulings, rangefinder-grade precision promises, or command-style coaching.
+- No rulings, rules advice, precision promises, or prescriptive instruction panels.
 
 ## Local storage boundary
 
-Saved profiles use browser `localStorage` when it is available. That storage is device-local only; the app has no remote account or shared persistence layer.
+Saved profiles stay in browser `localStorage` when it is available. That storage is device-local only; the app has no remote account or shared persistence layer.
 
 ## Setup
 
