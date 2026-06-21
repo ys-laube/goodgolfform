@@ -13,6 +13,43 @@ import { App } from '../App';
 import motionParametersSource from './motionParameters.ts?raw';
 
 const packageDependencyNames = Object.keys(packageJson.dependencies);
+const runtimeSourceModules = import.meta.glob('../**/*.{ts,tsx}', {
+  eager: true,
+  query: '?raw',
+  import: 'default',
+}) as Record<string, string>;
+const runtimeSourceEntries = Object.entries(runtimeSourceModules).filter(
+  ([modulePath]) => !modulePath.endsWith('.test.ts') && !modulePath.endsWith('vitest-node.d.ts') && !modulePath.endsWith('vite-env.d.ts'),
+);
+
+const supersededRuntimeFilePatterns = [
+  /(?:MapShell|useCurrentLocation|roomApi|roomRepository|shotPinFlow|courseTargets|geo|mapAdapter|fieldReadiness)\.(?:ts|tsx)$/,
+] as const;
+
+const supersededImportSpecifiers = [
+  /(?:^|\/)MapShell$/,
+  /(?:^|\/)useCurrentLocation$/,
+  /(?:^|\/)roomApi$/,
+  /(?:^|\/)roomRepository$/,
+  /(?:^|\/)shotPinFlow$/,
+  /(?:^|\/)courseTargets$/,
+  /(?:^|\/)geo$/,
+  /(?:^|\/)mapAdapter$/,
+  /(?:^|\/)fieldReadiness$/,
+  /mapbox|maplibre|leaflet|firebase|supabase|amplify|socket\.io/i,
+] as const;
+
+const supersededRuntimeTokens = [
+  /navigator\.geolocation/i,
+  /getCurrentPosition/i,
+  /VITE_MAP_/i,
+  /VITE_ROOM_API_/i,
+  /google\.maps/i,
+] as const;
+
+function importSpecifiersFromSource(source: string): string[] {
+  return Array.from(source.matchAll(/(?:import|export)\s+(?:type\s+)?(?:[^'"]*?\s+from\s+)?["']([^"']+)["']|import\(["']([^"']+)["']\)/g), (match) => match[1] ?? match[2]);
+}
 
 function withPoisonedBrowserStorage<T>(assertions: () => T): T {
   const descriptors = {
@@ -143,6 +180,29 @@ describe('App SSR/static harness contract', () => {
     expect(appSource).toMatch(/recommendShot/);
     expect(appSource).toMatch(/motionParametersFromRecommendation/);
     expect(appSource).toMatch(/SwingMotionViewer/);
+  });
+
+  it('keeps all runtime source free of retired GPS, map, room, and backend import surfaces', () => {
+    const runtimeModulePaths = runtimeSourceEntries.map(([modulePath]) => modulePath);
+    const runtimeImports = runtimeSourceEntries.flatMap(([modulePath, source]) =>
+      importSpecifiersFromSource(source).map((specifier) => ({ modulePath, specifier })),
+    );
+    const combinedRuntimeSource = runtimeSourceEntries.map(([, source]) => source).join('\n');
+
+    expect(runtimeModulePaths).not.toEqual(expect.arrayContaining([expect.stringMatching(supersededRuntimeFilePatterns[0])]));
+    for (const { modulePath, specifier } of runtimeImports) {
+      for (const pattern of supersededImportSpecifiers) {
+        expect(specifier, `${modulePath} must not import retired surface ${pattern}`).not.toMatch(pattern);
+      }
+    }
+    for (const tokenPattern of supersededRuntimeTokens) {
+      expect(combinedRuntimeSource, `runtime source must not reference ${tokenPattern}`).not.toMatch(tokenPattern);
+    }
+    for (const dependencyName of packageDependencyNames) {
+      for (const pattern of supersededImportSpecifiers) {
+        expect(dependencyName, `runtime dependency ${dependencyName} must stay out of retired provider surfaces`).not.toMatch(pattern);
+      }
+    }
   });
 
   it('keeps the static HTML entrypoint ready for mobile swing lab smoke checks', () => {
