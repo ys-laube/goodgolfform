@@ -47,6 +47,10 @@ describe('App SSR/static harness contract', () => {
     expect(renderedApp).toContain('Serious Golf Swing Lab');
     expect(renderedApp).toContain('Save profile locally');
     expect(renderedApp).toContain('Target distance (m)');
+    expect(renderedApp).toContain('Wind direction');
+    expect(renderedApp).toContain('Wind strength');
+    expect(renderedApp).toContain('Desired window');
+    expect(renderedApp).toContain('Live analysis preview');
     expect(renderedApp).not.toMatch(/GPS shot pins|room-flow|map-shell|invite-link room/i);
   });
 
