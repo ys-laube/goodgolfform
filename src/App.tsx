@@ -127,17 +127,17 @@ export function App() {
     <main className="app-shell" aria-labelledby="app-title">
       <section className="hero-card swing-hero">
         <p className="eyebrow">Serious Golf Swing Lab</p>
-        <h1 id="app-title">Preset a player. Build the shot. Read the swing card.</h1>
+        <h1 id="app-title">Player profile in. Scenario context out. Analysis card ready.</h1>
         <p className="hero-copy">
-          A mobile-first practice lab for golf friends: choose a saved profile, tune core tendencies, type the shot in front of you,
-          and get a deterministic analysis card without GPS, maps, weather feeds, rooms, auth, or backend setup.
+          A mobile-first practice lab for golf friends: saved profiles, core tendencies, and manual shot context produce
+          a deterministic analysis card without GPS, maps, weather feeds, rooms, auth, or backend setup.
         </p>
         <div className="hero-actions" aria-label="Primary swing lab actions">
           <a href="#profile-panel" className="primary-action">
-            Edit profile
+            Profile panel
           </a>
           <a href="#scenario-panel" className="secondary-action">
-            Enter shot
+            Scenario panel
           </a>
         </div>
       </section>
@@ -151,7 +151,7 @@ export function App() {
       <section id="profile-panel" className="lab-panel" aria-labelledby="profile-title">
         <div className="section-heading">
           <p className="eyebrow">Step 1 · Profile preset</p>
-          <h2 id="profile-title">Load, edit, and save a golfer profile</h2>
+          <h2 id="profile-title">Golfer profile details</h2>
           <p>{storageMessage}</p>
         </div>
 
@@ -293,7 +293,7 @@ export function App() {
       <section id="scenario-panel" className="lab-panel" aria-labelledby="scenario-title">
         <div className="section-heading">
           <p className="eyebrow">Step 2 · Manual shot scenario</p>
-          <h2 id="scenario-title">Type the shot conditions</h2>
+          <h2 id="scenario-title">Manual shot conditions</h2>
           <p>Every input is manual and deterministic, so the primary flow works offline and in a static smoke test.</p>
         </div>
 

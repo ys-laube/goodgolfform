@@ -45,6 +45,9 @@ describe('App SSR/static harness contract', () => {
     expect(renderedApp).toContain('id="profile-panel"');
     expect(renderedApp).toContain('id="scenario-panel"');
     expect(renderedApp).toContain('Serious Golf Swing Lab');
+    expect(renderedApp).toContain('Player profile in. Scenario context out. Analysis card ready.');
+    expect(renderedApp).toContain('Profile panel');
+    expect(renderedApp).toContain('Scenario panel');
     expect(renderedApp).toContain('Save profile locally');
     expect(renderedApp).toContain('Target distance (m)');
     expect(renderedApp).toContain('Wind direction');
@@ -52,6 +55,7 @@ describe('App SSR/static harness contract', () => {
     expect(renderedApp).toContain('Desired window');
     expect(renderedApp).toContain('Live analysis preview');
     expect(renderedApp).not.toMatch(/GPS shot pins|room-flow|map-shell|invite-link room/i);
+    expect(renderedApp).not.toMatch(/Build the shot|Read the swing card|Enter shot|Type the shot|choose a saved profile|get a deterministic/i);
   });
 
 

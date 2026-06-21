@@ -45,7 +45,7 @@ export function recommendShot(profile: SwingLabProfile, scenario: ShotScenario):
     selectedClub: selectedDistance.club,
     clubLabel: formatClub(selectedDistance.club),
     adjustedDistanceMeters,
-    distanceFeel: `${formatClub(selectedDistance.club)} ${swingSizePercent}% window for ${adjustedDistanceMeters} m adjusted play`,
+    distanceFeel: `${formatClub(selectedDistance.club)} ${swingSizePercent}% profile window · ${adjustedDistanceMeters} m adjusted context`,
     swingSizePercent,
     swingSizeLabel: labelSwingSize(swingSizePercent),
     tempo,
@@ -66,7 +66,7 @@ function buildAdjustments(profile: SwingLabProfile, scenario: ShotScenario): rea
 
   return [
     { label: 'Wind', meters: windMeters, reason: windReason(scenario.windDirection, windMeters) },
-    { label: 'Lie', meters: lieAdjustments[scenario.lie], reason: `${scenario.lie} lie changes carry planning by ${lieAdjustments[scenario.lie]} m` },
+    { label: 'Lie', meters: lieAdjustments[scenario.lie], reason: `${scenario.lie} lie shifts the context number by ${lieAdjustments[scenario.lie]} m` },
     { label: 'Window', meters: windowMeters + tendencyMeters, reason: `${scenario.desiredWindow} window blended with ${profile.trajectoryTendency} profile tendency` },
   ].filter((adjustment) => adjustment.meters !== 0);
 }
@@ -142,7 +142,7 @@ function buildWhy(
 ): readonly string[] {
   return [
     `${profile.name} carries ${formatClub(selectedDistance.club)} around ${selectedDistance.carryMeters} m, matching the ${adjustedDistanceMeters} m adjusted target at ${swingSizePercent}%.`,
-    `${scenario.windStrength} ${scenario.windDirection} and ${scenario.lie} lie nudge the card toward a ${trajectoryStrategy} trajectory.`,
+    `${scenario.windStrength} ${scenario.windDirection} and ${scenario.lie} lie correlate with a ${trajectoryStrategy} trajectory read.`,
     `${profile.shotShape} shape maps to a ${pathBias} path read for a coherent motion-viewer state.`,
   ];
 }
@@ -164,7 +164,7 @@ function tempoRating(tempo: SwingTempo): number {
 }
 
 function windReason(direction: ShotScenario['windDirection'], meters: number): string {
-  return direction === 'none' ? 'Calm wind keeps the base number intact' : `${direction} changes adjusted play by ${meters} m`;
+  return direction === 'none' ? 'Calm wind leaves the base number unchanged' : `${direction} shifts the context number by ${meters} m`;
 }
 
 function formatClub(club: ClubDistance['club']): string {

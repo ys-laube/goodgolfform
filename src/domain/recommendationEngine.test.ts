@@ -16,7 +16,7 @@ describe('recommendation engine', () => {
     const recommendation = recommendShot(builtInProfilePresets[0], baselineScenario);
 
     expect(recommendation.selectedClub).toBe('7i');
-    expect(recommendation.distanceFeel).toMatch(/7 IRON 100% window/i);
+    expect(recommendation.distanceFeel).toMatch(/7 IRON 100% profile window/i);
     expect(recommendation.swingSizeLabel).toBe('fuller stock');
     expect(recommendation.trajectoryStrategy).toBe('standard-window');
     expect(recommendation.why.join(' ')).toMatch(/adjusted target/i);
@@ -95,6 +95,7 @@ describe('recommendation engine', () => {
       ...recommendation.adjustments.map((adjustment) => adjustment.reason),
     ].join(' ');
 
-    expect(copy).not.toMatch(/\b(must|guarantee|exact)\b/i);
+    expect(copy).not.toMatch(/\b(must|should|need to|try|take|play|hit|aim|choose|use|recommend|guarantee|exact)\b/i);
+    expect(copy).not.toMatch(/\b(club up|club down|go for)\b/i);
   });
 });
