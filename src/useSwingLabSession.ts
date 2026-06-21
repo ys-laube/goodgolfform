@@ -34,31 +34,31 @@ function analysisCardsFor(recommendation: SwingRecommendation): readonly Analysi
   return [
     {
       id: 'club-distance-feel',
-      label: 'Club · distance feel',
+      label: '클럽 · 거리감',
       title: recommendation.clubLabel,
       detail: recommendation.distanceFeel,
-      meta: `${recommendation.adjustedDistanceMeters} m adjusted context`,
+      meta: `${recommendation.adjustedDistanceMeters} m 보정 상황`,
     },
     {
       id: 'swing-size-tempo',
-      label: 'Swing size · tempo',
+      label: '스윙 크기 · 템포',
       title: `${recommendation.swingSizePercent}% ${recommendation.swingSizeLabel}`,
-      detail: `${formatCardText(recommendation.tempo)} tempo profile with ${recommendation.tempoRating} rhythm rating`,
-      meta: 'Motion meter',
+      detail: `${formatCardText(recommendation.tempo)} 템포 프로필 · 리듬 지수 ${recommendation.tempoRating}`,
+      meta: '모션 미터',
     },
     {
       id: 'trajectory-strategy',
-      label: 'Trajectory strategy',
+      label: '탄도 전략',
       title: formatCardText(recommendation.trajectoryStrategy),
-      detail: `${formatCardText(recommendation.pathBias)} path read shaped by window, wind, and player tendency`,
-      meta: 'Flight lane',
+      detail: `${formatCardText(recommendation.pathBias)} 경로 읽기 · 탄도창, 바람, 플레이어 성향 반영`,
+      meta: '비행 라인',
     },
     {
       id: 'plausibility-game-metrics',
-      label: 'Plausibility · game metrics',
+      label: '개연성 · 게임 지표',
       title: recommendation.gameMetricLabel,
-      detail: `${recommendation.confidenceScore}/100 fit score for this profile and scenario blend`,
-      meta: 'Scenario fit',
+      detail: `프로필과 상황 조합의 적합도 ${recommendation.confidenceScore}/100`,
+      meta: '상황 적합도',
     },
   ];
 }
@@ -69,8 +69,8 @@ function initialSavedProfiles(): readonly SwingLabProfile[] {
 
 function initialStorageMessage(profiles: readonly SwingLabProfile[]): string {
   return profiles.length > 0
-    ? `${profiles.length} saved profile${profiles.length === 1 ? '' : 's'} restored from this device.`
-    : 'Built-in profiles are ready. Saved profiles load on this device only.';
+    ? `이 기기에서 저장 프로필 ${profiles.length}개를 불러왔습니다.`
+    : '기본 프로필이 준비되었습니다. 저장 프로필은 이 기기에서만 불러옵니다.';
 }
 
 function cloneProfile(profile: SwingLabProfile): SwingLabProfile {
@@ -94,7 +94,7 @@ export function distanceFor(profile: SwingLabProfile, club: ClubKey): number {
 }
 
 export function presetSummary(profile: SwingLabProfile): string {
-  return `${profile.level} · ${profile.shotShape} · ${profile.trajectoryTendency} flight · ${profile.tempoPreference} tempo`;
+  return `${profile.level} · ${profile.shotShape} · ${profile.trajectoryTendency} 탄도 · ${profile.tempoPreference} 템포`;
 }
 
 export function useSwingLabSession() {
@@ -113,7 +113,7 @@ export function useSwingLabSession() {
     const nextProfile = selectableProfiles.find((profile) => profile.id === profileId) ?? builtInProfilePresets[0];
     setSelectedPresetId(profileId);
     setActiveProfile(cloneProfile(nextProfile));
-    setStorageMessage(`${nextProfile.name} loaded into the profile editor.`);
+    setStorageMessage(`${nextProfile.name} 프로필을 편집기에 불러왔습니다.`);
   }
 
   function saveCurrentProfile() {
@@ -121,8 +121,8 @@ export function useSwingLabSession() {
     const profileToSave: SwingLabProfile = {
       ...activeProfile,
       id: activeProfile.id.startsWith('preset-') ? `saved-${activeProfile.id}` : activeProfile.id,
-      name: activeProfile.name.trim() || 'Custom Swing Lab Profile',
-      archetype: activeProfile.archetype.trim() || 'Saved local player profile',
+      name: activeProfile.name.trim() || '나만의 스윙 랩 프로필',
+      archetype: activeProfile.archetype.trim() || '저장된 로컬 플레이어 프로필',
     };
     const nextSavedProfiles = upsertProfilePreset(savedProfiles, profileToSave);
     const saved = saveProfilePresets(storage, nextSavedProfiles);
@@ -131,8 +131,8 @@ export function useSwingLabSession() {
     setActiveProfile(cloneProfile(profileToSave));
     setStorageMessage(
       saved
-        ? `${profileToSave.name} saved locally and can be loaded from this preset list.`
-        : `${profileToSave.name} is staged in memory. Local storage is not available in this environment.`,
+        ? `${profileToSave.name} 프로필을 로컬에 저장했으며 프리셋 목록에서 불러올 수 있습니다.`
+        : `${profileToSave.name} 프로필을 메모리에만 보관했습니다. 이 환경에서는 로컬 저장소를 사용할 수 없습니다.`,
     );
   }
 

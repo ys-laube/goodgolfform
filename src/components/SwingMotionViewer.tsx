@@ -47,14 +47,14 @@ export function SwingMotionViewer({ parameters, recommendation, forceReducedMoti
     const backswingRotation = -amplitude;
     const finishRotation = amplitude * 0.72;
     const impactOffset = parameters.pathOffset * 0.34;
-    const trajectoryEndY = 176 - parameters.followThroughHeight * 0.72;
+    const 탄도EndY = 176 - parameters.followThroughHeight * 0.72;
 
     return {
       backswingRotation,
       finishRotation,
       impactOffset,
-      trajectoryEndY,
-      poseLabel: prefersReducedMotion ? `Static ${parameters.reducedMotionPose} pose` : 'Animated tempo loop',
+      탄도EndY,
+      poseLabel: prefersReducedMotion ? `Static ${parameters.reducedMotionPose} pose` : 'Animated 템포 루프',
     };
   }, [parameters, prefersReducedMotion]);
 
@@ -72,10 +72,10 @@ export function SwingMotionViewer({ parameters, recommendation, forceReducedMoti
   return (
     <section className="motion-viewer-panel" aria-labelledby="motion-viewer-title">
       <div className="section-heading motion-viewer-heading">
-        <p className="eyebrow">Step 3 · Motion viewer</p>
-        <h2 id="motion-viewer-title">Parameterized golfer motion</h2>
+        <p className="eyebrow">3단계 · 모션 뷰어</p>
+        <h2 id="motion-viewer-title">파라미터 기반 골퍼 모션</h2>
         <p>
-          SVG layers translate this card into visible swing size, path, tempo, plane, and trajectory changes in a flat 2D view.
+          SVG 레이어가 이 카드의 스윙 크기, 경로, 템포, 플레인, 탄도 변화를 평면 2D 보기로 보여줍니다.
         </p>
       </div>
 
@@ -84,12 +84,12 @@ export function SwingMotionViewer({ parameters, recommendation, forceReducedMoti
         style={viewerStyle}
         role="img"
         tabIndex={0}
-        aria-label={`Golfer motion viewer: ${parameters.accessibleSummary}. ${visualState.poseLabel}. Flat 2D stage.`}
+        aria-label={`골퍼 모션 뷰어: ${parameters.accessibleSummary}. ${visualState.poseLabel}. 평면 2D 스테이지.`}
       >
         <div className="motion-stage-depth">
           <svg className="swing-arc-svg" viewBox="0 0 360 320" aria-hidden="true">
             <defs>
-              <linearGradient id="trajectoryGradient" x1="0" x2="1" y1="0" y2="0">
+              <linearGradient id="탄도Gradient" x1="0" x2="1" y1="0" y2="0">
                 <stop offset="0%" stopColor="#b8ff68" stopOpacity="0.95" />
                 <stop offset="100%" stopColor="#53d1ff" stopOpacity="0.3" />
               </linearGradient>
@@ -98,7 +98,7 @@ export function SwingMotionViewer({ parameters, recommendation, forceReducedMoti
             <ellipse className="ground-ring" cx="180" cy="250" rx="118" ry="28" />
             <path className="swing-plane" d={`M 84 222 C 122 72, 236 72, 276 222`} pathLength="100" />
             <path className="swing-plane swing-plane-shadow" d={`M ${84 + parameters.pathOffset} 228 C ${124 + parameters.pathOffset} 96, ${236 + parameters.pathOffset} 96, ${276 + parameters.pathOffset} 228`} pathLength="100" />
-            <path className="trajectory-line" d={`M 196 164 C 236 ${134 - parameters.launchAngleDegrees}, 282 ${visualState.trajectoryEndY}, 330 ${visualState.trajectoryEndY - 24}`} />
+            <path className="탄도-line" d={`M 196 164 C 236 ${134 - parameters.launchAngleDegrees}, 282 ${visualState.탄도EndY}, 330 ${visualState.탄도EndY - 24}`} />
 
             <g className="golfer-body">
               <line className="leg lead-leg" x1="166" y1="205" x2="144" y2="252" />
@@ -123,22 +123,22 @@ export function SwingMotionViewer({ parameters, recommendation, forceReducedMoti
         </div>
       </div>
 
-      <div className="motion-meter-grid" aria-label="Current motion parameters">
+      <div className="motion-meter-grid" aria-label="현재 모션 파라미터">
         <span>
           <strong>{parameters.arcDegrees}°</strong>
-          Swing arc from {recommendation.swingSizePercent}% {recommendation.swingSizeLabel}
+          스윙 아크 {recommendation.swingSizePercent}% {recommendation.swingSizeLabel}
         </span>
         <span>
           <strong>{(parameters.animationDurationMs / 1000).toFixed(1)}s</strong>
-          {formatValue(recommendation.tempo)} tempo loop
+          {formatValue(recommendation.tempo)} 템포 루프
         </span>
         <span>
           <strong>{parameters.pathOffset}px</strong>
-          {formatValue(recommendation.pathBias)} path offset
+          {formatValue(recommendation.pathBias)} 경로 오프셋
         </span>
         <span>
           <strong>{parameters.launchAngleDegrees}°</strong>
-          {formatValue(recommendation.trajectoryStrategy)} trajectory
+          {formatValue(recommendation.탄도Strategy)} 탄도
         </span>
       </div>
     </section>

@@ -1,23 +1,23 @@
 export const productPrinciples = [
-  'One-handed, outdoor-readable swing lab.',
-  'Profile-aware distance feel and swing context stay approximate by design.',
-  'Manual scenario inputs drive deterministic analysis cards.',
-  'Flat motion values stay parameterized and dependency-free.',
+  '한 손으로 쓰고 야외에서도 읽기 쉬운 스윙 랩.',
+  '프로필 기반 거리감과 스윙 맥락은 설계상 근사값으로 유지합니다.',
+  '수동 상황 입력이 결정적 분석 카드를 만듭니다.',
+  '평면 모션 값은 파라미터 기반이며 의존성 없이 유지합니다.',
 ] as const;
 
 export const nonGoals = [
-  'No backend, hosted persistence, database, API server, or remote sync.',
-  'No authentication, accounts, invite rooms, multiplayer, or shared state.',
-  'No GPS, browser geolocation, maps, map tiles, weather feeds, forecasts, or location permissions.',
-  'No scorecards, betting, public social feed, followers, or discovery.',
-  'No rulings, rules advice, precision promises, or prescriptive instruction panels.',
+  '백엔드, 호스팅 저장소, 데이터베이스, API 서버, 원격 동기화 없음.',
+  '인증, 계정, 초대 방, 멀티플레이, 공유 상태 없음.',
+  'GPS, 브라우저 위치, 지도, 지도 타일, 날씨 피드, 예보, 위치 권한 없음.',
+  '스코어카드, 베팅, 공개 소셜 피드, 팔로워, 탐색 기능 없음.',
+  '룰 판정, 규칙 조언, 정밀도 약속, 지시형 안내 패널 없음.',
 ] as const;
 
 export const privacyNotes = [
-  'Saved profiles stay in local device storage only when the browser provides it.',
-  'Manual shot context stays in React state unless a profile is saved locally.',
-  'The prototype does not create remote accounts or transmit player context.',
+  '브라우저가 제공할 때만 저장 프로필은 로컬 기기 저장소에 남습니다.',
+  '프로필을 로컬 저장하지 않으면 수동 샷 맥락은 React 상태에만 남습니다.',
+  '이 프로토타입은 원격 계정을 만들거나 플레이어 맥락을 전송하지 않습니다.',
 ] as const;
 
 export const approximateDistanceCopy =
-  'Distance feel uses approximate practice estimates shaped by player profile and manual shot conditions.';
+  '거리감은 플레이어 프로필과 수동 샷 조건으로 형성한 근사 연습 추정값을 사용합니다.';
