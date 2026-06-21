@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { approximateDistanceDisclaimer, nonGoals, privacyNotes, productPrinciples } from './copy';
+import { approximateDistanceCopy, nonGoals, privacyNotes, productPrinciples } from './copy';
 import { createRoomRepository, createSharedRoomBackend, type CreateShotPinInput } from './roomRepository';
 
 describe('G004 mobile shot-pin UX acceptance contract', () => {
@@ -44,8 +44,8 @@ describe('G004 mobile shot-pin UX acceptance contract', () => {
     expect(productPrinciples.join(' ')).toMatch(/One-handed, outdoor-readable/i);
     expect(productPrinciples.join(' ')).toMatch(/Shot pins stay playful/i);
     expect(privacyNotes.join(' ')).toMatch(/invite-link rooms/i);
-    expect(approximateDistanceDisclaimer).toMatch(/approximate practice estimates/i);
-    expect(approximateDistanceDisclaimer).not.toMatch(/official|rangefinder|disclaimer/i);
+    expect(approximateDistanceCopy).toMatch(/approximate practice estimates/i);
+    expect(approximateDistanceCopy).not.toMatch(/official|rangefinder|disclaimer/i);
     expect(nonGoals.join(' ')).toMatch(/No public social feed/i);
     expect(nonGoals.join(' ')).toMatch(/No scorecards, betting/i);
     expect(nonGoals.join(' ')).toMatch(/No rulings/i);

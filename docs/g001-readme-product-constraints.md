@@ -32,13 +32,13 @@ The MVP is not:
 - A provider-specific map SDK integration in the foundation slice.
 - A course-map upload/calibration workflow unless the initial satellite/GPS MVP fails its usefulness review.
 
-### Privacy and location disclaimer
+### Privacy and location boundaries
 
 This app is intended for private invite-link rooms. Treat room URLs as share links: anyone with the link may be able to join or view room-scoped data depending on the eventual persistence implementation.
 
 Location data can be sensitive. The app should request browser location permission only when needed, explain why it is requested, and handle denied/unavailable location without crashing. G001 should not introduce public location sharing, public profiles, or live friend tracking by default.
 
-### Approximate distance disclaimer
+### Approximate distance boundaries
 
 Distances and positions shown by this app are approximate and depend on browser GPS accuracy, device sensors, map imagery, target data, and network conditions. They are for casual orientation and shared round context only. They are not official measurements, not rangefinder-grade output, and not intended for rules, safety, betting, or tournament decisions.
 

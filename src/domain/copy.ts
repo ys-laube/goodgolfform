@@ -19,5 +19,5 @@ export const privacyNotes = [
   'Shared persistence is MVP-critical later, but this foundation does not implement backend storage.',
 ] as const;
 
-export const approximateDistanceDisclaimer =
+export const approximateDistanceCopy =
   'Distance feel uses approximate practice estimates shaped by player profile, course context, and conditions.';

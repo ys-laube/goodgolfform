@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { approximateDistanceDisclaimer, nonGoals, privacyNotes, productPrinciples } from './copy';
+import { approximateDistanceCopy, nonGoals, privacyNotes, productPrinciples } from './copy';
 import { g005ReadinessChecks, uploadedCourseMapFallbackTriggers } from './fieldReadiness';
 import { buildShotPinInput } from './shotPinFlow';
 import { createRoomApiClient, createRoomApiHandler } from './roomApi';
@@ -8,7 +8,7 @@ import { createRoomRepository, createSharedRoomBackend } from './roomRepository'
 describe('G005 field-readiness contract', () => {
   it('keeps field copy approximate, private, outdoor-oriented, and clear of non-goals', () => {
     const joinedCopy = [
-      approximateDistanceDisclaimer,
+      approximateDistanceCopy,
       ...privacyNotes,
       ...productPrinciples,
       ...nonGoals,

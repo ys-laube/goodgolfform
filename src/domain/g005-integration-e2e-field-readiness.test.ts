@@ -2,7 +2,7 @@ import { createElement } from 'react';
 import { renderToString } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { App } from '../App';
-import { approximateDistanceDisclaimer, nonGoals, privacyNotes, productPrinciples } from './copy';
+import { approximateDistanceCopy, nonGoals, privacyNotes, productPrinciples } from './copy';
 import { classifyLocationFailure, classifyLocationSample, formatApproxDistance, targetDistances } from './geo';
 import { createRoomApiClient, createRoomApiHandler } from './roomApi';
 import { createRoomRepository, createSharedRoomBackend } from './roomRepository';
@@ -98,7 +98,7 @@ describe('G005 integration E2E field-readiness contract', () => {
     const renderedApp = renderToString(createElement(App));
     const copySurface = [
       renderedApp,
-      approximateDistanceDisclaimer,
+      approximateDistanceCopy,
       ...productPrinciples,
       ...privacyNotes,
       ...nonGoals,
