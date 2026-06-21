@@ -9,6 +9,7 @@ import {
 } from './copy';
 
 const commandLikeCopyPattern = /\b(coach|must|should|need to|try to|take this|hit this|aim at|choose this|use this)\b|반드시|해야|보장|정확|코치/i;
+const staleMiniCardPattern = /2D 미니카드|미니카드|mini-card|visual-card|visualCards|조준과 라이 미니카드|2D 보조/i;
 
 describe('foundation product copy', () => {
   it('keeps approximate distance boundary copy available without notice-style wording', () => {
@@ -35,6 +36,7 @@ describe('foundation product copy', () => {
 
     expect(joinedCopy).not.toMatch(/official|rangefinder|safety-critical|disclaimer|legal notice|공식|거리측정기|면책|법적 고지|안전 필수/i);
     expect(joinedCopy).not.toMatch(commandLikeCopyPattern);
+    expect(joinedCopy).not.toMatch(staleMiniCardPattern);
   });
 
   it('keeps docs and product copy on the refined dashboard terminology', () => {
