@@ -151,6 +151,43 @@ select optgroup {
   color: #0a251c;
 }
 
+.segmented-control {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  border: 1px solid rgba(216, 249, 223, 0.2);
+  border-radius: 1rem;
+  margin: 0;
+  padding: 0.7rem;
+}
+
+.segmented-control legend {
+  padding: 0 0.3rem;
+  color: #9af1b4;
+  font-size: 0.82rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.segmented-control label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 2.35rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 0 0.8rem;
+  color: #f7fff7;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.segmented-control input {
+  min-height: auto;
+  width: auto;
+}
+
 .sticky-action {
   position: sticky;
   bottom: max(0.75rem, env(safe-area-inset-bottom));
@@ -248,7 +285,7 @@ select optgroup {
   text-transform: uppercase;
 }
 
- .shot-visual {
+.shot-visual {
   display: grid;
   gap: 1rem;
   border: 1px solid rgba(184, 255, 104, 0.24);
@@ -259,14 +296,36 @@ select optgroup {
   padding: 1rem;
 }
 
+.shot-visual-copy h3 {
+  margin: 0.2rem 0 0.4rem;
+}
+
+.shot-visual-copy p:last-child,
+.shot-visual-view p {
+  margin: 0;
+  color: #9af1b4;
+}
+
+.shot-visual-views {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.shot-visual-view {
+  display: grid;
+  gap: 0.7rem;
+  margin: 0;
+}
+
+.shot-visual-view figcaption {
+  color: #f7fff7;
+  font-weight: 900;
+}
+
 .shot-visual-stage {
-  --aim-offset: 0%;
-  --ball-offset: 0rem;
+  --ball-position: 50%;
   --stance-tilt: 0deg;
-  --arc-height: 58%;
-  --wind-shift: 0%;
-  --wind-width: 2.4rem;
-  --wind-opacity: 0.72;
+  --side-hill-offset: 0rem;
   position: relative;
   min-height: 10rem;
   overflow: hidden;
@@ -279,106 +338,85 @@ select optgroup {
   background-size: 2.5rem 2.5rem, 2.5rem 2.5rem, cover;
 }
 
-.shot-visual-stage[data-aim="left"] {
-  --aim-offset: -14%;
-}
-
-.shot-visual-stage[data-aim="right"] {
-  --aim-offset: 14%;
-}
-
-.shot-visual-stage[data-ball-height="below-feet"] {
-  --ball-offset: -1rem;
-}
-
-.shot-visual-stage[data-ball-height="above-feet"] {
-  --ball-offset: 1rem;
-}
-
-.shot-visual-stage[data-stance="uphill"] {
+.shot-visual-stage[data-front-back="uphill"] {
   --stance-tilt: -8deg;
 }
 
-.shot-visual-stage[data-stance="downhill"] {
+.shot-visual-stage[data-front-back="downhill"] {
   --stance-tilt: 8deg;
 }
 
-.shot-visual-stage[data-trajectory="low"] {
-  --arc-height: 36%;
+.shot-visual-stage[data-side-hill="below-feet"] {
+  --side-hill-offset: 1rem;
 }
 
-.shot-visual-stage[data-trajectory="soft-landing"] {
-  --arc-height: 72%;
+.shot-visual-stage[data-side-hill="above-feet"] {
+  --side-hill-offset: -1rem;
 }
 
-.shot-visual-stage[data-wind="left-to-right"],
-.shot-visual-stage[data-wind="tailwind"] {
-  --wind-shift: 18%;
-}
-
-.shot-visual-stage[data-wind="right-to-left"],
-.shot-visual-stage[data-wind="headwind"] {
-  --wind-shift: -18%;
-}
-
-.shot-visual-stage[data-wind-strength="medium"] {
-  --wind-width: 3rem;
-  --wind-opacity: 0.84;
-}
-
-.shot-visual-stage[data-wind-strength="strong"] {
-  --wind-width: 3.8rem;
-  --wind-opacity: 0.96;
-}
-
-.shot-visual-aim-line,
-.shot-visual-arc,
-.shot-visual-feet,
-.shot-visual-stance,
+.shot-visual-target-line,
+.shot-visual-foot,
 .shot-visual-ball,
-.shot-visual-wind {
+.shot-visual-horizon,
+.shot-visual-slope {
   position: absolute;
   display: block;
 }
 
-.shot-visual-aim-line {
-  inset: 12% calc(50% - var(--aim-offset)) 16%;
-  border-left: 2px dashed rgba(255, 255, 255, 0.34);
+.shot-visual-target-line {
+  inset: 0.9rem 1rem auto;
+  color: rgba(247, 255, 247, 0.72);
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-align: right;
 }
 
-.shot-visual-arc {
-  left: calc(18% + var(--wind-shift));
-  right: calc(18% - var(--wind-shift));
-  bottom: 22%;
-  height: var(--arc-height);
-  border: 3px solid rgba(83, 209, 255, 0.64);
-  border-bottom: 0;
-  border-radius: 999px 999px 0 0;
+.shot-visual-target-line::after {
+  content: "→";
+  margin-left: 0.35rem;
+  color: #b8ff68;
 }
 
-.shot-visual-feet {
-  left: 26%;
-  right: 26%;
-  bottom: 12%;
-  height: 0.45rem;
+.shot-visual-foot {
+  bottom: 18%;
+  width: 28%;
+  height: 0.7rem;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.28);
-  transform: rotate(var(--stance-tilt));
+  background: rgba(255, 255, 255, 0.34);
 }
 
-.shot-visual-stance {
-  left: 37%;
-  right: 37%;
-  bottom: 15%;
-  height: 2.2rem;
-  border-left: 2px solid rgba(154, 241, 180, 0.7);
-  border-right: 2px solid rgba(154, 241, 180, 0.7);
-  transform: rotate(var(--stance-tilt));
+.shot-visual-foot::before {
+  position: absolute;
+  top: -1.45rem;
+  color: rgba(247, 255, 247, 0.72);
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.shot-visual-foot-lead {
+  left: 16%;
+}
+
+.shot-visual-foot-trail {
+  right: 16%;
+}
+
+.shot-visual-stage[data-handedness="right"] .shot-visual-foot-lead::before,
+.shot-visual-stage[data-handedness="left"] .shot-visual-foot-trail::before {
+  content: "리드";
+}
+
+.shot-visual-stage[data-handedness="right"] .shot-visual-foot-trail::before,
+.shot-visual-stage[data-handedness="left"] .shot-visual-foot-lead::before {
+  content: "트레일";
+}
+
+.shot-visual-top .shot-visual-ball {
+  left: calc(var(--ball-position) - 0.38rem);
+  bottom: 29%;
 }
 
 .shot-visual-ball {
-  left: calc(50% + var(--ball-offset) - 0.38rem);
-  bottom: 18%;
   width: 0.76rem;
   height: 0.76rem;
   border-radius: 999px;
@@ -386,23 +424,26 @@ select optgroup {
   box-shadow: 0 0 1.2rem rgba(184, 255, 104, 0.82);
 }
 
-.shot-visual-wind {
-  top: 1rem;
-  left: calc(50% + var(--wind-shift) - (var(--wind-width) / 2));
-  width: var(--wind-width);
-  height: 0.34rem;
+.shot-visual-horizon {
+  left: 12%;
+  right: 12%;
+  top: 46%;
+  border-top: 1px dashed rgba(255, 255, 255, 0.28);
+}
+
+.shot-visual-slope {
+  left: 18%;
+  right: 18%;
+  bottom: 36%;
+  height: 0.5rem;
   border-radius: 999px;
-  background: rgba(83, 209, 255, var(--wind-opacity));
-  box-shadow: 0 0.7rem 0 rgba(83, 209, 255, 0.34);
+  background: rgba(154, 241, 180, 0.58);
+  transform: translateY(var(--side-hill-offset)) rotate(var(--stance-tilt));
 }
 
-.shot-visual-copy h3 {
-  margin: 0.2rem 0 0.4rem;
-}
-
-.shot-visual-copy p:last-child {
-  margin: 0;
-  color: #9af1b4;
+.shot-visual-rear .shot-visual-ball {
+  left: calc(50% - 0.38rem);
+  bottom: calc(36% + var(--side-hill-offset));
 }
 
 @media (min-width: 42rem) {
