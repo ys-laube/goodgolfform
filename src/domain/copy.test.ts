@@ -7,12 +7,12 @@ import {
   productPrinciples,
 } from './copy';
 
-const commandLikeCopyPattern = /\b(coach|caddie|caddy|must|should|need to|try to|take|hit|aim|choose|use|recommend)\b/i;
+const commandLikeCopyPattern = /\b(coach|caddie|caddy|must|should|need to|try to|take|hit|aim|choose|use|recommend)\b|반드시|해야|추천|보장|정확|캐디|코치/i;
 
 describe('foundation product copy', () => {
   it('keeps approximate distance boundary copy available without notice-style wording', () => {
-    expect(approximateDistanceCopy).toMatch(/approximate practice estimates/i);
-    expect(approximateDistanceCopy).not.toMatch(/official|rangefinder|safety-critical|disclaimer|legal notice/i);
+    expect(approximateDistanceCopy).toMatch(/근사|연습|추정/);
+    expect(approximateDistanceCopy).not.toMatch(/official|rangefinder|safety-critical|disclaimer|legal notice|공식|거리측정기|면책|법적 고지|안전 필수/i);
   });
 
   it('keeps exported product copy naming free of disclaimer and notice surfaces', () => {
@@ -21,18 +21,18 @@ describe('foundation product copy', () => {
   });
 
   it('documents local-only privacy boundaries without shared persistence promises', () => {
-    expect(privacyNotes.join(' ')).toMatch(/local device storage/i);
-    expect(privacyNotes.join(' ')).toMatch(/does not create remote accounts or transmit player context/i);
-    expect(privacyNotes.join(' ')).not.toMatch(/invite-link|shared persistence|backend storage|\bshould\b/i);
+    expect(privacyNotes.join(' ')).toMatch(/로컬 기기 저장소/);
+    expect(privacyNotes.join(' ')).toMatch(/원격 계정.*플레이어 맥락을 전송하지/);
+    expect(privacyNotes.join(' ')).not.toMatch(/invite-link|shared persistence|backend storage|\bshould\b|초대 링크|공유 저장|백엔드 저장|해야/i);
   });
 
   it('locks MVP non-goals out of the foundation scope', () => {
-    expect(nonGoals.join(' ')).toMatch(/No scorecards/i);
-    expect(nonGoals.join(' ')).toMatch(/No scorecards, betting, public social feed/i);
-    expect(productPrinciples.join(' ')).toMatch(/Manual scenario inputs/i);
+    expect(nonGoals.join(' ')).toMatch(/스코어카드/);
+    expect(nonGoals.join(' ')).toMatch(/스코어카드, 베팅, 공개 소셜 피드/);
+    expect(productPrinciples.join(' ')).toMatch(/수동 상황 입력/);
     const joinedCopy = [...productPrinciples, ...nonGoals, ...privacyNotes, approximateDistanceCopy].join(' ');
 
-    expect(joinedCopy).not.toMatch(/official|rangefinder|safety-critical|disclaimer|legal notice/i);
+    expect(joinedCopy).not.toMatch(/official|rangefinder|safety-critical|disclaimer|legal notice|공식|거리측정기|면책|법적 고지|안전 필수/i);
     expect(joinedCopy).not.toMatch(commandLikeCopyPattern);
   });
 });

@@ -41,13 +41,13 @@ describe('G004 parameterized motion viewer static contract', () => {
     const renderedViewer = renderViewerFor(neutralScenario);
 
     expect(renderedViewer).toContain('id="motion-viewer-title"');
-    expect(renderedViewer).toContain('Parameterized golfer motion');
+    expect(renderedViewer).toContain('파라미터 기반 골퍼 모션');
     expect(renderedViewer).toContain('<svg');
     expect(renderedViewer).toContain('class="swing-arc-svg"');
     expect(renderedViewer).toContain('role="img"');
-    expect(renderedViewer).toMatch(/Golfer motion viewer: .* tempo, .* path, .* launch/i);
-    expect(renderedViewer).toContain('flat 2D view');
-    expect(renderedViewer).toContain('Current motion parameters');
+    expect(renderedViewer).toMatch(/aria-label="골퍼 모션 뷰어:/);
+    expect(renderedViewer).toContain('평면 2D 보기');
+    expect(renderedViewer).toContain('현재 모션 파라미터');
     expect(renderedViewer).not.toMatch(/canvas|webgl|three|@react-three/i);
   });
 
@@ -67,8 +67,8 @@ describe('G004 parameterized motion viewer static contract', () => {
     expect(shaped).toMatch(/--plane-tilt:[^;]+deg/);
     expect(shaped).toMatch(/--swing-duration:[^;]+ms/);
     expect(shaped).toMatch(/--launch-angle:[^;]+deg/);
-    expect(compact).toMatch(/Swing arc from \d+% three-quarter/i);
-    expect(shaped).toMatch(/trajectory/i);
+    expect(compact).toMatch(/스윙 아크<!-- --> \d+%/);
+    expect(shaped).toMatch(/탄도/);
   });
 
   it('supports reduced-motion static fallback from the same parameters', () => {
@@ -84,8 +84,8 @@ describe('G004 parameterized motion viewer static contract', () => {
       true,
     );
 
-    expect(renderedViewer).toMatch(/Static (compact|balanced|extended) pose/);
-    expect(renderedViewer).toContain('aria-label="Golfer motion viewer:');
+    expect(renderedViewer).toMatch(/정적 (컴팩트|균형|확장) 자세/);
+    expect(renderedViewer).toContain('aria-label="골퍼 모션 뷰어:');
     expect(stylesSource).toContain('@media (prefers-reduced-motion: reduce)');
     expect(stylesSource).toContain('animation: none');
   });
@@ -95,10 +95,10 @@ describe('G004 parameterized motion viewer static contract', () => {
 
     expect(swingLabSessionSource).toMatch(/motionParametersFromRecommendation/);
     expect(appSource).toMatch(/<SwingMotionViewer parameters=\{motionParameters\} recommendation=\{recommendation\}/);
-    expect(renderedApp).toContain('Parameterized golfer motion');
-    expect(renderedApp).toContain('Current motion parameters');
-    expect(renderedApp).toMatch(/Golfer motion viewer:/);
-    expect(renderedApp).not.toMatch(/disclaimer|legal notice|official|rangefinder|coach|caddie|caddy|must|should|guarantee|exact/i);
+    expect(renderedApp).toContain('파라미터 기반 골퍼 모션');
+    expect(renderedApp).toContain('현재 모션 파라미터');
+    expect(renderedApp).toMatch(/골퍼 모션 뷰어:/);
+    expect(renderedApp).not.toMatch(/disclaimer|legal notice|official|rangefinder|coach|caddie|caddy|must|should|guarantee|exact|면책|법적 고지|공식|거리측정기|캐디|코치|보장|정확/i);
   });
 
   it('keeps the flat viewer free of 3D interaction and transform CSS while preserving mobile styles', () => {

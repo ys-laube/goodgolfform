@@ -91,27 +91,28 @@ describe('App SSR/static harness contract', () => {
     expect(renderedApp).toContain('id="app-title"');
     expect(renderedApp).toContain('id="profile-panel"');
     expect(renderedApp).toContain('id="scenario-panel"');
-    expect(renderedApp).toContain('Serious Golf Swing Lab');
-    expect(renderedApp).toContain('Player profile in. Scenario context out. Analysis card ready.');
-    expect(renderedApp).toContain('Profile panel');
-    expect(renderedApp).toContain('Scenario panel');
-    expect(renderedApp).toContain('Save profile locally');
-    expect(renderedApp).toContain('Target distance (m)');
-    expect(renderedApp).toContain('Wind direction');
-    expect(renderedApp).toContain('Wind strength');
-    expect(renderedApp).toContain('Desired window');
-    expect(renderedApp).toContain('Live analysis report');
-    expect(renderedApp).toContain('Analysis report cards');
-    expect(renderedApp).toContain('Club · distance feel');
-    expect(renderedApp).toContain('Swing size · tempo');
-    expect(renderedApp).toContain('Trajectory strategy');
-    expect(renderedApp).toContain('Plausibility · game metrics');
-    expect(renderedApp).toContain('Why this card');
-    expect(renderedApp).toContain('Parameterized golfer motion');
-    expect(renderedApp).toContain('Current motion parameters');
-    expect(renderedApp).toMatch(/Golfer motion viewer:/);
-    expect(renderedApp).toMatch(/fit score/i);
-    expect(renderedApp).toMatch(/adjusted target/i);
+    expect(renderedApp).toContain('진지한 골프 스윙 랩');
+    expect(renderedApp).toContain('플레이어 프로필과 상황을 넣으면 분석 카드가 바로 준비됩니다.');
+    expect(renderedApp).toContain('프로필 패널');
+    expect(renderedApp).toContain('상황 패널');
+    expect(renderedApp).toContain('프로필 로컬 저장');
+    expect(renderedApp).toContain('목표 거리 (m)');
+    expect(renderedApp).toContain('바람 방향');
+    expect(renderedApp).toContain('바람 세기');
+    expect(renderedApp).toContain('원하는 탄도창');
+    expect(renderedApp).toContain('실시간 분석 리포트');
+    expect(renderedApp).toContain('분석 리포트 카드');
+    expect(renderedApp).toContain('클럽 · 거리감');
+    expect(renderedApp).toContain('스윙 크기 · 템포');
+    expect(renderedApp).toContain('탄도 전략');
+    expect(renderedApp).toContain('개연성 · 게임 지표');
+    expect(renderedApp).toContain('이 카드의 이유');
+    expect(renderedApp).toContain('파라미터 기반 골퍼 모션');
+    expect(renderedApp).toContain('현재 모션 파라미터');
+    expect(renderedApp).toMatch(/골퍼 모션 뷰어:/);
+    expect(renderedApp).toMatch(/적합도/i);
+    expect(renderedApp).toMatch(/보정 목표/i);
+    expect(renderedApp).not.toMatch(/Serious Golf Swing Lab|Profile panel|Scenario panel|Save profile locally|Live analysis report/);
     expect(renderedApp).not.toMatch(/GPS shot pins|room-flow|map-shell|invite-link room/i);
     expect(renderedApp).not.toMatch(/without GPS|No login|GPS shot pins|weather feeds?|invite-link room|backend setup|backend dependency/i);
     expect(renderedApp).not.toMatch(/\b(coach|caddie|caddy)\b/i);
@@ -121,13 +122,13 @@ describe('App SSR/static harness contract', () => {
   it('SSR-renders the default analysis card fields without notice-style copy', () => {
     const renderedApp = withPoisonedBrowserStorage(() => renderToString(createElement(App)));
 
-    expect(renderedApp).toContain('6 IRON');
-    expect(renderedApp).toContain('controlled');
-    expect(renderedApp).toContain('Plausibility');
-    expect(renderedApp).toContain('Tempo');
-    expect(renderedApp).toContain('Trajectory strategy');
-    expect(renderedApp).toMatch(/fit score/i);
-    expect(renderedApp).toMatch(/adjusted target/i);
+    expect(renderedApp).toContain('6번 아이언');
+    expect(renderedApp).toContain('컨트롤');
+    expect(renderedApp).toContain('개연성');
+    expect(renderedApp).toContain('템포');
+    expect(renderedApp).toContain('탄도 전략');
+    expect(renderedApp).toMatch(/적합도/i);
+    expect(renderedApp).toMatch(/보정 목표/i);
     expect(renderedApp).not.toMatch(/\b(disclaimer|legal notice|official|rangefinder|coach|caddie|caddy|must|should|need to|try to|hit|aim|guarantee|exact|adjusted play)\b/i);
   });
 
@@ -135,12 +136,12 @@ describe('App SSR/static harness contract', () => {
   it('renders every required analysis report card category from recommendation output', () => {
     const renderedApp = withPoisonedBrowserStorage(() => renderToString(createElement(App)));
 
-    expect(renderedApp).toMatch(/Club · distance feel[\s\S]*IRON/i);
-    expect(renderedApp).toMatch(/Swing size · tempo[\s\S]*(controlled|fuller stock)/i);
-    expect(renderedApp).toMatch(/Trajectory strategy[\s\S]*standard window/i);
-    expect(renderedApp).toMatch(/Plausibility · game metrics[\s\S]*fit score/i);
-    expect(renderedApp).toMatch(/Why this card[\s\S]*adjusted target/i);
-    expect(renderedApp).toMatch(/Scenario adjustment reads|Why this card/i);
+    expect(renderedApp).toMatch(/클럽 · 거리감[\s\S]*아이언/i);
+    expect(renderedApp).toMatch(/스윙 크기 · 템포[\s\S]*(컨트롤|풀 스톡)/i);
+    expect(renderedApp).toMatch(/탄도 전략[\s\S]*표준 탄도창/i);
+    expect(renderedApp).toMatch(/개연성 · 게임 지표[\s\S]*적합도/i);
+    expect(renderedApp).toMatch(/이 카드의 이유[\s\S]*보정 목표/i);
+    expect(renderedApp).toMatch(/상황 보정 읽기|이 카드의 이유/i);
     expect(renderedApp).not.toMatch(/\b(coach|caddie|caddy|must|should|need to|try to|hit|aim|guarantee|exact)\b|adjusted play/i);
   });
 
@@ -165,8 +166,8 @@ describe('App SSR/static harness contract', () => {
     try {
       const renderedApp = renderToString(createElement(App));
 
-      expect(renderedApp).toContain('1 saved profile restored from this device.');
-      expect(renderedApp).toContain('Saved on this device');
+      expect(renderedApp).toContain('이 기기에서 저장 프로필 1개를 불러왔습니다.');
+      expect(renderedApp).toContain('이 기기에 저장됨');
       expect(renderedApp).toContain('Saved Smooth Draw');
     } finally {
       if (descriptor) {
@@ -212,10 +213,10 @@ describe('App SSR/static harness contract', () => {
 
   it('keeps the static HTML entrypoint ready for mobile swing lab smoke checks', () => {
     expect(indexHtml).toContain('<!doctype html>');
-    expect(indexHtml).toContain('<html lang="en">');
+    expect(indexHtml).toContain('<html lang="ko">');
     expect(indexHtml).toContain('<meta name="viewport" content="width=device-width, initial-scale=1.0" />');
     expect(indexHtml).toContain('<meta name="theme-color" content="#0b3d2e" />');
-    expect(indexHtml).toContain('mobile-first serious golf swing lab prototype');
+    expect(indexHtml).toContain('프로필 기반 샷 분석')
     expect(indexHtml).toContain('<div id="root"></div>');
     expect(indexHtml).toContain('<script type="module" src="/src/main.tsx"></script>');
   });
@@ -235,7 +236,7 @@ describe('App SSR/static harness contract', () => {
 
     expect(renderedViewer).toContain('role="img"');
     expect(renderedViewer).toContain(parameters.accessibleSummary);
-    expect(renderedViewer).toContain(`Static ${parameters.reducedMotionPose} pose`);
+    expect(renderedViewer).toMatch(/정적 (컴팩트|균형|확장) 자세/);
     expect(renderedViewer).toContain('--swing-arc');
     expect(renderedViewer).toMatch(new RegExp(`${parameters.arcDegrees}<!-- -->°`));
     expect(renderedViewer).toContain(`${parameters.pathOffset}px`);
@@ -254,6 +255,6 @@ describe('App SSR/static harness contract', () => {
     expect(browserEnvironmentSource).toMatch(/browserWindow\(\)\?\.matchMedia/);
     expect(scannedSources).not.toMatch(/Object\.getOwnPropertyDescriptor\(globalThis, 'window'\)/);
     expect(swingMotionViewerSource).toMatch(/forceReducedMotion/);
-    expect(swingLabSessionSource).toMatch(/Motion meter/);
+    expect(swingLabSessionSource).toMatch(/모션 미터/);
   });
 });
