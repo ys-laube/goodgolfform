@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createCaddieDistancePreset } from './caddiePresets';
-import { recommendCaddieApproach, type CaddieApproachScenario } from './caddieRecommendationEngine';
+import { recommendCaddieApproach, selectCaddieClubForPlayDistance, type CaddieApproachScenario } from './caddieRecommendationEngine';
 
 const preset = createCaddieDistancePreset({
   id: 'preset-task-3-100m',
@@ -28,6 +28,18 @@ describe('caddie approach recommendation engine', () => {
     expect(recommendation.summary).toContain('100 m 플레이 거리');
     expect(recommendation.landingWindow).toBe('그린 중앙 구역');
     expect(recommendation.adjustments).toEqual([]);
+  });
+
+
+
+  it('selects a control club whose swing percent stays close to the play distance', () => {
+    const selection = selectCaddieClubForPlayDistance(preset, 103, { preferControl: true });
+    const carriedMeters = Math.round((selection.carryMeters * selection.swingPercent) / 100);
+
+    expect(selection.selectedClub).toBe('9i');
+    expect(selection.swingPercent).toBeGreaterThanOrEqual(88);
+    expect(selection.swingPercent).toBeLessThanOrEqual(92);
+    expect(Math.abs(carriedMeters - 103)).toBeLessThanOrEqual(2);
   });
 
   it('moves play distance longer for uphill/back/high-risk greens and lowers confidence', () => {

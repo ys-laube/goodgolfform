@@ -10,6 +10,7 @@ import {
   type CaddieClubKey,
   type CaddieDistancePreset,
 } from './domain/caddiePresets';
+import { selectCaddieClubForPlayDistance } from './domain/caddieRecommendationEngine';
 
 export type CaddieLie = 'tee' | 'fairway' | 'rough' | 'bunker';
 export type CaddieStanceSlope = 'level' | 'uphill' | 'downhill' | 'ball-above-feet' | 'ball-below-feet';
@@ -75,17 +76,17 @@ const defaultScenario: CaddieScenario = {
 
 export const caddieClubLabels = {
   driver: '드라이버',
-  '3w': '3W',
-  '5w': '5W',
+  '3w': '3번 우드',
+  '5w': '5번 우드',
   '4i': '4번 아이언',
   '5i': '5번 아이언',
   '6i': '6번 아이언',
   '7i': '7번 아이언',
   '8i': '8번 아이언',
   '9i': '9번 아이언',
-  pw: 'PW',
-  gw: 'GW',
-  sw: 'SW',
+  pw: '피칭 웨지',
+  gw: '갭 웨지',
+  sw: '샌드 웨지',
 } satisfies Record<CaddieClubKey, string>;
 
 export const lieLabels = {
@@ -162,11 +163,6 @@ function distanceAdjustmentFor(scenario: CaddieScenario): number {
   const riskAdjustment = { 'short-danger': 3, 'long-danger': -3, 'safe-middle': 0 }[scenario.greenRisk];
 
   return Math.round(windBase * windMultiplier + lieAdjustment + stanceAdjustment + pinAdjustment + riskAdjustment);
-}
-
-function recommendClub(preset: CaddieDistancePreset, playDistanceMeters: number) {
-  const sortedDistances = [...preset.clubDistances].sort((a, b) => a.carryMeters - b.carryMeters);
-  return sortedDistances.find((distance) => distance.carryMeters >= playDistanceMeters) ?? sortedDistances.at(-1) ?? defaultPreset.clubDistances[0];
 }
 
 function aimTextFor(scenario: CaddieScenario): string {
@@ -248,22 +244,21 @@ function markerForLie(scenario: CaddieScenario): CaddieVisualCard['marker'] {
 function buildPrescription(preset: CaddieDistancePreset, scenario: CaddieScenario): CaddiePrescription {
   const targetDistanceMeters = clampMeters(scenario.targetDistanceMeters);
   const playDistanceMeters = clampMeters(targetDistanceMeters + distanceAdjustmentFor(scenario));
-  const selectedClub = recommendClub(preset, playDistanceMeters);
   const controlTrouble =
     scenario.pinPosition === 'front' ||
     scenario.greenRisk === 'short-danger' ||
     scenario.windDirection === 'headwind' ||
     scenario.stanceSlope === 'ball-below-feet';
-  const rawSwingPercent = Math.round((playDistanceMeters / selectedClub.carryMeters) * 100);
-  const swingPercent = controlTrouble ? Math.min(88, Math.max(80, rawSwingPercent - 8)) : Math.min(100, Math.max(70, rawSwingPercent));
+  const selectedClub = selectCaddieClubForPlayDistance(preset, playDistanceMeters, { preferControl: controlTrouble });
+  const swingPercent = selectedClub.swingPercent;
   const aimText = aimTextFor(scenario);
   const trajectoryText = trajectoryTextFor(scenario);
   const warningText = warningTextFor(scenario);
-  const selectedClubLabel = caddieClubLabels[selectedClub.club];
+  const selectedClubLabel = caddieClubLabels[selectedClub.selectedClub];
 
   return {
     headline: `추천: ${selectedClubLabel} ${swingPercent}%, ${aimText}, ${trajectoryText} — ${warningText}.`,
-    selectedClub: selectedClub.club,
+    selectedClub: selectedClub.selectedClub,
     selectedClubLabel,
     swingPercent,
     playDistanceMeters,

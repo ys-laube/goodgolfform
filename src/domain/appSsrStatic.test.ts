@@ -121,7 +121,7 @@ describe('App SSR/static harness contract', () => {
   it('SSR-renders the representative 100m result-first prescription fields', () => {
     const renderedApp = withPoisonedBrowserStorage(() => renderToString(createElement(App)));
 
-    expect(renderedApp).toContain('추천: PW 88%');
+    expect(renderedApp).toContain('추천: 9번 아이언 90%');
     expect(renderedApp).toContain('목표보다 살짝 오른쪽 조준');
     expect(renderedApp).toContain('낮게 컨트롤');
     expect(renderedApp).toContain('발끝 내리막 당김·토핑 주의');
@@ -135,7 +135,7 @@ describe('App SSR/static harness contract', () => {
     const renderedApp = withPoisonedBrowserStorage(() => renderToString(createElement(App)));
 
     expect(renderedApp).toMatch(/지금 처방[\s\S]*추천 요약[\s\S]*클럽[\s\S]*스윙[\s\S]*플레이 거리/i);
-    expect(renderedApp).toMatch(/짧은 이유[\s\S]*PW 88%[\s\S]*목표보다 살짝 오른쪽 조준[\s\S]*낮게 컨트롤/i);
+    expect(renderedApp).toMatch(/짧은 이유[\s\S]*9번 아이언 90%[\s\S]*목표보다 살짝 오른쪽 조준[\s\S]*낮게 컨트롤/i);
     expect(renderedApp).toMatch(/2D 보조[\s\S]*조준 미니맵[\s\S]*라이·스탠스/i);
     expect(renderedApp).not.toMatch(/\b(coach|must|should|need to|try to|guarantee|exact)\b|adjusted play|코치|보장|정확/i);
   });

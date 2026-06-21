@@ -17,6 +17,12 @@ export type CaddieRecommendationAdjustment = {
   readonly reason: string;
 };
 
+export type CaddieClubSelection = {
+  readonly selectedClub: CaddieClubDistance['club'];
+  readonly carryMeters: number;
+  readonly swingPercent: number;
+};
+
 export type CaddieApproachRecommendation = {
   readonly selectedClub: CaddieClubDistance['club'];
   readonly clubLabel: string;
@@ -62,22 +68,20 @@ export function recommendCaddieApproach(
   const playDistanceMeters = clampMeters(
     targetDistanceMeters + adjustments.reduce((sum, adjustment) => sum + adjustment.meters, 0),
   );
-  const sortedDistances = [...preset.clubDistances].sort((a, b) => a.carryMeters - b.carryMeters);
-  const selectedDistance = selectPlayableClub(sortedDistances, playDistanceMeters);
-  const swingPercent = clampPercent(Math.round((playDistanceMeters / selectedDistance.carryMeters) * 100));
+  const selectedDistance = selectCaddieClubForPlayDistance(preset, playDistanceMeters);
   const distanceGap = Math.abs(selectedDistance.carryMeters - playDistanceMeters);
   const confidenceScore = clampScore(94 - distanceGap - riskConfidencePenalty[scenario.greenRisk]);
   const landingWindow = landingWindowFor(scenario);
 
   return {
-    selectedClub: selectedDistance.club,
-    clubLabel: formatClub(selectedDistance.club),
+    selectedClub: selectedDistance.selectedClub,
+    clubLabel: formatClub(selectedDistance.selectedClub),
     targetDistanceMeters,
     playDistanceMeters,
-    swingPercent,
+    swingPercent: selectedDistance.swingPercent,
     confidenceScore,
     landingWindow,
-    summary: `${formatClub(selectedDistance.club)} ${swingPercent}% · ${playDistanceMeters} m 플레이 거리 · ${landingWindow}`,
+    summary: `${formatClub(selectedDistance.selectedClub)} ${selectedDistance.swingPercent}% · ${playDistanceMeters} m 플레이 거리 · ${landingWindow}`,
     adjustments,
   };
 }
@@ -102,12 +106,35 @@ function buildAdjustments(scenario: CaddieApproachScenario): readonly CaddieReco
   ].filter((adjustment) => adjustment.meters !== 0);
 }
 
-function selectPlayableClub(
-  distances: readonly CaddieClubDistance[],
+export function selectCaddieClubForPlayDistance(
+  preset: CaddieDistancePreset,
   playDistanceMeters: number,
-): CaddieClubDistance {
-  const enoughCarry = distances.find((distance) => distance.carryMeters >= playDistanceMeters);
-  return enoughCarry ?? distances.at(-1) ?? { club: 'pw', carryMeters: 100 };
+  options: { readonly preferControl?: boolean } = {},
+): CaddieClubSelection {
+  const sortedDistances = [...preset.clubDistances].sort((a, b) => a.carryMeters - b.carryMeters);
+  const candidates = sortedDistances
+    .map((distance) => ({
+      selectedClub: distance.club,
+      carryMeters: distance.carryMeters,
+      swingPercent: clampPercent(Math.round((clampMeters(playDistanceMeters) / distance.carryMeters) * 100)),
+    }))
+    .filter((candidate) => candidate.swingPercent >= 50 && candidate.swingPercent <= 104);
+
+  if (options.preferControl) {
+    const controlCandidates = candidates.filter((candidate) => candidate.swingPercent >= 80 && candidate.swingPercent <= 95);
+    const pool = controlCandidates.length > 0 ? controlCandidates : candidates;
+    return nearestSwingPercent(pool, 88);
+  }
+
+  return candidates.find((candidate) => candidate.carryMeters >= clampMeters(playDistanceMeters)) ?? candidates.at(-1) ?? { selectedClub: 'pw', carryMeters: 100, swingPercent: 100 };
+}
+
+function nearestSwingPercent(candidates: readonly CaddieClubSelection[], targetPercent: number): CaddieClubSelection {
+  return [...candidates].sort((left, right) => {
+    const leftGap = Math.abs(left.swingPercent - targetPercent);
+    const rightGap = Math.abs(right.swingPercent - targetPercent);
+    return leftGap - rightGap || left.carryMeters - right.carryMeters;
+  })[0] ?? { selectedClub: 'pw', carryMeters: 100, swingPercent: 100 };
 }
 
 function landingWindowFor(scenario: CaddieApproachScenario): string {

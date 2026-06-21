@@ -49,7 +49,7 @@ export function App() {
         <p className="eyebrow">캐디 한줄 처방</p>
         <h1 id="app-title">남은 거리와 라이만 빠르게 넣고 한 줄 조언을 먼저 봅니다.</h1>
         <p className="hero-copy">
-          GPS, 날씨 API, 로그인 없이 현장에서 직접 본 조건만 넣습니다. 거리 프리셋은 이 기기에 저장하고,
+          위치·날씨 자동 연동이나 로그인 없이 현장에서 직접 본 조건만 넣습니다. 거리 프리셋은 이 기기에 저장하고,
           결과는 한 손으로 바로 읽히는 압축 카드로 보여줍니다.
         </p>
         <div className="hero-actions" aria-label="주요 캐디 카드 동작">
@@ -224,7 +224,7 @@ export function App() {
           <select value={selectedPresetId} onChange={(event) => selectPreset(event.target.value)}>
             {selectablePresets.map((preset) => (
               <option key={preset.id} value={preset.id}>
-                {preset.name} — 드라이버 {preset.anchorDistances.driver}m · 7번 {preset.anchorDistances.sevenIron}m · PW {preset.anchorDistances.pitchingWedge}m
+                {preset.name} — 드라이버 {preset.anchorDistances.driver}m · 7번 {preset.anchorDistances.sevenIron}m · 피칭 웨지 {preset.anchorDistances.pitchingWedge}m
               </option>
             ))}
           </select>

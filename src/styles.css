@@ -59,7 +59,7 @@ a {
 .hero-card {
   display: grid;
   gap: 1rem;
-  min-height: 72vh;
+  min-height: 32vh;
   align-content: end;
   border-radius: 2rem;
   padding: clamp(1.25rem, 7vw, 4rem);
@@ -389,6 +389,7 @@ select optgroup {
 .visual-card.aim-left .visual-marker { transform: translateX(-0.65rem); }
 .visual-card.slope-down .visual-marker { transform: rotate(-8deg); }
 .visual-card.slope-up .visual-marker { transform: rotate(8deg); }
+.visual-card.slope-side .visual-marker { transform: skewX(-18deg); }
 
 @media (prefers-reduced-motion: reduce) {
   html {
