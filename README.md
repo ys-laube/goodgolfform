@@ -1,16 +1,16 @@
-# FunGolf Swing Lab
+# FunGolf Korean Caddie Card
 
-FunGolf is a mobile-first TypeScript web app prototype for a serious golf swing lab. It lets a player choose or save a local profile, enter manual shot context, and view a deterministic analysis card plus parameterized flat motion values.
+FunGolf is a mobile-first Korean web app prototype for serious golfers who want a fast field-side shot card. It lets a player enter manual shot context, load or save local club-distance presets, and read a result-first Korean recommendation with short reasons and 2D mini cards.
 
 ## Current scope
 
 This prototype includes:
 
-- Vite + React + TypeScript app shell optimized for mobile-first layout.
-- Built-in and locally saved swing profiles stored on the current device only.
-- Manual scenario inputs for distance, wind, lie, and desired shot window.
-- A deterministic recommendation engine for club distance feel, swing size, tempo, path bias, trajectory strategy, confidence, and explanatory adjustments.
-- Motion-parameter mapping for a flat swing viewer without WebGL, map, backend, or provider SDK dependencies.
+- Vite + React + TypeScript app shell optimized for one-hand mobile use.
+- Locally saved club-distance presets stored on the current device only.
+- Manual shot inputs for remaining distance, lie, stance slope, side slope, wind, pin, and green risk.
+- A deterministic Korean caddie prescription for club, swing percent, aim, trajectory, and miss warning.
+- 2D aim/lie mini cards without 3D, maps, backend, weather, or provider SDK dependencies.
 - Vitest, TypeScript, ESLint, and production build scripts.
 
 ## Explicit non-goals
@@ -19,11 +19,11 @@ This prototype includes:
 - No authentication, accounts, invite rooms, multiplayer, or shared state.
 - No GPS, browser geolocation, maps, map tiles, weather feeds, forecasts, or location permissions.
 - No scorecards, betting, public social feed, followers, or discovery.
-- No rulings, rules advice, precision promises, or prescriptive instruction panels.
+- No rulings, rules advice, precision promises, 3D motion viewer, or English core UI.
 
 ## Local storage boundary
 
-Saved profiles stay in browser `localStorage` when it is available. That storage is device-local only; the app has no remote account or shared persistence layer.
+Saved distance presets stay in browser `localStorage` when it is available. That storage is device-local only; the app has no remote account or shared persistence layer.
 
 ## Setup
 

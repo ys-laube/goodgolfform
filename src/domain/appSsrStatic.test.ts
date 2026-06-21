@@ -211,7 +211,7 @@ describe('App SSR/static harness contract', () => {
     expect(indexHtml).toContain('<html lang="ko">');
     expect(indexHtml).toContain('<meta name="viewport" content="width=device-width, initial-scale=1.0" />');
     expect(indexHtml).toContain('<meta name="theme-color" content="#0b3d2e" />');
-    expect(indexHtml).toContain('프로필 기반 샷 분석');
+    expect(indexHtml).toContain('한국어 캐디 한줄 처방');
     expect(indexHtml).toContain('<div id="root"></div>');
     expect(indexHtml).toContain('<script type="module" src="/src/main.tsx"></script>');
   });

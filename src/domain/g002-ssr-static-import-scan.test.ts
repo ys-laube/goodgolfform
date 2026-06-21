@@ -6,43 +6,19 @@ const sourceModules = import.meta.glob('./*.ts', {
   import: 'default',
 }) as Record<string, string>;
 
-const g002SwingFlowModules = [
-  './swingLabModels.ts',
-  './profilePresets.ts',
-  './recommendationEngine.ts',
-  './motionParameters.ts',
-] as const;
+const caddieFlowModules = ['./caddiePresets.ts', './caddieRecommendationEngine.ts'] as const;
 
 const forbiddenRuntimeImportPatterns = [
-  /from ['"](?:\.\.\/)?hooks\/useCurrentLocation['"]/,
-  /from ['"]\.\/geo['"]/,
-  /from ['"]\.\/mapAdapter['"]/,
-  /from ['"]\.\/roomApi['"]/,
-  /from ['"]\.\/roomRepository['"]/,
-  /from ['"]\.\/fieldReadiness['"]/,
-  /from ['"](?:react|react-dom(?:\/server)?)['"]/,
+  /from ['"](?:\.\.\/)?hooks\/useCurrentLocation['"]/, /from ['"]\.\/geo['"]/, /from ['"]\.\/mapAdapter['"]/, /from ['"]\.\/roomApi['"]/, /from ['"]\.\/roomRepository['"]/, /from ['"]\.\/fieldReadiness['"]/, /from ['"](?:react|react-dom(?:\/server)?)['"]/, /SwingMotionViewer|motionParameters|profilePresets|recommendationEngine|swingLabModels|useSwingLabSession/,
 ] as const;
 
 const forbiddenProviderOrBackendTokens = [
-  'navigator.geolocation',
-  'getCurrentPosition',
-  'VITE_MAP_',
-  'VITE_ROOM_API_',
-  'weather',
-  'forecast',
-  'mapbox',
-  'maplibre',
-  'leaflet',
-  'google.maps',
-  'firebase',
-  'supabase',
-  'amplify',
-  'graphql',
+  'navigator.geolocation', 'getCurrentPosition', 'VITE_MAP_', 'VITE_ROOM_API_', 'weather', 'forecast', 'mapbox', 'maplibre', 'leaflet', 'google.maps', 'firebase', 'supabase', 'amplify', 'graphql',
 ] as const;
 
-describe('G002 profile/scenario SSR/static import boundaries', () => {
-  it('keeps the profile preset and manual scenario engine independent from GPS, map, weather, and backend modules', () => {
-    for (const modulePath of g002SwingFlowModules) {
+describe('G002 Korean caddie SSR/static import boundaries', () => {
+  it('keeps caddie presets and recommendation engine independent from GPS, map, weather, backend, and old Swing Lab modules', () => {
+    for (const modulePath of caddieFlowModules) {
       const source = sourceModules[modulePath];
 
       expect(source, `${modulePath} should be included in the source scan`).toBeDefined();
@@ -55,9 +31,9 @@ describe('G002 profile/scenario SSR/static import boundaries', () => {
     }
   });
 
-  it('keeps the profile/scenario source slice free of full analysis-card and rich motion-viewer surfaces', () => {
-    const combinedSource = g002SwingFlowModules.map((modulePath) => sourceModules[modulePath]).join('\n');
+  it('keeps the caddie source slice free of rich motion-viewer and 3D surfaces', () => {
+    const combinedSource = caddieFlowModules.map((modulePath) => sourceModules[modulePath]).join('\n');
 
-    expect(combinedSource).not.toMatch(/analysis\s*card|analysis-card|three\.?js|@react-three|webgl|canvas/i);
+    expect(combinedSource).not.toMatch(/analysis-card|three\.?js|@react-three|webgl|canvas|motion viewer|SwingMotionViewer/i);
   });
 });

@@ -7,7 +7,7 @@ import {
   productPrinciples,
 } from './copy';
 
-const commandLikeCopyPattern = /\b(coach|caddie|caddy|must|should|need to|try to|take|hit|aim|choose|use|recommend)\b|반드시|해야|추천|보장|정확|캐디|코치/i;
+const commandLikeCopyPattern = /\b(coach|must|should|need to|try to|take this|hit this|aim at|choose this|use this)\b|반드시|해야|보장|정확|코치/i;
 
 describe('foundation product copy', () => {
   it('keeps approximate distance boundary copy available without notice-style wording', () => {
@@ -29,7 +29,7 @@ describe('foundation product copy', () => {
   it('locks MVP non-goals out of the foundation scope', () => {
     expect(nonGoals.join(' ')).toMatch(/스코어카드/);
     expect(nonGoals.join(' ')).toMatch(/스코어카드, 베팅, 공개 소셜 피드/);
-    expect(productPrinciples.join(' ')).toMatch(/수동 상황 입력/);
+    expect(productPrinciples.join(' ')).toMatch(/남은 거리, 라이, 경사, 바람, 핀/);
     const joinedCopy = [...productPrinciples, ...nonGoals, ...privacyNotes, approximateDistanceCopy].join(' ');
 
     expect(joinedCopy).not.toMatch(/official|rangefinder|safety-critical|disclaimer|legal notice|공식|거리측정기|면책|법적 고지|안전 필수/i);

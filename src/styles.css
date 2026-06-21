@@ -359,215 +359,39 @@ select optgroup {
   }
 }
 
-.motion-viewer-panel {
+.visual-card-grid {
   display: grid;
-  gap: 1rem;
-  margin-top: 1rem;
-  border: 1px solid rgba(83, 209, 255, 0.28);
-  border-radius: 1.5rem;
-  background: rgba(5, 25, 19, 0.78);
-  box-shadow: 0 1.25rem 4rem rgba(0, 0, 0, 0.26);
-  padding: 1rem;
-  overflow: hidden;
+  gap: 0.85rem;
 }
 
-.motion-viewer-heading p {
-  max-width: 45rem;
-}
-
-.motion-stage-wrap {
-  min-height: 21rem;
-  border: 1px solid rgba(216, 249, 223, 0.16);
-  border-radius: 1.35rem;
-  background:
-    radial-gradient(circle at 50% 28%, rgba(83, 209, 255, 0.16), transparent 16rem),
-    linear-gradient(180deg, rgba(14, 62, 53, 0.82), rgba(5, 25, 19, 0.92));
-  display: grid;
-  place-items: center;
-  user-select: none;
-  outline: none;
-}
-
-.motion-stage-wrap:focus-visible {
-  box-shadow: 0 0 0 0.25rem rgba(184, 255, 104, 0.3);
-}
-
-.motion-stage-frame {
-  width: min(100%, 30rem);
-}
-
-.swing-arc-svg {
-  display: block;
-  width: 100%;
-}
-
-.ground-ring {
-  fill: rgba(184, 255, 104, 0.08);
-  stroke: rgba(184, 255, 104, 0.38);
-  stroke-width: 3;
-}
-
-.swing-plane,
-.trajectory-line {
-  fill: none;
-  stroke-linecap: round;
-}
-
-.swing-plane {
-  stroke: rgba(184, 255, 104, 0.82);
-  stroke-dasharray: 68 32;
-  stroke-width: 6;
-  transform-box: fill-box;
-  transform-origin: center;
-  transform: skewX(calc(var(--path-offset) * 0.1)) rotate(var(--plane-tilt));
-  animation: swing-plane-pulse var(--swing-duration) ease-in-out infinite;
-}
-
-.swing-plane-guide {
-  stroke: rgba(83, 209, 255, 0.42);
-  stroke-dasharray: 14 12;
-  stroke-width: 4;
-  transform: skewX(calc(var(--path-offset) * 0.08)) rotate(calc(var(--plane-tilt) - 9deg));
-}
-
-.trajectory-line {
-  stroke: url(#trajectoryGradient);
-  stroke-width: 5;
-  transform-box: fill-box;
-  transform-origin: left bottom;
-  transform: rotate(calc(var(--launch-angle) - 17deg));
-}
-
-.golfer-body line,
-.golfer-body circle {
-  stroke: #f7fff7;
-  stroke-linecap: round;
-}
-
-.leg,
-.torso,
-.collar-line,
-.lead-arm,
-.trail-arm {
-  stroke-width: 10;
-}
-
-.head {
-  fill: rgba(247, 255, 247, 0.92);
-  stroke-width: 4;
-}
-
-.club {
-  stroke: #b8ff68;
-  stroke-width: 5;
-}
-
-.club-head {
-  fill: #b8ff68;
-  stroke: #b8ff68;
-}
-
-.swing-armature {
-  transform-box: fill-box;
-  transform-origin: 156px 190px;
-  animation: swing-armature var(--swing-duration) cubic-bezier(0.58, 0, 0.28, 1) infinite;
-}
-
-.pose-markers circle {
-  fill: #53d1ff;
-  opacity: 0.78;
-}
-
-.motion-meter-grid {
-  display: grid;
-  gap: 0.75rem;
-}
-
-.motion-meter-grid span {
+.visual-card {
   position: relative;
-  display: grid;
-  gap: 0.25rem;
-  min-height: 5.5rem;
-  align-content: center;
-  border: 1px solid rgba(83, 209, 255, 0.18);
-  border-radius: 1rem;
-  background:
-    radial-gradient(circle at calc(100% - 1rem) 1rem, rgba(83, 209, 255, 0.2), transparent 3rem),
-    rgba(255, 255, 255, 0.08);
-  color: #d8f9df;
-  padding: 0.9rem;
+  min-height: 8rem;
   overflow: hidden;
+  border: 1px solid rgba(83, 209, 255, 0.22);
+  border-radius: 1.2rem;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 1rem;
 }
 
-.motion-meter-grid span::after {
-  content: "";
+.visual-marker {
   position: absolute;
-  right: 0.8rem;
-  bottom: 0.75rem;
-  width: 3rem;
-  height: 1.25rem;
-  border: 1px solid rgba(83, 209, 255, 0.32);
+  right: 1rem;
+  bottom: 1rem;
+  width: 4rem;
+  height: 2rem;
+  border: 2px solid rgba(184, 255, 104, 0.46);
   border-top: 0;
   border-radius: 0 0 999px 999px;
-  opacity: 0.72;
 }
 
-.motion-meter-grid strong {
-  color: #53d1ff;
-  font-size: 1.35rem;
-}
-
-@keyframes swing-armature {
-  0%,
-  100% {
-    transform: translateX(var(--impact-offset)) rotate(var(--finish-rotation));
-  }
-
-  42% {
-    transform: translateX(calc(var(--path-offset) * -0.55)) rotate(var(--backswing-rotation));
-  }
-
-  62% {
-    transform: translateX(var(--impact-offset)) rotate(-5deg);
-  }
-}
-
-@keyframes swing-plane-pulse {
-  0%,
-  100% {
-    stroke-dashoffset: 0;
-  }
-
-  50% {
-    stroke-dashoffset: 34;
-  }
-}
+.visual-card.aim-right .visual-marker { transform: translateX(0.65rem); }
+.visual-card.aim-left .visual-marker { transform: translateX(-0.65rem); }
+.visual-card.slope-down .visual-marker { transform: rotate(-8deg); }
+.visual-card.slope-up .visual-marker { transform: rotate(8deg); }
 
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
-  }
-
-  .motion-stage-frame,
-  .swing-plane,
-  .swing-armature {
-    animation: none;
-    transition: none;
-  }
-
-  .swing-armature {
-    transform: translateX(var(--impact-offset)) rotate(calc(var(--finish-rotation) * 0.5));
-  }
-}
-
-@media (min-width: 42rem) {
-  .motion-meter-grid {
-    grid-template-columns: repeat(4, 1fr);
-  }
-}
-
-@media (min-width: 56rem) {
-  .motion-viewer-panel {
-    padding: 1.5rem;
   }
 }

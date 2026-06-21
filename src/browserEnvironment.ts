@@ -1,4 +1,4 @@
-import type { StorageLike } from './domain/profilePresets';
+import type { StorageLike } from './domain/caddiePresets';
 
 function browserWindow(): Window | undefined {
   try {
