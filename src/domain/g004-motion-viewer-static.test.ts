@@ -30,11 +30,10 @@ describe('G004 stale Swing Lab removal guard', () => {
     }
   });
 
-  it('keeps the app wired only to the Korean caddie session and 2D mini cards', () => {
+  it('keeps the app wired only to the Korean caddie session without 2D mini cards', () => {
     expect(appSource).toMatch(/useCaddieSession/);
     expect(appSource).toMatch(/prescription\.reasonCards/);
-    expect(appSource).toMatch(/prescription\.visualCards/);
-    expect(appSource).toMatch(/visual-card-grid/);
+    expect(appSource).not.toMatch(/prescription\.visualCards|visual-card-grid/);
     expect(caddieSessionSource).toMatch(/buildPrescription/);
     expect(caddieSessionSource).toMatch(/caddiePresets/);
     expect(`${appSource}\n${caddieSessionSource}`).not.toMatch(/SwingMotionViewer|motionParameters|useSwingLabSession|recommendShot|profilePresets|swingLabModels/);
@@ -42,7 +41,7 @@ describe('G004 stale Swing Lab removal guard', () => {
 
   it('removes motion-viewer styling while preserving responsive mobile layout', () => {
     expect(stylesSource).not.toMatch(/motion-viewer|motion-stage|motion-meter|swing-arc|swing-plane|swing-armature|perspective|preserve-3d|translateZ|rotateX|rotateY/i);
-    expect(stylesSource).toContain('.visual-card-grid');
+    expect(stylesSource).not.toMatch(/visual-card-grid|visual-card|visual-marker/);
     expect(stylesSource).toContain('@media (min-width: 42rem)');
     expect(stylesSource).toContain('@media (min-width: 56rem)');
   });

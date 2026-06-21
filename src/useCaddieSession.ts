@@ -38,15 +38,6 @@ export type CaddieReasonCard = {
   readonly detail: string;
 };
 
-export type CaddieShotDashboard = {
-  readonly lieSummary: string;
-  readonly slopeSummary: string;
-  readonly ballHeightSummary: string;
-  readonly windSummary: string;
-  readonly trajectorySummary: string;
-  readonly recommendationSummary: string;
-};
-
 export type CaddiePrescription = {
   readonly headline: string;
   readonly selectedClub: CaddieClubKey;
@@ -57,7 +48,6 @@ export type CaddiePrescription = {
   readonly trajectoryText: string;
   readonly warningText: string;
   readonly reasonCards: readonly CaddieReasonCard[];
-  readonly shotDashboard: CaddieShotDashboard;
 };
 
 const defaultPreset = createCaddieDistancePreset({
@@ -269,14 +259,6 @@ function buildPrescription(preset: CaddieDistancePreset, scenario: CaddieScenari
         detail: `${lieLabels[scenario.lie]} 라이에서 가장 큰 미스 하나만 먼저 지웁니다.`,
       },
     ],
-    shotDashboard: {
-      lieSummary: lieLabels[scenario.lie],
-      slopeSummary: stanceSlopeLabels[scenario.stanceSlope],
-      ballHeightSummary: sideSlopeLabels[scenario.sideSlope],
-      windSummary: `${windDirectionLabels[scenario.windDirection]} · ${windStrengthLabels[scenario.windStrength]}`,
-      trajectorySummary: trajectoryText,
-      recommendationSummary: `${selectedClubLabel} ${swingPercent}% · ${playDistanceMeters}m`,
-    },
   };
 }
 

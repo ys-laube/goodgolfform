@@ -79,7 +79,6 @@ export function App() {
               <p className="card-label">{card.title}</p>
               <strong>{card.title}</strong>
               <p>{card.detail}</p>
-              <span>근거 카드</span>
             </article>
           ))}
         </div>
@@ -96,17 +95,6 @@ export function App() {
           </span>
         </div>
 
-        <h3>조준과 라이 미니카드</h3>
-        <p>2D 보조</p>
-        <div className="visual-card-grid" aria-label="조준과 라이 미니카드">
-          {prescription.visualCards.map((card) => (
-            <article className={`visual-card ${card.marker}`} key={card.id}>
-              <p className="card-label">{card.title}</p>
-              <strong>{card.detail}</strong>
-              <span aria-hidden="true" className="visual-marker" />
-            </article>
-          ))}
-        </div>
       </section>
 
       <section id="shot-panel" className="lab-panel caddie-input-panel" aria-labelledby="scenario-title">

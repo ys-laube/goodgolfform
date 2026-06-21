@@ -110,8 +110,9 @@ describe('App SSR/static harness contract', () => {
     expect(renderedApp).toContain('그린 위험');
     expect(renderedApp).toContain('로컬 프리셋 저장');
     expect(renderedApp).toContain('왜 이렇게 치나요?');
-    expect(renderedApp).toContain('조준과 라이 미니카드');
-    expect(renderedApp).toContain('조준 미니맵');
+    expect(renderedApp).not.toContain('근거 카드');
+    expect(renderedApp).not.toContain('조준과 라이 미니카드');
+    expect(renderedApp).not.toContain('조준 미니맵');
     expect(renderedApp).not.toMatch(/Serious Golf Swing Lab|Profile panel|Scenario panel|Save profile locally|Live analysis report/);
     expect(renderedApp).not.toMatch(/GPS shot pins|room-flow|map-shell|invite-link room/i);
     expect(renderedApp).not.toMatch(/without GPS|No login|GPS shot pins|weather feeds?|invite-link room|backend setup|backend dependency/i);
@@ -127,7 +128,8 @@ describe('App SSR/static harness contract', () => {
     expect(renderedApp).toContain('발끝 내리막 당김·토핑 주의');
     expect(renderedApp).toContain('플레이 거리');
     expect(renderedApp).toContain('103');
-    expect(renderedApp).toContain('페어웨이 · 발끝 내리막 · 좌측 경사');
+    expect(renderedApp).toContain('대표값은 100m · 페어웨이 · 발끝 내리막 · 약한 맞바람입니다.');
+    expect(renderedApp).toContain('좌측 경사');
     expect(renderedApp).not.toMatch(/\b(disclaimer|legal notice|official|rangefinder|must|should|need to|try to|guarantee|exact|adjusted play)\b|면책|법적 고지|공식|거리측정기|보장|정확/i);
   });
 
@@ -136,7 +138,7 @@ describe('App SSR/static harness contract', () => {
 
     expect(renderedApp).toMatch(/지금 처방[\s\S]*추천 요약[\s\S]*클럽[\s\S]*스윙[\s\S]*플레이 거리/i);
     expect(renderedApp).toMatch(/짧은 이유[\s\S]*9번 아이언 90%[\s\S]*목표보다 살짝 오른쪽 조준[\s\S]*낮게 컨트롤/i);
-    expect(renderedApp).toMatch(/2D 보조[\s\S]*조준 미니맵[\s\S]*라이·스탠스/i);
+    expect(renderedApp).not.toMatch(/2D 보조|조준 미니맵|라이·스탠스/i);
     expect(renderedApp).not.toMatch(/\b(coach|must|should|need to|try to|guarantee|exact)\b|adjusted play|코치|보장|정확/i);
   });
 
@@ -180,7 +182,7 @@ describe('App SSR/static harness contract', () => {
     expect(appSessionSource).toMatch(/useCaddieSession/);
     expect(appSessionSource).toMatch(/buildPrescription/);
     expect(appSessionSource).toMatch(/caddiePresets/);
-    expect(appSource).toMatch(/visual-card-grid/);
+    expect(appSource).not.toMatch(/visual-card-grid|visualCards/);
   });
 
   it('keeps all runtime source free of retired GPS, map, room, weather, auth, and backend import surfaces', () => {
