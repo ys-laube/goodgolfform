@@ -1,6 +1,6 @@
 # FunGolf Korean Caddie Card
 
-FunGolf is a mobile-first Korean web app prototype for serious golfers who want a fast field-side shot card. It lets a player enter manual shot context, load or save local club-distance presets, and read four named Korean result panels: 클럽 선택이유, 조준 방향 이유, 목표 탄도 이유, 미스 경고 코멘트, plus one reactive 2D shot/stance visual.
+FunGolf is a mobile-first Korean web app prototype for serious golfers who want a fast field-side shot card. It lets a player enter manual shot context, load or save local club-distance presets, and read four named Korean result panels: 클럽 선택이유, 조준 방향 이유, 목표 탄도 이유, 미스 경고 코멘트, plus one evidence-based 2D setup visual with top-down stance and rear lie views.
 
 ## Current scope
 
@@ -10,7 +10,7 @@ This prototype includes:
 - Locally saved club-distance presets stored on the current device only.
 - Manual shot inputs for remaining distance, lie, front-back slope, ball position height, wind, pin, and green risk.
 - A deterministic Korean caddie prescription presented through the four named result panels.
-- A reactive 2D shot/stance visual for feet, ball height, target line, wind direction/strength, and trajectory without 3D, maps, backend, weather, or provider SDK dependencies.
+- An evidence-based 2D setup visual for top-down stance/ball position, handedness, and rear-view lie/slope relationships without trajectory arcs, wind markers, 3D, maps, backend, weather, or provider SDK dependencies.
 - Vitest, TypeScript, ESLint, and production build scripts.
 
 ## Explicit non-goals
