@@ -15,9 +15,9 @@ This prototype includes:
 
 ## Explicit non-goals
 
-- No backend, hosted persistence, database, API server, or remote sync.
+- No backend, hosted persistence, database, 응용 인터페이스 server, or remote sync.
 - No authentication, accounts, invite rooms, multiplayer, or shared state.
-- No GPS, browser geolocation, maps, map tiles, weather feeds, forecasts, or location permissions.
+- No 위치 자동 인식, browser geolocation, maps, map tiles, weather feeds, forecasts, or location permissions.
 - No scorecards, betting, public social feed, followers, or discovery.
 - No rulings, rules advice, precision promises, 3D motion viewer, or English core UI.
 
