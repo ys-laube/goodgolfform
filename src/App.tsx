@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 import {
   caddieClubLabels,
@@ -64,14 +64,6 @@ export function App() {
     Object.fromEntries(caddieClubOrder.map((club) => [club, numericInputValue(distanceFor(activePreset, club))])),
   );
 
-  useEffect(() => {
-    setTargetDistanceDraft(numericInputValue(scenario.targetDistanceMeters));
-  }, [scenario.targetDistanceMeters]);
-
-  useEffect(() => {
-    setClubDistanceDrafts(Object.fromEntries(caddieClubOrder.map((club) => [club, numericInputValue(distanceFor(activePreset, club))])));
-  }, [activePreset, caddieClubOrder]);
-
   function handleTargetDistanceDraft(value: string) {
     setTargetDistanceDraft(value);
     const parsedDistance = parseNumericDraft(value);
@@ -96,6 +88,16 @@ export function App() {
 
   function handleClubDistanceBlur(club: (typeof caddieClubOrder)[number]) {
     setClubDistanceDrafts((drafts) => ({ ...drafts, [club]: numericInputValue(distanceFor(activePreset, club)) }));
+  }
+
+  function handlePresetSelection(presetId: string) {
+    const selectedPreset = selectablePresets.find((preset) => preset.id === presetId);
+
+    if (selectedPreset) {
+      setClubDistanceDrafts(Object.fromEntries(caddieClubOrder.map((club) => [club, numericInputValue(distanceFor(selectedPreset, club))])));
+    }
+
+    selectPreset(presetId);
   }
 
   return (
@@ -126,7 +128,7 @@ export function App() {
 
         <label>
           저장된 프리셋 불러오기
-          <select value={selectedPresetId} onChange={(event) => selectPreset(event.target.value)}>
+          <select value={selectedPresetId} onChange={(event) => handlePresetSelection(event.target.value)}>
             {selectablePresets.map((preset) => (
               <option key={preset.id} value={preset.id}>
                 {preset.name} — 드라이버 {preset.anchorDistances.driver}m · 7번 {preset.anchorDistances.sevenIron}m · 피칭 웨지 {preset.anchorDistances.pitchingWedge}m
