@@ -116,6 +116,8 @@ describe('App SSR/static harness contract', () => {
     expect(renderedApp).toMatch(/골퍼 모션 뷰어:/);
     expect(renderedApp).toMatch(/적합도/i);
     expect(renderedApp).toMatch(/보정 목표/i);
+    expect(renderedApp).toMatch(/균형형 메이커[\s\S]*싱글 핸디캡[\s\S]*스트레이트[\s\S]*중간 탄도[\s\S]*중립 템포/);
+    expect(renderedApp).not.toMatch(/single-digit · straight · mid 탄도 · neutral 템포|developing · draw · high 탄도 · smooth 템포|scratch · fade · low 탄도 · assertive 템포/);
     expect(renderedApp).not.toMatch(/Serious Golf Swing Lab|Profile panel|Scenario panel|Save profile locally|Live analysis report/);
     expect(renderedApp).not.toMatch(/GPS shot pins|room-flow|map-shell|invite-link room/i);
     expect(renderedApp).not.toMatch(/without GPS|No login|GPS shot pins|weather feeds?|invite-link room|backend setup|backend dependency/i);
@@ -154,7 +156,7 @@ describe('App SSR/static harness contract', () => {
     const savedProfile = {
       ...builtInProfilePresets[1],
       id: 'saved-smooth-draw-player',
-      name: 'Saved Smooth Draw',
+      name: '저장된 부드러운 드로',
     };
     const storage: StorageLike = {
       getItem: () => serializeProfilePresets([savedProfile]),
@@ -172,7 +174,7 @@ describe('App SSR/static harness contract', () => {
 
       expect(renderedApp).toContain('이 기기에서 저장 프로필 1개를 불러왔습니다.');
       expect(renderedApp).toContain('이 기기에 저장됨');
-      expect(renderedApp).toContain('Saved Smooth Draw');
+      expect(renderedApp).toContain('저장된 부드러운 드로');
     } finally {
       if (descriptor) {
         Object.defineProperty(globalThis, 'window', descriptor);
