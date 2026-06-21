@@ -17,6 +17,19 @@ export function motionParametersFromRecommendation(recommendation: SwingRecommen
     launchAngleDegrees,
     followThroughHeight,
     reducedMotionPose: recommendation.swingSizePercent < 76 ? 'compact' : recommendation.swingSizePercent > 94 ? 'extended' : 'balanced',
-    accessibleSummary: `${recommendation.swingSizeLabel} · ${recommendation.tempo} 템포 · ${recommendation.pathBias} 경로 · ${recommendation.trajectoryStrategy} 탄도`,
+    accessibleSummary: `${recommendation.swingSizeLabel} · ${tempoLabel(recommendation.tempo)} 템포 · ${pathBiasLabel(recommendation.pathBias)} 경로 · ${trajectoryLabel(recommendation.trajectoryStrategy)} 탄도`,
   };
+}
+
+
+function tempoLabel(value: SwingRecommendation['tempo']): string {
+  return { smooth: '부드러운', neutral: '중립', assertive: '과감한' }[value];
+}
+
+function pathBiasLabel(value: SwingRecommendation['pathBias']): string {
+  return { neutral: '중립', 'draw-biased': '드로 성향', 'fade-biased': '페이드 성향' }[value];
+}
+
+function trajectoryLabel(value: SwingRecommendation['trajectoryStrategy']): string {
+  return { flighted: '낮은', 'standard-window': '표준', 'launch-higher': '높은' }[value];
 }

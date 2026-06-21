@@ -67,7 +67,7 @@ describe('G004 parameterized motion viewer static contract', () => {
     expect(shaped).toMatch(/--plane-tilt:[^;]+deg/);
     expect(shaped).toMatch(/--swing-duration:[^;]+ms/);
     expect(shaped).toMatch(/--launch-angle:[^;]+deg/);
-    expect(compact).toMatch(/스윙 아크<!-- --> \d+%/);
+    expect(compact).toMatch(/스윙 아크 ?\d+%/);
     expect(shaped).toMatch(/탄도/);
   });
 

@@ -68,7 +68,7 @@ describe('profile presets', () => {
     const storage = new MemoryStorage();
 
     expect(saveProfilePresets(storage, [builtInProfilePresets[1]])).toBe(true);
-    expect(storage.getItem(profilePresetStorageKey)).toContain('Smooth Draw Player');
+    expect(storage.getItem(profilePresetStorageKey)).toContain('부드러운 드로 플레이어');
     expect(loadSavedProfilePresets(storage)).toEqual([builtInProfilePresets[1]]);
   });
 

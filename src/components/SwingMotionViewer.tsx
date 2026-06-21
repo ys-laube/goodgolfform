@@ -59,14 +59,14 @@ export function SwingMotionViewer({ parameters, recommendation, forceReducedMoti
     const backswingRotation = -amplitude;
     const finishRotation = amplitude * 0.72;
     const impactOffset = parameters.pathOffset * 0.34;
-    const 탄도EndY = 176 - parameters.followThroughHeight * 0.72;
+    const trajectoryEndY = 176 - parameters.followThroughHeight * 0.72;
 
     return {
       backswingRotation,
       finishRotation,
       impactOffset,
-      탄도EndY,
-      poseLabel: prefersReducedMotion ? `Static ${parameters.reducedMotionPose} pose` : 'Animated 템포 루프',
+      trajectoryEndY,
+      poseLabel: prefersReducedMotion ? `정적 ${poseLabel(parameters.reducedMotionPose)} 자세` : '애니메이션 템포 루프',
     };
   }, [parameters, prefersReducedMotion]);
 
@@ -101,7 +101,7 @@ export function SwingMotionViewer({ parameters, recommendation, forceReducedMoti
         <div className="motion-stage-depth">
           <svg className="swing-arc-svg" viewBox="0 0 360 320" aria-hidden="true">
             <defs>
-              <linearGradient id="탄도Gradient" x1="0" x2="1" y1="0" y2="0">
+              <linearGradient id="trajectoryGradient" x1="0" x2="1" y1="0" y2="0">
                 <stop offset="0%" stopColor="#b8ff68" stopOpacity="0.95" />
                 <stop offset="100%" stopColor="#53d1ff" stopOpacity="0.3" />
               </linearGradient>
@@ -110,7 +110,7 @@ export function SwingMotionViewer({ parameters, recommendation, forceReducedMoti
             <ellipse className="ground-ring" cx="180" cy="250" rx="118" ry="28" />
             <path className="swing-plane" d={`M 84 222 C 122 72, 236 72, 276 222`} pathLength="100" />
             <path className="swing-plane swing-plane-shadow" d={`M ${84 + parameters.pathOffset} 228 C ${124 + parameters.pathOffset} 96, ${236 + parameters.pathOffset} 96, ${276 + parameters.pathOffset} 228`} pathLength="100" />
-            <path className="탄도-line" d={`M 196 164 C 236 ${134 - parameters.launchAngleDegrees}, 282 ${visualState.탄도EndY}, 330 ${visualState.탄도EndY - 24}`} />
+            <path className="trajectory-line" d={`M 196 164 C 236 ${134 - parameters.launchAngleDegrees}, 282 ${visualState.trajectoryEndY}, 330 ${visualState.trajectoryEndY - 24}`} />
 
             <g className="golfer-body">
               <line className="leg lead-leg" x1="166" y1="205" x2="144" y2="252" />
