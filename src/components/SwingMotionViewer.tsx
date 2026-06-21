@@ -28,15 +28,16 @@ function formatValue(value: string): string {
 }
 
 function usePrefersReducedMotion(forceReducedMotion = false): boolean {
-  const [prefersReducedMotion, setPrefersReducedMotion] = useState(forceReducedMotion);
-
-  useEffect(() => {
-    if (forceReducedMotion) {
-      setPrefersReducedMotion(true);
-      return;
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(() => {
+    if (forceReducedMotion || typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+      return forceReducedMotion;
     }
 
-    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  });
+
+  useEffect(() => {
+    if (forceReducedMotion || typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
       return;
     }
 
@@ -48,7 +49,7 @@ function usePrefersReducedMotion(forceReducedMotion = false): boolean {
     return () => mediaQuery.removeEventListener('change', syncPreference);
   }, [forceReducedMotion]);
 
-  return prefersReducedMotion;
+  return forceReducedMotion || prefersReducedMotion;
 }
 
 export function SwingMotionViewer({ parameters, recommendation, forceReducedMotion = false }: SwingMotionViewerProps) {
@@ -149,7 +150,7 @@ export function SwingMotionViewer({ parameters, recommendation, forceReducedMoti
               <line className="leg trail-leg" x1="172" y1="205" x2="202" y2="252" />
               <line className="torso" x1="168" y1="202" x2="184" y2="142" />
               <circle className="head" cx="190" cy="122" r="15" />
-              <line className="shoulder" x1="166" y1="154" x2="202" y2="150" />
+              <line className="collar-line" x1="166" y1="154" x2="202" y2="150" />
               <g className="swing-armature">
                 <line className="lead-arm" x1="172" y1="156" x2="146" y2="188" />
                 <line className="trail-arm" x1="198" y1="154" x2="158" y2="190" />

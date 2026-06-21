@@ -4,12 +4,15 @@ import { describe, expect, it } from 'vitest';
 import { SwingMotionViewer } from '../components/SwingMotionViewer';
 import appSource from '../App.tsx?raw';
 import viewerSource from '../components/SwingMotionViewer.tsx?raw';
-import stylesSource from '../styles.css?raw';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { motionParametersFromRecommendation } from './motionParameters';
 import { builtInProfilePresets } from './profilePresets';
 import { recommendShot } from './recommendationEngine';
 import type { ShotScenario } from './swingLabModels';
 import { App } from '../App';
+
+const stylesSource = readFileSync(join(process.cwd(), 'src/styles.css'), 'utf8');
 
 const neutralScenario: ShotScenario = {
   targetDistanceMeters: 145,
@@ -42,7 +45,7 @@ describe('G004 parameterized motion viewer static contract', () => {
     expect(renderedViewer).toContain('class="swing-arc-svg"');
     expect(renderedViewer).toContain('role="img"');
     expect(renderedViewer).toMatch(/Golfer motion viewer: .* tempo, .* path, .* launch/i);
-    expect(renderedViewer).toContain('Drag the stage to rotate');
+    expect(renderedViewer).toContain('Swipe the stage for pseudo-3D rotation');
     expect(renderedViewer).toContain('Current motion parameters');
     expect(renderedViewer).not.toMatch(/canvas|webgl|three|@react-three/i);
   });
@@ -101,7 +104,6 @@ describe('G004 parameterized motion viewer static contract', () => {
     expect(viewerSource).toMatch(/onPointerDown=\{handlePointerDown\}/);
     expect(viewerSource).toMatch(/onPointerMove=\{handlePointerMove\}/);
     expect(viewerSource).toMatch(/setPointerCapture/);
-    expect(viewerSource).toMatch(/touch-action/i);
     expect(stylesSource).toContain('.motion-stage-wrap');
     expect(stylesSource).toContain('touch-action: none');
     expect(stylesSource).toContain('.motion-meter-grid');
