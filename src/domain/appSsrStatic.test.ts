@@ -3,7 +3,7 @@ import { renderToString } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import indexHtml from '../../index.html?raw';
 import packageJson from '../../package.json';
-import stylesSource from '../styles.css?raw';
+import stylesSource from '../styles.css?inline';
 import appSource from '../App.tsx?raw';
 import browserEnvironmentSource from '../browserEnvironment.ts?raw';
 import caddieSessionSource from '../useCaddieSession.ts?raw';
@@ -211,7 +211,6 @@ describe('App SSR/static harness contract', () => {
       }
     }
   });
-
 
   it('imports the premium Korean webfont with system Korean fallbacks', () => {
     expect(stylesSource).toContain('@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css");');
