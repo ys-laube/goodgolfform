@@ -44,10 +44,10 @@ describe('G004 mobile shot-pin UX acceptance contract', () => {
     expect(productPrinciples.join(' ')).toMatch(/One-handed, outdoor-readable/i);
     expect(productPrinciples.join(' ')).toMatch(/Shot pins stay playful/i);
     expect(privacyNotes.join(' ')).toMatch(/invite-link rooms/i);
-    expect(approximateDistanceDisclaimer).toMatch(/approximate GPS estimates/i);
-    expect(approximateDistanceDisclaimer).not.toMatch(/rangefinder-grade/i);
+    expect(approximateDistanceDisclaimer).toMatch(/approximate practice estimates/i);
+    expect(approximateDistanceDisclaimer).not.toMatch(/official|rangefinder|disclaimer/i);
     expect(nonGoals.join(' ')).toMatch(/No public social feed/i);
     expect(nonGoals.join(' ')).toMatch(/No scorecards, betting/i);
-    expect(nonGoals.join(' ')).toMatch(/No official rulings/i);
+    expect(nonGoals.join(' ')).toMatch(/No rulings/i);
   });
 });

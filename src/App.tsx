@@ -219,7 +219,7 @@ export function App() {
 
       <section className="detail-panel" aria-labelledby="targets-title">
         <h2 id="targets-title">Tapped and manual targets</h2>
-        <p>Tap a sample target or type rough coordinates. These are approximate field notes, not official measurements.</p>
+        <p>Tap a sample target or type rough coordinates. These stay as approximate field notes for friendly practice context.</p>
         <ul className="target-list">
           {sampleCourseTargets.map((target) => {
             const distance = distances.find((item) => item.target.id === target.id);

@@ -1,15 +1,15 @@
 export const productPrinciples = [
   'One-handed, outdoor-readable round companion.',
-  'Approximate GPS distances only; never official rangefinder output.',
+  'Profile-aware distance feel and swing context stay approximate by design.',
   'Invite-link rooms for friends, not public discovery.',
   'Shot pins stay playful and lightweight.',
 ] as const;
 
 export const nonGoals = [
-  'No official rulings or rules advice.',
+  'No rulings, scoring judgments, or rules-advice workflow.',
   'No scorecards, betting, or settlement flows.',
   'No public social feed, search, followers, or discovery.',
-  'No rangefinder-grade precision promises.',
+  'No precision-promise panel or measuring-device workflow.',
   'No map-provider-specific SDK coupling in the foundation.',
 ] as const;
 
@@ -20,4 +20,4 @@ export const privacyNotes = [
 ] as const;
 
 export const approximateDistanceDisclaimer =
-  'Distances and positions are approximate GPS estimates for friendly play context only, not official measuring-device or safety-critical output.';
+  'Distance feel uses approximate practice estimates shaped by player profile, course context, and conditions.';

@@ -7,9 +7,9 @@ import {
 } from './copy';
 
 describe('foundation product copy', () => {
-  it('keeps the approximate distance disclaimer explicit', () => {
-    expect(approximateDistanceDisclaimer).toMatch(/approximate GPS estimates/i);
-    expect(approximateDistanceDisclaimer).not.toMatch(/official rangefinder/i);
+  it('keeps approximate distance copy visible without disclaimer-style wording', () => {
+    expect(approximateDistanceDisclaimer).toMatch(/approximate practice estimates/i);
+    expect(approximateDistanceDisclaimer).not.toMatch(/official|rangefinder|safety-critical|disclaimer|legal notice/i);
   });
 
   it('documents privacy and deferred shared persistence boundaries', () => {
@@ -21,5 +21,8 @@ describe('foundation product copy', () => {
     expect(nonGoals.join(' ')).toMatch(/No scorecards/i);
     expect(nonGoals.join(' ')).toMatch(/No public social feed/i);
     expect(productPrinciples.join(' ')).toMatch(/Shot pins stay playful/i);
+    expect([...productPrinciples, ...nonGoals, approximateDistanceDisclaimer].join(' ')).not.toMatch(
+      /official|rangefinder|safety-critical|disclaimer|legal notice/i,
+    );
   });
 });

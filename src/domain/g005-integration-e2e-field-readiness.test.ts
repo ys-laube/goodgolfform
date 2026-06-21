@@ -113,12 +113,11 @@ describe('G005 integration E2E field-readiness contract', () => {
 
     expect(formatApproxDistance(88.4)).toBe('≈ 88 m');
     expect(distances.map((distance) => distance.label)).toEqual(expect.arrayContaining([expect.stringMatching(/^≈ /)]));
-    expect(copySurface).toMatch(/approximate GPS/i);
+    expect(copySurface).toMatch(/approximate/i);
     expect(copySurface).toMatch(/visible only inside this invite-link room/i);
-    expect(copySurface).toMatch(/No official rulings/i);
     expect(copySurface).toMatch(/No scorecards, betting/i);
     expect(copySurface).toMatch(/No public social feed/i);
-    expect(copySurface).not.toMatch(/Create scorecard|Place bet|Open leaderboard|Create public profile|Follow player|Request official ruling/i);
+    expect(copySurface).not.toMatch(/Create scorecard|Place bet|Open leaderboard|Create public profile|Follow player|Request official ruling|official|rangefinder|disclaimer|legal notice/i);
   });
 
   it('assesses geolocation fallback triggers without blocking manual field pins', () => {

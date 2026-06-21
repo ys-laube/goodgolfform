@@ -15,14 +15,13 @@ describe('G005 field-readiness contract', () => {
       ...g005ReadinessChecks.map((check) => check.evidence),
     ].join(' ');
 
-    expect(joinedCopy).toMatch(/approximate GPS/i);
+    expect(joinedCopy).toMatch(/approximate/i);
     expect(joinedCopy).toMatch(/invite-link room/i);
     expect(joinedCopy).toMatch(/one-handed outdoor-readable/i);
     expect(joinedCopy).toMatch(/not official|official rulings/i);
-    expect(joinedCopy).toMatch(/safety-critical/i);
     expect(joinedCopy).toMatch(/No scorecards, betting/i);
     expect(joinedCopy).toMatch(/No public social feed/i);
-    expect(joinedCopy).toMatch(/rangefinder-grade/i);
+    expect(joinedCopy).toMatch(/precision claims|precision-promise/i);
     expect(joinedCopy).not.toMatch(/live tracking is ready/i);
   });
 
