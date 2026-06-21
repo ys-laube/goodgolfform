@@ -3,7 +3,7 @@ import { renderToStaticMarkup, renderToString } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { SwingMotionViewer } from '../components/SwingMotionViewer';
 import appSource from '../App.tsx?raw';
-import swingLabSessionSource from '../useSwingLabSession.ts?raw';
+import caddieSessionSource from '../useCaddieSession.ts?raw';
 import viewerSource from '../components/SwingMotionViewer.tsx?raw';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -90,21 +90,21 @@ describe('G004 parameterized motion viewer static contract', () => {
     expect(stylesSource).toContain('animation: none');
   });
 
-  it('wires the App recommendation output into the viewer without new rendering dependencies or notice copy', () => {
+  it('wires the App prescription output into result-first cards without new rendering dependencies or notice copy', () => {
     const renderedApp = renderToString(createElement(App));
 
-    expect(swingLabSessionSource).toMatch(/motionParametersFromRecommendation/);
-    expect(appSource).toMatch(/<SwingMotionViewer parameters=\{motionParameters\} recommendation=\{recommendation\}/);
-    expect(renderedApp).toContain('파라미터 기반 골퍼 모션');
-    expect(renderedApp).toContain('현재 모션 파라미터');
-    expect(renderedApp).toMatch(/골퍼 모션 뷰어:/);
-    expect(renderedApp).not.toMatch(/disclaimer|legal notice|official|rangefinder|coach|caddie|caddy|must|should|guarantee|exact|면책|법적 고지|공식|거리측정기|캐디|코치|보장|정확/i);
+    expect(caddieSessionSource).toMatch(/buildPrescription/);
+    expect(appSource).toMatch(/prescription\.reasonCards/);
+    expect(appSource).toMatch(/prescription\.visualCards/);
+    expect(renderedApp).toContain('지금 처방');
+    expect(renderedApp).toContain('추천: PW 88%');
+    expect(renderedApp).toContain('조준과 라이 미니카드');
+    expect(renderedApp).not.toMatch(/disclaimer|legal notice|official|rangefinder|coach|must|should|guarantee|exact|면책|법적 고지|공식|거리측정기|코치|보장|정확/i);
   });
 
   it('keeps the flat viewer free of 3D interaction and transform CSS while preserving mobile styles', () => {
     expect(viewerSource).not.toMatch(/onPointerDown|onPointerMove|setPointerCapture|pseudo-3D|rotate the stage/i);
-    expect(viewerSource).not.toMatch(/motion-stage-depth|swing-plane-shadow/i);
-    expect(stylesSource).not.toMatch(/perspective|preserve-3d|translateZ|rotateX|rotateY|drop-shadow|motion-stage-depth|swing-plane-shadow/);
+    expect(stylesSource).not.toMatch(/perspective|preserve-3d|translateZ|rotateX|rotateY/);
     expect(stylesSource).toContain('.motion-stage-wrap');
     expect(stylesSource).toContain('.motion-meter-grid');
     expect(stylesSource).toContain('@media (min-width: 42rem)');

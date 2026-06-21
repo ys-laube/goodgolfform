@@ -3,16 +3,15 @@ import { renderToString } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import indexHtml from '../../index.html?raw';
 import packageJson from '../../package.json';
-import { SwingMotionViewer } from '../components/SwingMotionViewer';
-import browserEnvironmentSource from '../browserEnvironment.ts?raw';
-import swingMotionViewerSource from '../components/SwingMotionViewer.tsx?raw';
 import appSource from '../App.tsx?raw';
-import swingLabSessionSource from '../useSwingLabSession.ts?raw';
-import { motionParametersFromRecommendation } from './motionParameters';
-import { builtInProfilePresets, serializeProfilePresets, type StorageLike } from './profilePresets';
-import { recommendShot } from './recommendationEngine';
+import browserEnvironmentSource from '../browserEnvironment.ts?raw';
+import caddieSessionSource from '../useCaddieSession.ts?raw';
 import { App } from '../App';
-import motionParametersSource from './motionParameters.ts?raw';
+import {
+  createCaddieDistancePreset,
+  serializeCaddiePresets,
+  type StorageLike,
+} from './caddiePresets';
 
 const packageDependencyNames = Object.keys(packageJson.dependencies);
 const runtimeSourceModules = import.meta.glob('../**/*.{ts,tsx}', {
@@ -54,7 +53,10 @@ const supersededRuntimeTokens = [
 ] as const;
 
 function importSpecifiersFromSource(source: string): string[] {
-  return Array.from(source.matchAll(/(?:import|export)\s+(?:type\s+)?(?:[^'"]*?\s+from\s+)?["']([^"']+)["']|import\(["']([^"']+)["']\)/g), (match) => match[1] ?? match[2]);
+  return Array.from(
+    source.matchAll(/(?:import|export)\s+(?:type\s+)?(?:[^'"]*?\s+from\s+)?["']([^"']+)["']|import\(["']([^"']+)["']\)/g),
+    (match) => match[1] ?? match[2],
+  );
 }
 
 function withPoisonedBrowserStorage<T>(assertions: () => T): T {
@@ -89,116 +91,64 @@ function withPoisonedBrowserStorage<T>(assertions: () => T): T {
 }
 
 describe('App SSR/static harness contract', () => {
-  it('renders the swing lab shell to a static string without browser storage globals', () => {
+  it('renders the Korean caddie shell to a static string without browser storage globals', () => {
     const renderedApp = withPoisonedBrowserStorage(() => renderToString(createElement(App)));
 
     expect(renderedApp).toContain('id="app-title"');
-    expect(renderedApp).toContain('id="analysis-panel"');
-    expect(renderedApp).toContain('id="profile-panel"');
-    expect(renderedApp).toContain('id="scenario-panel"');
-    expect(renderedApp).toContain('진지한 골프 스윙 랩');
-    expect(renderedApp).toContain('플레이어 프로필과 상황을 넣으면 분석 카드가 바로 준비됩니다.');
-    expect(renderedApp).toContain('분석 리포트');
-    expect(renderedApp).toContain('프로필 조정');
-    expect(renderedApp).toContain('프로필 로컬 저장');
-    expect(renderedApp).toContain('목표 거리 (m)');
+    expect(renderedApp).toContain('id="shot-panel"');
+    expect(renderedApp).toContain('id="preset-panel"');
+    expect(renderedApp).toContain('캐디 한줄 처방');
+    expect(renderedApp).toContain('남은 거리와 라이만 빠르게 넣고');
+    expect(renderedApp).toContain('지금 처방');
+    expect(renderedApp).toContain('추천 요약');
+    expect(renderedApp).toContain('샷 상황 입력');
+    expect(renderedApp).toContain('남은 거리 (m)');
+    expect(renderedApp).toContain('경사/스탠스');
+    expect(renderedApp).toContain('좌우 경사');
     expect(renderedApp).toContain('바람 방향');
-    expect(renderedApp).toContain('바람 세기');
-    expect(renderedApp).toContain('원하는 탄도창');
-    expect(renderedApp).toContain('실시간 분석 리포트');
-    expect(renderedApp).toContain('분석 리포트 카드');
-    expect(renderedApp).toContain('클럽 · 거리감');
-    expect(renderedApp).toContain('스윙 크기 · 템포');
-    expect(renderedApp).toContain('탄도 전략');
-    expect(renderedApp).toContain('개연성 · 게임 지표');
-    expect(renderedApp).toContain('이 카드의 이유');
-    expect(renderedApp).toContain('파라미터 기반 골퍼 모션');
-    expect(renderedApp).toContain('현재 모션 파라미터');
-    expect(renderedApp).toMatch(/골퍼 모션 뷰어:/);
-    expect(renderedApp).toMatch(/적합도/i);
-    expect(renderedApp).toMatch(/보정 목표/i);
-    expect(renderedApp.indexOf('id="analysis-panel"')).toBeLessThan(renderedApp.indexOf('id="profile-panel"'));
-    expect(renderedApp.indexOf('id="analysis-panel"')).toBeLessThan(renderedApp.indexOf('id="scenario-panel"'));
-    expect(renderedApp).toMatch(/균형형 메이커[\s\S]*싱글 핸디캡[\s\S]*스트레이트[\s\S]*중간 탄도[\s\S]*중립 템포/);
-    expect(renderedApp).not.toMatch(/single-digit · straight · mid 탄도 · neutral 템포|developing · draw · high 탄도 · smooth 템포|scratch · fade · low 탄도 · assertive 템포/);
+    expect(renderedApp).toContain('핀 위치');
+    expect(renderedApp).toContain('그린 위험');
+    expect(renderedApp).toContain('로컬 프리셋 저장');
+    expect(renderedApp).toContain('왜 이렇게 치나요?');
+    expect(renderedApp).toContain('조준과 라이 미니카드');
+    expect(renderedApp).toContain('조준 미니맵');
     expect(renderedApp).not.toMatch(/Serious Golf Swing Lab|Profile panel|Scenario panel|Save profile locally|Live analysis report/);
     expect(renderedApp).not.toMatch(/GPS shot pins|room-flow|map-shell|invite-link room/i);
     expect(renderedApp).not.toMatch(/without GPS|No login|GPS shot pins|weather feeds?|invite-link room|backend setup|backend dependency/i);
-    expect(renderedApp).not.toMatch(/\b(coach|caddie|caddy)\b/i);
-    expect(renderedApp).not.toMatch(/Build the shot|Read the swing card|Enter shot|Type the shot|choose a saved profile|get a deterministic|becoming commands|adjusted play|you should|let's|do this|next|now/i);
+    expect(renderedApp).not.toMatch(/Build the shot|Read the swing card|Enter shot|Type the shot|choose a saved profile|get a deterministic|adjusted play|you should|let's|do this|next|now/i);
   });
 
-  it('SSR-renders the default analysis card fields without notice-style copy', () => {
+  it('SSR-renders the representative 100m result-first prescription fields', () => {
     const renderedApp = withPoisonedBrowserStorage(() => renderToString(createElement(App)));
 
-    expect(renderedApp).toContain('6번 아이언');
-    expect(renderedApp).toContain('컨트롤');
-    expect(renderedApp).toContain('개연성');
-    expect(renderedApp).toContain('템포');
-    expect(renderedApp).toContain('탄도 전략');
-    expect(renderedApp).toMatch(/적합도/i);
-    expect(renderedApp).toMatch(/보정 목표/i);
-    expect(renderedApp).not.toMatch(/\b(disclaimer|legal notice|official|rangefinder|coach|caddie|caddy|must|should|need to|try to|hit|aim|guarantee|exact|adjusted play)\b/i);
+    expect(renderedApp).toContain('추천: PW 88%');
+    expect(renderedApp).toContain('목표보다 살짝 오른쪽 조준');
+    expect(renderedApp).toContain('낮게 컨트롤');
+    expect(renderedApp).toContain('발끝 내리막 당김·토핑 주의');
+    expect(renderedApp).toContain('플레이 거리');
+    expect(renderedApp).toContain('103');
+    expect(renderedApp).toContain('페어웨이 · 발끝 내리막 · 좌측 경사');
+    expect(renderedApp).not.toMatch(/\b(disclaimer|legal notice|official|rangefinder|must|should|need to|try to|guarantee|exact|adjusted play)\b|면책|법적 고지|공식|거리측정기|보장|정확/i);
   });
 
-
-  it('renders every required analysis report card category from recommendation output', () => {
+  it('renders every required Korean caddie result card category from prescription output', () => {
     const renderedApp = withPoisonedBrowserStorage(() => renderToString(createElement(App)));
 
-    expect(renderedApp).toMatch(/클럽 · 거리감[\s\S]*아이언/i);
-    expect(renderedApp).toMatch(/스윙 크기 · 템포[\s\S]*(컨트롤|풀 스톡)/i);
-    expect(renderedApp).toMatch(/탄도 전략[\s\S]*표준 탄도창/i);
-    expect(renderedApp).toMatch(/개연성 · 게임 지표[\s\S]*적합도/i);
-    expect(renderedApp).toMatch(/이 카드의 이유[\s\S]*보정 목표/i);
-    expect(renderedApp).toMatch(/상황 보정 읽기|이 카드의 이유/i);
-    expect(renderedApp).not.toMatch(/\b(coach|caddie|caddy|must|should|need to|try to|hit|aim|guarantee|exact)\b|adjusted play/i);
+    expect(renderedApp).toMatch(/지금 처방[\s\S]*추천 요약[\s\S]*클럽[\s\S]*스윙[\s\S]*플레이 거리/i);
+    expect(renderedApp).toMatch(/짧은 이유[\s\S]*PW 88%[\s\S]*목표보다 살짝 오른쪽 조준[\s\S]*낮게 컨트롤/i);
+    expect(renderedApp).toMatch(/2D 보조[\s\S]*조준 미니맵[\s\S]*라이·스탠스/i);
+    expect(renderedApp).not.toMatch(/\b(coach|must|should|need to|try to|guarantee|exact)\b|adjusted play|코치|보장|정확/i);
   });
 
-  it('covers a representative 100m Korean recommendation and motion render', () => {
-    const recommendation = recommendShot(builtInProfilePresets[0], {
-      targetDistanceMeters: 100,
-      windDirection: 'none',
-      windStrength: 'calm',
-      lie: 'fairway',
-      desiredWindow: 'standard',
-    });
-    const motionParameters = motionParametersFromRecommendation(recommendation);
-    const renderedViewer = renderToString(createElement(SwingMotionViewer, { parameters: motionParameters, recommendation }));
-
-    expect(recommendation.adjustedDistanceMeters).toBe(100);
-    expect(recommendation.selectedClub).toBe('pw');
-    expect(recommendation.distanceFeel).toContain('피칭 웨지 94% 프로필 거리창');
-    expect(recommendation.gameMetricLabel).toMatch(/적합도/);
-    expect(renderedViewer).toContain('파라미터 기반 골퍼 모션');
-    expect(renderedViewer).toContain('94');
-    expect(renderedViewer).toMatch(/골퍼 모션 뷰어:/);
-    expect(renderedViewer).not.toMatch(/coach|caddie|must|should|exact|캐디|코치|보장|정확/i);
-  });
-
-
-  it('keeps the local preset save boundary wired through Korean session copy', () => {
-    expect(appSource).toMatch(/onClick=\{saveCurrentProfile\}/);
-    expect(swingLabSessionSource).toMatch(/availableLocalStorage\(\)/);
-    expect(swingLabSessionSource).toMatch(/upsertProfilePreset/);
-    expect(swingLabSessionSource).toMatch(/saveProfilePresets/);
-    expect(swingLabSessionSource).toContain('프로필을 로컬에 저장했으며 프리셋 목록에서 불러올 수 있습니다.');
-    expect(swingLabSessionSource).toContain('프로필을 메모리에만 보관했습니다. 이 환경에서는 로컬 저장소를 사용할 수 없습니다.');
-  });
-
-
-  it('restores saved profile presets through the App storage boundary when browser storage exists', () => {
+  it('restores saved caddie distance presets through the App storage boundary when browser storage exists', () => {
     const descriptor = Object.getOwnPropertyDescriptor(globalThis, 'window');
-    const savedProfile = {
-      ...builtInProfilePresets[1],
-      id: 'saved-smooth-draw-player',
-      name: '저장된 부드러운 드로',
-    };
-    let getItemCalls = 0;
+    const savedPreset = createCaddieDistancePreset({
+      id: 'preset-saved-local-yardage',
+      name: '저장된 거리표',
+      anchorDistances: { driver: 225, sevenIron: 142, pitchingWedge: 108 },
+    });
     const storage: StorageLike = {
-      getItem: () => {
-        getItemCalls += 1;
-        return serializeProfilePresets([savedProfile]);
-      },
+      getItem: () => serializeCaddiePresets([savedPreset]),
       setItem: () => undefined,
       removeItem: () => undefined,
     };
@@ -211,12 +161,9 @@ describe('App SSR/static harness contract', () => {
     try {
       const renderedApp = renderToString(createElement(App));
 
-      expect(renderedApp).toContain('이 기기에서 저장 프로필 1개를 불러왔습니다.');
-      expect(renderedApp).toContain('이 기기에 저장됨');
-      expect(renderedApp).toContain('저장된 부드러운 드로');
-      expect(renderedApp).toContain('성장 중 · 드로 · 높은 탄도 · 부드러운 템포');
-      expect(renderedApp).not.toMatch(/developing · draw · high 탄도 · smooth 템포/);
-      expect(getItemCalls).toBe(1);
+      expect(renderedApp).toContain('이 기기에서 거리 프리셋 1개를 불러왔습니다.');
+      expect(renderedApp).toContain('저장된 프리셋 불러오기');
+      expect(renderedApp).toContain('저장된 거리표');
     } finally {
       if (descriptor) {
         Object.defineProperty(globalThis, 'window', descriptor);
@@ -228,12 +175,12 @@ describe('App SSR/static harness contract', () => {
 
   it('keeps App free of superseded GPS/map/room/weather/auth/backend imports', () => {
     expect(appSource).not.toMatch(/MapShell|useCurrentLocation|roomApi|roomRepository|shotPinFlow|courseTargets|mapAdapter|auth|weather|backend/i);
-    const appSessionSource = `${appSource}\n${swingLabSessionSource}`;
+    const appSessionSource = `${appSource}\n${caddieSessionSource}`;
 
-    expect(appSessionSource).toMatch(/profilePresets/);
-    expect(appSessionSource).toMatch(/recommendShot/);
-    expect(appSessionSource).toMatch(/motionParametersFromRecommendation/);
-    expect(appSource).toMatch(/SwingMotionViewer/);
+    expect(appSessionSource).toMatch(/useCaddieSession/);
+    expect(appSessionSource).toMatch(/buildPrescription/);
+    expect(appSessionSource).toMatch(/caddiePresets/);
+    expect(appSource).toMatch(/visual-card-grid/);
   });
 
   it('keeps all runtime source free of retired GPS, map, room, weather, auth, and backend import surfaces', () => {
@@ -259,50 +206,22 @@ describe('App SSR/static harness contract', () => {
     }
   });
 
-  it('keeps the static HTML entrypoint ready for mobile swing lab smoke checks', () => {
+  it('keeps the static HTML entrypoint ready for mobile Korean caddie smoke checks', () => {
     expect(indexHtml).toContain('<!doctype html>');
     expect(indexHtml).toContain('<html lang="ko">');
     expect(indexHtml).toContain('<meta name="viewport" content="width=device-width, initial-scale=1.0" />');
     expect(indexHtml).toContain('<meta name="theme-color" content="#0b3d2e" />');
-    expect(indexHtml).toContain('프로필 기반 샷 분석')
+    expect(indexHtml).toContain('프로필 기반 샷 분석');
     expect(indexHtml).toContain('<div id="root"></div>');
     expect(indexHtml).toContain('<script type="module" src="/src/main.tsx"></script>');
   });
 
-  it('SSR-renders the motion viewer reduced-motion fallback from deterministic parameters', () => {
-    const recommendation = recommendShot(builtInProfilePresets[2], {
-      targetDistanceMeters: 165,
-      windDirection: 'headwind',
-      windStrength: 'strong',
-      lie: 'rough',
-      desiredWindow: 'low',
-    });
-    const parameters = motionParametersFromRecommendation(recommendation);
-    const renderedViewer = withPoisonedBrowserStorage(() =>
-      renderToString(createElement(SwingMotionViewer, { parameters, recommendation, forceReducedMotion: true })),
-    );
+  it('keeps browser environment access optional and SSR-safe', () => {
+    const renderedApp = withPoisonedBrowserStorage(() => renderToString(createElement(App)));
 
-    expect(renderedViewer).toContain('role="img"');
-    expect(renderedViewer).toContain(parameters.accessibleSummary);
-    expect(renderedViewer).toMatch(/정적 (컴팩트|균형|확장) 자세/);
-    expect(renderedViewer).toContain('--swing-arc');
-    expect(renderedViewer).toMatch(new RegExp(`${parameters.arcDegrees}<!-- -->°`));
-    expect(renderedViewer).toContain(`${parameters.pathOffset}px`);
-    expect(renderedViewer).toMatch(new RegExp(`${parameters.launchAngleDegrees}<!-- -->°`));
-  });
-
-  it('keeps the motion-viewer static contract dependency-free and SSR-safe', () => {
-    const scannedSources = [appSource, swingLabSessionSource, motionParametersSource, swingMotionViewerSource].join('\n');
-
-    expect(packageDependencyNames).toEqual(['@vitejs/plugin-react', 'vite', 'typescript', 'react', 'react-dom']);
-    expect(scannedSources).not.toMatch(/three|@react-three|webgl|canvas|getContext|requestAnimationFrame/i);
-    expect(scannedSources).not.toMatch(/navigator\.geolocation|VITE_MAP_|VITE_ROOM_API_|mapbox|maplibre|leaflet|firebase|supabase/i);
-    expect(motionParametersSource).toMatch(/accessibleSummary/);
-    expect(motionParametersSource).toMatch(/reducedMotionPose/);
+    expect(renderedApp).toContain('기본 거리표가 준비되었습니다.');
     expect(browserEnvironmentSource).toMatch(/browserWindow\(\)\?\.localStorage/);
     expect(browserEnvironmentSource).toMatch(/browserWindow\(\)\?\.matchMedia/);
-    expect(scannedSources).not.toMatch(/Object\.getOwnPropertyDescriptor\(globalThis, 'window'\)/);
-    expect(swingMotionViewerSource).toMatch(/forceReducedMotion/);
-    expect(swingLabSessionSource).toMatch(/모션 미터/);
+    expect(`${appSource}\n${caddieSessionSource}`).not.toMatch(/Object\.getOwnPropertyDescriptor\(globalThis, 'window'\)/);
   });
 });
