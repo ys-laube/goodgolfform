@@ -111,8 +111,7 @@ h2 {
 .hero-actions,
 .form-grid,
 .club-grid,
-.analysis-card-grid,
-.adjustment-strip {
+.analysis-card-grid {
   display: grid;
   gap: 0.85rem;
 }
@@ -195,8 +194,7 @@ select optgroup {
   border-color: rgba(184, 255, 104, 0.3);
 }
 
-.analysis-card,
-.adjustment-strip span {
+.analysis-card {
   display: grid;
   gap: 0.35rem;
   border-radius: 1.1rem;
@@ -205,8 +203,7 @@ select optgroup {
   color: #d8f9df;
 }
 
-.analysis-card strong,
-.adjustment-strip strong {
+.analysis-card strong {
   color: #f7fff7;
   font-size: 1.05rem;
   text-transform: capitalize;
@@ -256,8 +253,7 @@ select optgroup {
   transform: rotate(-8deg);
 }
 
-.analysis-card p,
-.adjustment-strip span {
+.analysis-card p {
   margin: 0;
 }
 
@@ -283,16 +279,6 @@ select optgroup {
   text-transform: uppercase;
 }
 
-.adjustment-strip {
-  grid-template-columns: 1fr;
-}
-
-.adjustment-strip span {
-  border: 1px solid rgba(83, 209, 255, 0.18);
-  background:
-    linear-gradient(90deg, rgba(83, 209, 255, 0.13), transparent),
-    rgba(255, 255, 255, 0.08);
-}
 
 .shot-dashboard {
   display: grid;
@@ -359,30 +345,6 @@ select optgroup {
   color: #9af1b4;
 }
 
-.dashboard-metrics {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.7rem;
-  margin: 0;
-}
-
-.dashboard-metrics div {
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 1rem;
-  background: rgba(255, 255, 255, 0.08);
-  padding: 0.8rem;
-}
-
-.dashboard-metrics dt {
-  color: #9af1b4;
-  font-size: 0.78rem;
-}
-
-.dashboard-metrics dd {
-  margin: 0.25rem 0 0;
-  font-size: 1.1rem;
-  font-weight: 800;
-}
 
 @media (min-width: 42rem) {
   .app-shell {
@@ -397,12 +359,6 @@ select optgroup {
   .analysis-card-grid {
     grid-template-columns: repeat(2, 1fr);
   }
-
-  .adjustment-strip,
-  .shot-dashboard {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
   .shot-dashboard {
     grid-template-columns: 1.1fr 0.9fr;
     align-items: center;
@@ -435,8 +391,7 @@ select optgroup {
     grid-template-columns: minmax(0, 0.8fr) minmax(18rem, 1.2fr);
   }
 
-  .dashboard-copy,
-  .dashboard-metrics {
+  .dashboard-copy {
     grid-column: auto;
   }
 }

@@ -121,49 +121,33 @@ export function App() {
 
       <section id="preset-panel" className="lab-panel" aria-labelledby="profile-title">
         <div className="section-heading">
-          <p className="eyebrow">1단계 · 거리 프리셋</p>
-          <h2 id="profile-title">내 클럽별 캐리 거리</h2>
-          <p>{storageMessage}</p>
+          <p className="eyebrow">지금 처방</p>
+          <h2 id="analysis-title">상황별 샷 처방</h2>
         </div>
 
-        <label>
-          저장된 프리셋 불러오기
-          <select value={selectedPresetId} onChange={(event) => handlePresetSelection(event.target.value)}>
-            {selectablePresets.map((preset) => (
-              <option key={preset.id} value={preset.id}>
-                {preset.name} — 드라이버 {preset.anchorDistances.driver}m · 7번 {preset.anchorDistances.sevenIron}m · 피칭 웨지 {preset.anchorDistances.pitchingWedge}m
-              </option>
-            ))}
-          </select>
-        </label>
-
-        {savedPresets.length > 0 ? <p className="storage-note">이 기기에 저장됨: {savedPresets.map((preset) => preset.name).join(', ')}</p> : null}
-
-        <label>
-          프리셋 이름
-          <input value={activePreset.name} onChange={(event) => setActivePreset({ ...activePreset, name: event.target.value })} />
-        </label>
-
-        <div className="club-grid" aria-label="수정 가능한 캐리 거리">
-          {caddieClubOrder.map((club) => (
-            <label key={club}>
-              {caddieClubLabels[club]} 캐리 (m)
-              <input
-                type="number"
-                min="30"
-                max="330"
-                inputMode="numeric"
-                value={clubDistanceDrafts[club] ?? numericInputValue(distanceFor(activePreset, club))}
-                onChange={(event) => handleClubDistanceDraft(club, event.currentTarget.value)}
-                onBlur={() => handleClubDistanceBlur(club)}
-              />
-            </label>
+        <h3>왜 이렇게 치나요?</h3>
+        <div className="analysis-card-grid" aria-label="처방 이유 네 가지">
+          {prescription.reasonCards.map((card) => (
+            <article className="analysis-card" key={card.id}>
+              <p className="card-label">{card.title}</p>
+              <strong>{card.summary}</strong>
+              <p>{card.detail}</p>
+            </article>
           ))}
         </div>
+        <section className="shot-dashboard" aria-labelledby="shot-dashboard-title">
+          <div className="dashboard-display" aria-hidden="true">
+            <span className="dashboard-target-line" />
+            <span className="dashboard-shot-arc" />
+            <span className="dashboard-ball-dot" />
+          </div>
+          <div className="dashboard-copy">
+            <p className="eyebrow">정적 샷 대시보드</p>
+            <h3 id="shot-dashboard-title">한 장으로 보는 타깃 라인</h3>
+            <p>스크린 골프식 샷 요약을 필드형 숫자판처럼 고정 표시합니다.</p>
+          </div>
+        </section>
 
-        <button type="button" className="primary-action button-action sticky-action" onClick={saveCurrentPreset}>
-          로컬 프리셋 저장
-        </button>
       </section>
       <section id="shot-panel" className="lab-panel caddie-input-panel" aria-labelledby="scenario-title">
         <div className="section-heading">
