@@ -219,6 +219,16 @@ describe('App SSR/static harness contract', () => {
     expect(appSource).toMatch(/data-ball-height=\{prescription\.shotVisual\.ballHeight\}/);
     expect(appSource).toMatch(/data-stance=\{prescription\.shotVisual\.stanceTilt\}/);
     expect(appSource).toMatch(/data-trajectory=\{prescription\.shotVisual\.trajectory\}/);
+    expect(appSource).toMatch(/data-aim=\{prescription\.shotVisual\.aimBias\}/);
+    expect(appSource).toMatch(/data-wind=\{prescription\.shotVisual\.windDirection\}/);
+    expect(appSource).toMatch(/shot-visual-feet/);
+    expect(appSource).toMatch(/shot-visual-stance/);
+    expect(appSource).toMatch(/shot-visual-ball/);
+    expect(stylesSource).toMatch(/data-ball-height="below-feet"[\s\S]*--ball-offset/);
+    expect(stylesSource).toMatch(/data-stance="uphill"[\s\S]*--stance-tilt/);
+    expect(stylesSource).toMatch(/data-aim="left"[\s\S]*--aim-offset/);
+    expect(stylesSource).toMatch(/data-trajectory="low"[\s\S]*--arc-height/);
+    expect(stylesSource).toMatch(/data-wind="right-to-left"[\s\S]*--wind-shift/);
   });
 
   it('restores saved caddie distance presets through the App storage boundary when browser storage exists', () => {
