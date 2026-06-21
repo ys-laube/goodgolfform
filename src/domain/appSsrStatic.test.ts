@@ -46,6 +46,22 @@ const supersededImportSpecifiers = [
   /mapbox|maplibre|leaflet|firebase|supabase|amplify|socket\.io|auth0|clerk|openweather|weatherapi/i,
 ] as const;
 
+
+const retiredTask16SourcePattern = new RegExp(
+  [
+    'type=' + '"number"',
+    '추천' + ':',
+    '추천 ' + '요약',
+    '짧은 ' + '이유',
+    'adjustment' + '-strip',
+    'shotDashboard' + '\\.recommendation',
+    'shot' + '-dashboard',
+    'dashboard' + '-metrics',
+    'visual-card-grid',
+    'visualCards',
+  ].join('|'),
+);
+
 const supersededRuntimeTokens = [
   /navigator\.geolocation/i,
   /getCurrentPosition/i,
@@ -273,7 +289,7 @@ describe('App SSR/static harness contract', () => {
     expect(appSessionSource).toMatch(/caddiePresets/);
     expect(appSource).toMatch(/shot-visual/);
     expect(appSource).toMatch(/shot-visual-metrics/);
-    expect(appSource).not.toMatch(/type="number"|추천:|추천 요약|짧은 이유|adjustment-strip|shotDashboard\.recommendation|shot-dashboard|dashboard-metrics|visual-card-grid|visualCards/);
+    expect(appSource).not.toMatch(retiredTask16SourcePattern);
     expect(appSource).not.toMatch(/TrackMan|FlightScope|Foresight|GCQuad|logo|brand|asset|img src|<img/i);
   });
 

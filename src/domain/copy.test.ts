@@ -8,6 +8,26 @@ import {
   productPrinciples,
 } from './copy';
 
+
+const retiredDocsCopyPattern = new RegExp(
+  [
+    '추천' + ':',
+    '추천 ' + '요약',
+    '짧은 ' + '이유',
+    'static shot ' + 'dashboard',
+    '정적 샷 ' + '대시보드',
+    '2D mini cards',
+    '2D aim/lie mini cards',
+    '미니카드',
+    '경사/스탠스',
+    '좌우 경사',
+    '발끝 오르막',
+    '발끝 내리막',
+    '좌측 경사',
+    '우측 경사',
+  ].join('|'),
+);
+
 const commandLikeCopyPattern = /\b(coach|must|should|need to|try to|take this|hit this|aim at|choose this|use this)\b|반드시|해야|보장|정확|코치/i;
 const staleMiniCardPattern = /2D 미니카드|미니카드|mini-card|visual-card|visualCards|조준과 라이 미니카드|2D 보조/i;
 
@@ -43,6 +63,6 @@ describe('foundation product copy', () => {
     const docsAndCopy = `${readmeSource}\n${copySource}\n${productPrinciples.join(' ')}`;
 
     expect(docsAndCopy).toMatch(/reactive 2D shot\/stance visual|반응형 2D 샷\/스탠스 비주얼/);
-    expect(docsAndCopy).not.toMatch(/추천:|추천 요약|짧은 이유|static shot dashboard|정적 샷 대시보드|2D mini cards|2D aim\/lie mini cards|미니카드|경사\/스탠스|좌우 경사|발끝 오르막|발끝 내리막|좌측 경사|우측 경사/);
+    expect(docsAndCopy).not.toMatch(retiredDocsCopyPattern);
   });
 });
