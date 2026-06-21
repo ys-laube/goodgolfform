@@ -98,7 +98,7 @@ export function SwingMotionViewer({ parameters, recommendation, forceReducedMoti
         tabIndex={0}
         aria-label={`골퍼 모션 뷰어: ${parameters.accessibleSummary}. ${visualState.poseLabel}. 평면 2D 스테이지.`}
       >
-        <div className="motion-stage-depth">
+        <div className="motion-stage-frame">
           <svg className="swing-arc-svg" viewBox="0 0 360 320" aria-hidden="true">
             <defs>
               <linearGradient id="trajectoryGradient" x1="0" x2="1" y1="0" y2="0">
@@ -109,7 +109,7 @@ export function SwingMotionViewer({ parameters, recommendation, forceReducedMoti
 
             <ellipse className="ground-ring" cx="180" cy="250" rx="118" ry="28" />
             <path className="swing-plane" d={`M 84 222 C 122 72, 236 72, 276 222`} pathLength="100" />
-            <path className="swing-plane swing-plane-shadow" d={`M ${84 + parameters.pathOffset} 228 C ${124 + parameters.pathOffset} 96, ${236 + parameters.pathOffset} 96, ${276 + parameters.pathOffset} 228`} pathLength="100" />
+            <path className="swing-plane swing-plane-guide" d={`M ${84 + parameters.pathOffset} 228 C ${124 + parameters.pathOffset} 96, ${236 + parameters.pathOffset} 96, ${276 + parameters.pathOffset} 228`} pathLength="100" />
             <path className="trajectory-line" d={`M 196 164 C 236 ${134 - parameters.launchAngleDegrees}, 282 ${visualState.trajectoryEndY}, 330 ${visualState.trajectoryEndY - 24}`} />
 
             <g className="golfer-body">
