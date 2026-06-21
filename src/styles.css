@@ -314,8 +314,6 @@ select optgroup {
     linear-gradient(180deg, rgba(14, 62, 53, 0.82), rgba(5, 25, 19, 0.92));
   display: grid;
   place-items: center;
-  perspective: 900px;
-  touch-action: none;
   user-select: none;
   outline: none;
 }
@@ -326,24 +324,18 @@ select optgroup {
 
 .motion-stage-depth {
   width: min(100%, 30rem);
-  transform: rotateX(var(--viewer-rotate-x)) rotateY(var(--viewer-rotate-y));
-  transform-style: preserve-3d;
-  transition: transform 180ms ease;
 }
 
 .swing-arc-svg {
   display: block;
   width: 100%;
   filter: drop-shadow(0 1.5rem 1.8rem rgba(0, 0, 0, 0.38));
-  transform: translateZ(2.5rem);
 }
 
 .ground-ring {
   fill: rgba(184, 255, 104, 0.08);
   stroke: rgba(184, 255, 104, 0.38);
   stroke-width: 3;
-  transform-origin: 180px 250px;
-  transform: rotateX(64deg);
 }
 
 .swing-plane,

@@ -1,6 +1,6 @@
 # FunGolf Swing Lab
 
-FunGolf is a mobile-first TypeScript web app prototype for a serious golf swing lab. It lets a player choose or save a local profile, enter manual shot context, and view a deterministic analysis card plus parameterized pseudo-3D motion values.
+FunGolf is a mobile-first TypeScript web app prototype for a serious golf swing lab. It lets a player choose or save a local profile, enter manual shot context, and view a deterministic analysis card plus parameterized flat motion values.
 
 ## Current scope
 
@@ -10,7 +10,7 @@ This prototype includes:
 - Built-in and locally saved swing profiles stored on the current device only.
 - Manual scenario inputs for distance, wind, lie, and desired shot window.
 - A deterministic recommendation engine for club distance feel, swing size, tempo, path bias, trajectory strategy, confidence, and explanatory adjustments.
-- Motion-parameter mapping for a pseudo-3D swing viewer without WebGL, map, backend, or provider SDK dependencies.
+- Motion-parameter mapping for a flat swing viewer without WebGL, map, backend, or provider SDK dependencies.
 - Vitest, TypeScript, ESLint, and production build scripts.
 
 ## Explicit non-goals

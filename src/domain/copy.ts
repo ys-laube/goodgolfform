@@ -2,7 +2,7 @@ export const productPrinciples = [
   'One-handed, outdoor-readable swing lab.',
   'Profile-aware distance feel and swing context stay approximate by design.',
   'Manual scenario inputs drive deterministic analysis cards.',
-  'Pseudo-3D motion values stay parameterized and dependency-free.',
+  'Flat motion values stay parameterized and dependency-free.',
 ] as const;
 
 export const nonGoals = [
