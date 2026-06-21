@@ -58,6 +58,18 @@ describe('App SSR/static harness contract', () => {
     expect(renderedApp).not.toMatch(/Build the shot|Read the swing card|Enter shot|Type the shot|choose a saved profile|get a deterministic/i);
   });
 
+  it('SSR-renders the default analysis card fields without notice-style copy', () => {
+    const renderedApp = withPoisonedBrowserStorage(() => renderToString(createElement(App)));
+
+    expect(renderedApp).toContain('6 IRON');
+    expect(renderedApp).toContain('controlled');
+    expect(renderedApp).toContain('Plausibility');
+    expect(renderedApp).toContain('Tempo');
+    expect(renderedApp).toContain('Flight read');
+    expect(renderedApp).toMatch(/fit score/i);
+    expect(renderedApp).toMatch(/adjusted target/i);
+    expect(renderedApp).not.toMatch(/disclaimer|legal notice|official|rangefinder|must|guarantee|exact/i);
+  });
 
   it('restores saved profile presets through the App storage boundary when browser storage exists', () => {
     const descriptor = Object.getOwnPropertyDescriptor(globalThis, 'window');

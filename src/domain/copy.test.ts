@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import copySource from './copy.ts?raw';
 import {
   approximateDistanceCopy,
   nonGoals,
@@ -10,6 +11,11 @@ describe('foundation product copy', () => {
   it('keeps approximate distance boundary copy available without notice-style wording', () => {
     expect(approximateDistanceCopy).toMatch(/approximate practice estimates/i);
     expect(approximateDistanceCopy).not.toMatch(/official|rangefinder|safety-critical|disclaimer|legal notice/i);
+  });
+
+  it('keeps exported product copy naming free of disclaimer and notice surfaces', () => {
+    expect(copySource).toMatch(/approximateDistanceCopy/);
+    expect(copySource).not.toMatch(/Disclaimer|LegalNotice|legal notice|disclaimer/i);
   });
 
   it('documents privacy and deferred shared persistence boundaries', () => {
