@@ -137,8 +137,11 @@ describe('App SSR/static harness contract', () => {
     const renderedApp = withPoisonedBrowserStorage(() => renderToString(createElement(App)));
 
     expect(renderedApp).toMatch(/지금 처방[\s\S]*추천 요약[\s\S]*클럽[\s\S]*스윙[\s\S]*플레이 거리/i);
-    expect(renderedApp).toMatch(/짧은 이유[\s\S]*9번 아이언 90%[\s\S]*목표보다 살짝 오른쪽 조준[\s\S]*낮게 컨트롤/i);
-    expect(renderedApp).not.toMatch(/2D 보조|조준 미니맵|라이·스탠스/i);
+    expect(renderedApp).toMatch(/짧은 이유[\s\S]*클럽 선택이유[\s\S]*9번 아이언 90%[\s\S]*조준 방향 이유[\s\S]*목표보다 살짝 오른쪽 조준[\s\S]*목표 탄도 이유[\s\S]*낮게 컨트롤[\s\S]*미스 경고 코멘트/i);
+    for (const category of ['클럽 선택이유', '조준 방향 이유', '목표 탄도 이유', '미스 경고 코멘트']) {
+      expect(renderedApp.match(new RegExp(category, 'g'))).toHaveLength(1);
+    }
+    expect(renderedApp).toMatch(/2D 보조[\s\S]*조준 미니맵[\s\S]*라이·스탠스/i);
     expect(renderedApp).not.toMatch(/\b(coach|must|should|need to|try to|guarantee|exact)\b|adjusted play|코치|보장|정확/i);
   });
 

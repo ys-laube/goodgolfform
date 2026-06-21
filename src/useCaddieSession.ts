@@ -235,28 +235,24 @@ function buildPrescription(preset: CaddieDistancePreset, scenario: CaddieScenari
     warningText,
     reasonCards: [
       {
-        id: 'club-swing',
+        id: 'club-selection-reason',
         title: '클럽 선택이유',
-        summary: `${selectedClubLabel} ${swingPercent}%`,
-        detail: `${targetDistanceMeters}m에 바람·라이·핀을 더해 ${playDistanceMeters}m처럼 보고 컨트롤 스윙을 고릅니다.`,
+        detail: `${selectedClubLabel} ${swingPercent}% — ${targetDistanceMeters}m에 바람·라이·핀을 더해 ${playDistanceMeters}m처럼 보고 컨트롤 스윙을 고릅니다.`,
       },
       {
-        id: 'aim-correction',
+        id: 'aim-direction-reason',
         title: '조준 방향 이유',
-        summary: aimText,
-        detail: `${stanceSlopeLabels[scenario.stanceSlope]} · ${sideSlopeLabels[scenario.sideSlope]} 조건이라 시작 방향을 안전 쪽으로 둡니다.`,
+        detail: `${aimText} — ${stanceSlopeLabels[scenario.stanceSlope]}과 ${sideSlopeLabels[scenario.sideSlope]} 때문에 시작 방향을 안전 쪽으로 둡니다.`,
       },
       {
-        id: 'trajectory-control',
+        id: 'target-trajectory-reason',
         title: '목표 탄도 이유',
-        summary: trajectoryText,
-        detail: `${windDirectionLabels[scenario.windDirection]} ${windStrengthLabels[scenario.windStrength]} · ${pinPositionLabels[scenario.pinPosition]} 상황에서는 탄도만 간단히 정합니다.`,
+        detail: `${trajectoryText} — ${windDirectionLabels[scenario.windDirection]} ${windStrengthLabels[scenario.windStrength]}·${pinPositionLabels[scenario.pinPosition]} 상황에서는 긴 설명보다 낮은 실행 처방이 빠릅니다.`,
       },
       {
-        id: 'miss-warning',
+        id: 'miss-warning-comment',
         title: '미스 경고 코멘트',
-        summary: warningText,
-        detail: `${lieLabels[scenario.lie]} 라이에서 가장 큰 미스 하나만 먼저 지웁니다.`,
+        detail: `${warningText} — ${lieLabels[scenario.lie]} 라이에서 가장 큰 미스 하나만 먼저 지웁니다.`,
       },
     ],
   };

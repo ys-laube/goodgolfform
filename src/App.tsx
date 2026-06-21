@@ -76,7 +76,7 @@ export function App() {
         <div className="analysis-card-grid" aria-label="짧은 이유">
           {prescription.reasonCards.map((card) => (
             <article className="analysis-card" key={card.id}>
-              <p className="card-label">{card.title}</p>
+              <p className="card-label">근거 카드</p>
               <strong>{card.title}</strong>
               <p>{card.detail}</p>
             </article>
