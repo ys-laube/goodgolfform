@@ -25,7 +25,7 @@ const runtimeSourceEntries = Object.entries(runtimeSourceModules).filter(
 );
 
 const supersededRuntimeFilePatterns = [
-  /(?:MapShell|useCurrentLocation|roomApi|roomRepository|shotPinFlow|courseTargets|geo|mapAdapter|fieldReadiness)\.(?:ts|tsx)$/,
+  /(?:MapShell|useCurrentLocation|roomApi|roomRepository|shotPinFlow|courseTargets|geo|mapAdapter|fieldReadiness|auth|weather)\.(?:ts|tsx)$/i,
 ] as const;
 
 const supersededImportSpecifiers = [
@@ -38,7 +38,8 @@ const supersededImportSpecifiers = [
   /(?:^|\/)geo$/,
   /(?:^|\/)mapAdapter$/,
   /(?:^|\/)fieldReadiness$/,
-  /mapbox|maplibre|leaflet|firebase|supabase|amplify|socket\.io/i,
+  /(?:^|\/)(?:auth|weather|backend)$/,
+  /mapbox|maplibre|leaflet|firebase|supabase|amplify|socket\.io|auth0|clerk|openweather|weatherapi/i,
 ] as const;
 
 const supersededRuntimeTokens = [
@@ -46,7 +47,10 @@ const supersededRuntimeTokens = [
   /getCurrentPosition/i,
   /VITE_MAP_/i,
   /VITE_ROOM_API_/i,
+  /VITE_(?:WEATHER|AUTH|BACKEND)_/i,
   /google\.maps/i,
+  /\bfetch\s*\(/i,
+  /XMLHttpRequest|EventSource|WebSocket/i,
 ] as const;
 
 function importSpecifiersFromSource(source: string): string[] {
@@ -178,8 +182,8 @@ describe('App SSR/static harness contract', () => {
     }
   });
 
-  it('keeps App free of superseded GPS/map/room imports', () => {
-    expect(appSource).not.toMatch(/MapShell|useCurrentLocation|roomApi|roomRepository|shotPinFlow|courseTargets|mapAdapter/);
+  it('keeps App free of superseded GPS/map/room/weather/auth/backend imports', () => {
+    expect(appSource).not.toMatch(/MapShell|useCurrentLocation|roomApi|roomRepository|shotPinFlow|courseTargets|mapAdapter|auth|weather|backend/i);
     const appSessionSource = `${appSource}\n${swingLabSessionSource}`;
 
     expect(appSessionSource).toMatch(/profilePresets/);
@@ -188,7 +192,7 @@ describe('App SSR/static harness contract', () => {
     expect(appSource).toMatch(/SwingMotionViewer/);
   });
 
-  it('keeps all runtime source free of retired GPS, map, room, and backend import surfaces', () => {
+  it('keeps all runtime source free of retired GPS, map, room, weather, auth, and backend import surfaces', () => {
     const runtimeModulePaths = runtimeSourceEntries.map(([modulePath]) => modulePath);
     const runtimeImports = runtimeSourceEntries.flatMap(([modulePath, source]) =>
       importSpecifiersFromSource(source).map((specifier) => ({ modulePath, specifier })),
