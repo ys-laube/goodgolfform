@@ -30,7 +30,7 @@ describe('G004 stale Swing Lab removal guard', () => {
     }
   });
 
-  it('keeps the app wired only to the Korean caddie session and reactive 2D shot visual', () => {
+  it('keeps the app wired only to the Korean caddie session and Korean semantic 2D setup visual', () => {
     expect(appSource).toMatch(/useCaddieSession/);
     expect(appSource).toMatch(/prescription\.reasonCards/);
     expect(appSource).toMatch(/prescription\.shotVisual/);
@@ -43,17 +43,22 @@ describe('G004 stale Swing Lab removal guard', () => {
     expect(`${appSource}\n${caddieSessionSource}`).not.toMatch(/SwingMotionViewer|motionParameters|useSwingLabSession|recommendShot|profilePresets|swingLabModels/);
   });
 
-  it('keeps visual state free of recommendation, play-distance, and swing summary fields', () => {
+  it('keeps semantic visual state free of recommendation, wind drawing, trajectory drawing, and swing summary fields', () => {
     const visualTypeBody = caddieSessionSource.match(/type CaddieShotVisualState = \{([\s\S]*?)\};/)?.[1] ?? '';
-    const visualStateBody = caddieSessionSource.match(/shotVisual:\s*\{([\s\S]*?)\n {4}\},/)?.[1] ?? '';
+    const visualStateBody = caddieSessionSource.match(/shotVisual:\s*\{([\s\S]*?)
+ {4}\},/)?.[1] ?? '';
 
-    expect(visualTypeBody).toMatch(/aimBias/);
-    expect(visualTypeBody).toMatch(/ballHeight/);
-    expect(visualTypeBody).toMatch(/stanceTilt/);
-    expect(visualTypeBody).toMatch(/windDirection/);
-    expect(visualTypeBody).toMatch(/windStrength/);
-    expect(visualTypeBody).toMatch(/trajectory/);
-    expect(`${visualTypeBody}\n${visualStateBody}`).not.toMatch(/recommendation|playDistanceMeters|swingPercent|selectedClubLabel|추천|플레이 거리|스윙/);
+    expect(visualTypeBody).toMatch(/handedness/);
+    expect(visualTypeBody).toMatch(/clubGroup/);
+    expect(visualTypeBody).toMatch(/ballPositionSlot/);
+    expect(visualTypeBody).toMatch(/ballPositionPercentRightHanded/);
+    expect(visualTypeBody).toMatch(/ballPositionPercent/);
+    expect(visualTypeBody).toMatch(/frontBackSlope/);
+    expect(visualTypeBody).toMatch(/sideHillRelation/);
+    expect(`${visualTypeBody}
+${visualStateBody}`).not.toMatch(
+      /recommendation|playDistanceMeters|swingPercent|selectedClubLabel|windDirection|windStrength|trajectory|추천|플레이 거리|스윙/,
+    );
   });
 
   it('removes motion-viewer styling while preserving responsive mobile layout', () => {
@@ -61,7 +66,9 @@ describe('G004 stale Swing Lab removal guard', () => {
     expect(stylesSource).toContain('.shot-visual');
     expect(stylesSource).not.toContain('.shot-visual-' + 'metrics');
     expect(stylesSource).not.toMatch(/shot-dashboard|dashboard-metrics|visual-card-grid|visual-card|visual-marker/);
-    expect(stylesSource).toMatch(/data-wind-strength="strong"[\s\S]*--wind-width/);
+    expect(stylesSource).toMatch(/data-front-back="uphill"[\s\S]*--stance-tilt/);
+    expect(stylesSource).toMatch(/data-side-hill="below-feet"[\s\S]*--side-hill-offset/);
+    expect(stylesSource).not.toMatch(/data-wind|data-trajectory|shot-visual-arc|shot-visual-wind/);
     expect(stylesSource).toContain('@media (min-width: 42rem)');
     expect(stylesSource).toContain('@media (min-width: 56rem)');
   });

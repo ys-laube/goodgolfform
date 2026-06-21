@@ -48,7 +48,7 @@ describe('G003 copy/UX integration boundary', () => {
     expect(renderedApp).toMatch(/거리 프리셋/i);
     expect(renderedApp).toMatch(/처방 결과/i);
     expect(renderedApp).toMatch(/왜 이렇게 치나요/i);
-    expect(renderedApp).toMatch(/반응형 2D 샷\/스탠스 비주얼/i);
+    expect(renderedApp).toMatch(/한국형 2D 셋업 비주얼/i);
     expect(renderedApp).not.toMatch(retiredTask16VisiblePattern);
     expect(visibleCopy).toMatch(/근사 연습 추정값/i);
     expect(renderedApp).toMatch(/9번 아이언 90%[\s\S]*목표보다 살짝 오른쪽 조준[\s\S]*낮게 컨트롤/);

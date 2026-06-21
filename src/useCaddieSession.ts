@@ -370,6 +370,8 @@ export function buildCaddiePrescription(preset: CaddieDistancePreset, scenario: 
   };
 }
 
+export const buildPrescription = buildCaddiePrescription;
+
 function clampMeters(value: number): number {
   const numericValue = Number.isFinite(value) ? value : 100;
   return Math.min(330, Math.max(30, Math.round(numericValue)));
@@ -409,7 +411,7 @@ export function useCaddieSession() {
   const [storageMessage, setStorageMessage] = useState(() => initialStorageMessage(savedPresets));
 
   const selectablePresets = useMemo(() => [defaultPreset, ...savedPresets], [savedPresets]);
-  const prescription = useMemo(() => buildCaddiePrescription(activePreset, scenario), [activePreset, scenario]);
+  const prescription = useMemo(() => buildPrescription(activePreset, scenario), [activePreset, scenario]);
 
   function selectPreset(presetId: string) {
     const nextPreset = selectablePresets.find((preset) => preset.id === presetId) ?? defaultPreset;
