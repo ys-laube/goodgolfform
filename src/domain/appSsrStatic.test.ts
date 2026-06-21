@@ -60,6 +60,9 @@ describe('App SSR/static harness contract', () => {
     expect(renderedApp).toContain('Trajectory strategy');
     expect(renderedApp).toContain('Plausibility · game metrics');
     expect(renderedApp).toContain('Why this card');
+    expect(renderedApp).toContain('Parameterized golfer motion');
+    expect(renderedApp).toContain('Current motion parameters');
+    expect(renderedApp).toMatch(/Golfer motion viewer:/);
     expect(renderedApp).toMatch(/fit score/i);
     expect(renderedApp).toMatch(/adjusted target/i);
     expect(renderedApp).not.toMatch(/GPS shot pins|room-flow|map-shell|invite-link room/i);
@@ -143,6 +146,8 @@ describe('App SSR/static harness contract', () => {
     expect(appSource).not.toMatch(/MapShell|useCurrentLocation|roomApi|roomRepository|shotPinFlow|courseTargets|mapAdapter/);
     expect(appSource).toMatch(/profilePresets/);
     expect(appSource).toMatch(/recommendShot/);
+    expect(appSource).toMatch(/motionParametersFromRecommendation/);
+    expect(appSource).toMatch(/SwingMotionViewer/);
   });
 
   it('keeps the static HTML entrypoint ready for mobile swing lab smoke checks', () => {
