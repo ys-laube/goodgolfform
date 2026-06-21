@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { SwingMotionViewer } from './components/SwingMotionViewer';
 import {
   builtInProfilePresets,
   loadSavedProfilePresets,
@@ -6,6 +7,7 @@ import {
   upsertProfilePreset,
   type StorageLike,
 } from './domain/profilePresets';
+import { motionParametersFromRecommendation } from './domain/motionParameters';
 import { recommendShot } from './domain/recommendationEngine';
 import type {
   ClubKey,
@@ -142,6 +144,7 @@ export function App() {
   const selectableProfiles = useMemo(() => [...builtInProfilePresets, ...savedProfiles], [savedProfiles]);
   const recommendation = useMemo(() => recommendShot(activeProfile, scenario), [activeProfile, scenario]);
   const analysisCards = useMemo(() => analysisCardsFor(recommendation), [recommendation]);
+  const motionParameters = useMemo(() => motionParametersFromRecommendation(recommendation), [recommendation]);
 
   function selectProfile(profileId: string) {
     const nextProfile = selectableProfiles.find((profile) => profile.id === profileId) ?? builtInProfilePresets[0];
@@ -449,6 +452,8 @@ export function App() {
           </ul>
         </div>
       </section>
+
+      <SwingMotionViewer parameters={motionParameters} recommendation={recommendation} />
     </main>
   );
 }
