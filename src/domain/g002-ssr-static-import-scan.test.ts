@@ -1,16 +1,16 @@
 import { describe, expect, it } from 'vitest';
 
-const sourceModules = import.meta.glob('../**/*.{ts,tsx}', {
+const sourceModules = import.meta.glob('./*.ts', {
   eager: true,
   query: '?raw',
   import: 'default',
 }) as Record<string, string>;
 
 const g002SwingFlowModules = [
-  '../domain/swingLabModels.ts',
-  '../domain/profilePresets.ts',
-  '../domain/recommendationEngine.ts',
-  '../domain/motionParameters.ts',
+  './swingLabModels.ts',
+  './profilePresets.ts',
+  './recommendationEngine.ts',
+  './motionParameters.ts',
 ] as const;
 
 const forbiddenRuntimeImportPatterns = [
