@@ -105,6 +105,8 @@ describe('App SSR/static harness contract', () => {
     expect(renderedApp).toContain('캐디 한줄 처방');
     expect(renderedApp).toContain('남은 거리와 라이만 빠르게 넣고');
     expect(renderedApp).toContain('지금 처방');
+    expect(renderedApp).toContain('1단계 · 거리 프리셋');
+    expect(renderedApp).toContain('2단계 · 수동 샷 입력');
     expect(renderedApp).toContain('추천 요약');
     expect(renderedApp).toContain('정적 샷 대시보드');
     expect(renderedApp).toContain('스크린 골프식 샷 요약');
@@ -128,6 +130,26 @@ describe('App SSR/static harness contract', () => {
 
     expect(renderedApp).not.toMatch(/경사\/스탠스|좌우 경사|발끝 오르막|발끝 내리막|좌측 경사|우측 경사|조준과 라이 미니카드|2D 보조|근거 카드|근거카드/);
     expect(renderedApp).not.toMatch(/Build the shot|Read the swing card|Enter shot|Type the shot|choose a saved profile|get a deterministic|adjusted play|you should|let's|do this|next|now/i);
+  });
+
+  it('orders the field workflow as distance preset, shot situation input, then prescription result', () => {
+    const renderedApp = withPoisonedBrowserStorage(() => renderToString(createElement(App)));
+    const presetIndex = renderedApp.indexOf('id="preset-panel"');
+    const shotIndex = renderedApp.indexOf('id="shot-panel"');
+    const prescriptionIndex = renderedApp.indexOf('id="analysis-panel"');
+
+    expect(presetIndex).toBeGreaterThan(-1);
+    expect(shotIndex).toBeGreaterThan(presetIndex);
+    expect(prescriptionIndex).toBeGreaterThan(shotIndex);
+  });
+
+  it('keeps caddie numeric inputs direct-typing friendly without event target number coercion', () => {
+    expect(appSource).toMatch(/inputMode="numeric"/);
+    expect(appSource.match(/inputMode="numeric"/g)?.length).toBeGreaterThanOrEqual(2);
+    expect(appSource).toMatch(/useState[\s\S]*targetDistanceDraft/);
+    expect(appSource).toMatch(/value\.trim\(\) === ''/);
+    expect(appSource).toMatch(/event\.currentTarget\.value/);
+    expect(appSource).not.toMatch(/Number\(event\.target\.value\)|Number\(event\.currentTarget\.value\)/);
   });
 
   it('SSR-renders the representative 100m result-first prescription fields', () => {
