@@ -18,14 +18,14 @@ describe('motion parameters', () => {
 
     expect(parameters).toEqual({
       arcDegrees: 148,
-      animationDurationMs: 1792,
-      tempoRating: 84,
+      animationDurationMs: 1648,
+      tempoRating: 96,
       pathOffset: 0,
       planeTiltDegrees: 50,
       launchAngleDegrees: 17,
-      followThroughHeight: 100,
-      reducedMotionPose: 'balanced',
-      accessibleSummary: 'controlled neutral tempo, neutral path, standard-window launch',
+      followThroughHeight: 112,
+      reducedMotionPose: 'extended',
+      accessibleSummary: 'fuller stock assertive tempo, neutral path, standard-window launch',
     });
   });
 

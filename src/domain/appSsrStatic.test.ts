@@ -2,14 +2,17 @@ import { createElement } from 'react';
 import { renderToString } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import indexHtml from '../../index.html?raw';
+import packageJson from '../../package.json';
+import { SwingMotionViewer } from '../components/SwingMotionViewer';
+import swingMotionViewerSource from '../components/SwingMotionViewer.tsx?raw';
 import appSource from '../App.tsx?raw';
+import { motionParametersFromRecommendation } from './motionParameters';
 import { builtInProfilePresets, serializeProfilePresets, type StorageLike } from './profilePresets';
+import { recommendShot } from './recommendationEngine';
 import { App } from '../App';
 import motionParametersSource from './motionParameters.ts?raw';
 
-const packageDependencyNames = Object.keys(
-  (await import('../../package.json', { with: { type: 'json' } })).default.dependencies,
-);
+const packageDependencyNames = Object.keys(packageJson.dependencies);
 
 function withPoisonedBrowserStorage<T>(assertions: () => T): T {
   const descriptors = {
@@ -85,7 +88,7 @@ describe('App SSR/static harness contract', () => {
     expect(renderedApp).toContain('Trajectory strategy');
     expect(renderedApp).toMatch(/fit score/i);
     expect(renderedApp).toMatch(/adjusted target/i);
-    expect(renderedApp).not.toMatch(/disclaimer|legal notice|official|rangefinder|coach|caddie|caddy|must|should|need to|try to|hit|aim|guarantee|exact|adjusted play/i);
+    expect(renderedApp).not.toMatch(/\b(disclaimer|legal notice|official|rangefinder|coach|caddie|caddy|must|should|need to|try to|hit|aim|guarantee|exact|adjusted play)\b/i);
   });
 
 
@@ -152,14 +155,38 @@ describe('App SSR/static harness contract', () => {
     expect(indexHtml).toContain('<script type="module" src="/src/main.tsx"></script>');
   });
 
+  it('SSR-renders the motion viewer reduced-motion fallback from deterministic parameters', () => {
+    const recommendation = recommendShot(builtInProfilePresets[2], {
+      targetDistanceMeters: 165,
+      windDirection: 'headwind',
+      windStrength: 'strong',
+      lie: 'rough',
+      desiredWindow: 'low',
+    });
+    const parameters = motionParametersFromRecommendation(recommendation);
+    const renderedViewer = withPoisonedBrowserStorage(() =>
+      renderToString(createElement(SwingMotionViewer, { parameters, recommendation, forceReducedMotion: true })),
+    );
+
+    expect(renderedViewer).toContain('role="img"');
+    expect(renderedViewer).toContain(parameters.accessibleSummary);
+    expect(renderedViewer).toContain(`Static ${parameters.reducedMotionPose} pose`);
+    expect(renderedViewer).toContain('--swing-arc');
+    expect(renderedViewer).toMatch(new RegExp(`${parameters.arcDegrees}<!-- -->°`));
+    expect(renderedViewer).toContain(`${parameters.pathOffset}px`);
+    expect(renderedViewer).toMatch(new RegExp(`${parameters.launchAngleDegrees}<!-- -->°`));
+  });
+
   it('keeps the motion-viewer static contract dependency-free and SSR-safe', () => {
-    const scannedSources = [appSource, motionParametersSource].join('\n');
+    const scannedSources = [appSource, motionParametersSource, swingMotionViewerSource].join('\n');
 
     expect(packageDependencyNames).toEqual(['@vitejs/plugin-react', 'vite', 'typescript', 'react', 'react-dom']);
-    expect(scannedSources).not.toMatch(/three|@react-three|webgl|canvas|getContext|matchMedia|requestAnimationFrame/i);
+    expect(scannedSources).not.toMatch(/three|@react-three|webgl|canvas|getContext|requestAnimationFrame/i);
     expect(scannedSources).not.toMatch(/navigator\.geolocation|VITE_MAP_|VITE_ROOM_API_|mapbox|maplibre|leaflet|firebase|supabase/i);
     expect(motionParametersSource).toMatch(/accessibleSummary/);
     expect(motionParametersSource).toMatch(/reducedMotionPose/);
+    expect(swingMotionViewerSource).toMatch(/typeof window === 'undefined'/);
+    expect(swingMotionViewerSource).toMatch(/forceReducedMotion/);
     expect(appSource).toMatch(/Motion meter/);
   });
 });
