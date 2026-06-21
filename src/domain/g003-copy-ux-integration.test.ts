@@ -7,8 +7,8 @@ import swingLabSessionSource from '../useSwingLabSession.ts?raw';
 import { App } from '../App';
 import { approximateDistanceCopy, nonGoals, privacyNotes, productPrinciples } from './copy';
 
-const forbiddenNoticeCopy = /disclaimer|legal notice|official|rangefinder|safety-critical/i;
-const forbiddenCommandCopy = /\b(must|should|need to|try to|guarantee|exact|hit this|play this|aim at|take this club|use this club|caddie|caddy|coach|go for|club up|club down)\b|adjusted play/i;
+const forbiddenNoticeCopy = /disclaimer|legal notice|official|rangefinder|safety-critical|면책|법적 고지|공식|거리측정기|안전 필수/i;
+const forbiddenCommandCopy = /\b(must|should|need to|try to|guarantee|exact|hit this|play this|aim at|take this club|use this club|caddie|caddy|coach|go for|club up|club down)\b|adjusted play|반드시|쳐야|겨냥|추천|보장|정확|캐디|코치/i;
 const forbiddenVisibleConstraintCopy = /without GPS|No login|GPS shot pins|weather feeds?|invite-link room|backend setup|backend dependency/i;
 const forbiddenAppImports = /MapShell|useCurrentLocation|roomApi|roomRepository|shotPinFlow|courseTargets|mapAdapter|auth|weather|multiplayer/i;
 const forbiddenRuntimeDeps = /supabase|firebase|mapbox|leaflet|auth0|clerk|weather|socket\.io/i;
@@ -22,13 +22,15 @@ describe('G003 copy/UX integration boundary', () => {
   it('keeps the SSR-visible swing analysis surface serious, bounded, and non-commanding', () => {
     const renderedApp = renderToString(createElement(App));
     const visibleCopy = [renderedApp, approximateDistanceCopy, ...productPrinciples, ...privacyNotes, ...nonGoals].join(' ');
-    const analysisCardCopy = renderedApp.slice(renderedApp.indexOf('Live analysis report'));
+    const analysisCardCopy = renderedApp.slice(renderedApp.indexOf('실시간 분석 리포트'));
 
-    expect(renderedApp).toMatch(/Live analysis report/i);
-    expect(renderedApp).toMatch(/Plausibility/i);
-    expect(renderedApp).toMatch(/Flight lane/i);
-    expect(renderedApp).toMatch(/fit score/i);
-    expect(visibleCopy).toMatch(/approximate practice estimates/i);
+    expect(renderedApp).toMatch(/[가-힣]/);
+    expect(renderedApp).toMatch(/실시간 분석 리포트/i);
+    expect(renderedApp).toMatch(/개연성/i);
+    expect(renderedApp).toMatch(/비행 라인/i);
+    expect(renderedApp).toMatch(/적합도/i);
+    expect(visibleCopy).toMatch(/근사 연습 추정값/i);
+    expect(renderedApp).not.toMatch(/Serious Golf Swing Lab|Profile panel|Scenario panel|Save profile locally|Live analysis report/);
     expect(visibleCopy).not.toMatch(forbiddenNoticeCopy);
     expect(renderedApp).not.toMatch(forbiddenVisibleConstraintCopy);
     expect(analysisCardCopy).not.toMatch(forbiddenCommandCopy);
