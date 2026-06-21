@@ -10,6 +10,8 @@ function withPoisonedBrowserStorage<T>(assertions: () => T): T {
     window: Object.getOwnPropertyDescriptor(globalThis, 'window'),
     localStorage: Object.getOwnPropertyDescriptor(globalThis, 'localStorage'),
     sessionStorage: Object.getOwnPropertyDescriptor(globalThis, 'sessionStorage'),
+    navigator: Object.getOwnPropertyDescriptor(globalThis, 'navigator'),
+    fetch: Object.getOwnPropertyDescriptor(globalThis, 'fetch'),
   };
 
   for (const property of Object.keys(descriptors) as Array<keyof typeof descriptors>) {
