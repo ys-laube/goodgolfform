@@ -2,6 +2,7 @@ import * as fs from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import appSource from '../App.tsx?raw';
+import shotVisualSource from '../CaddieShotVisual.tsx?raw';
 import caddieSessionSource from '../useCaddieSession.ts?raw';
 
 const stylesSource = fs.readFileSync(join(process.cwd(), 'src/styles.css'), 'utf8');
@@ -34,13 +35,13 @@ describe('G004 stale Swing Lab removal guard', () => {
     expect(appSource).toMatch(/useCaddieSession/);
     expect(appSource).toMatch(/prescription\.reasonCards/);
     expect(appSource).toMatch(/prescription\.shotVisual/);
-    expect(appSource).toMatch(/shot-visual/);
+    expect(`${appSource}\n${shotVisualSource}`).toMatch(/shot-visual/);
     expect(caddieSessionSource).toMatch(/buildCaddiePrescription/);
     expect(caddieSessionSource).toMatch(/caddiePresets/);
     expect(caddieSessionSource).toMatch(/CaddieShotVisualState/);
     expect(caddieSessionSource).toMatch(/shotVisual:\s*\{/);
     expect(caddieSessionSource).not.toMatch(new RegExp(['CaddieShot' + 'Dashboard', 'shot' + 'Dashboard', 'recommendation:'].join('|')));
-    expect(`${appSource}\n${caddieSessionSource}`).not.toMatch(/SwingMotionViewer|motionParameters|useSwingLabSession|recommendShot|profilePresets|swingLabModels/);
+    expect(`${appSource}\n${shotVisualSource}\n${caddieSessionSource}`).not.toMatch(/SwingMotionViewer|motionParameters|useSwingLabSession|recommendShot|profilePresets|swingLabModels/);
   });
 
   it('keeps semantic visual state free of recommendation, wind drawing, trajectory drawing, and swing summary fields', () => {
