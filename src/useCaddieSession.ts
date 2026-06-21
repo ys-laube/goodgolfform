@@ -46,6 +46,15 @@ export type CaddieShotDashboard = {
   readonly recommendation: string;
 };
 
+export type CaddieShotVisualState = {
+  readonly aimBias: 'left' | 'center' | 'right';
+  readonly ballHeight: 'below-feet' | 'level' | 'above-feet';
+  readonly stanceTilt: CaddieStanceSlope;
+  readonly windDirection: CaddieWindDirection;
+  readonly windStrength: CaddieWindStrength;
+  readonly trajectory: 'low' | 'neutral' | 'soft-landing';
+};
+
 export type CaddiePrescription = {
   readonly headline: string;
   readonly selectedClub: CaddieClubKey;
@@ -56,6 +65,7 @@ export type CaddiePrescription = {
   readonly trajectoryText: string;
   readonly warningText: string;
   readonly reasonCards: readonly CaddieReasonCard[];
+  readonly shotVisual: CaddieShotVisualState;
   readonly shotDashboard: CaddieShotDashboard;
 };
 
@@ -198,6 +208,42 @@ function trajectoryTextFor(scenario: CaddieScenario): string {
   return '기본 탄도로 중앙 공략';
 }
 
+function trajectoryVisualFor(scenario: CaddieScenario): CaddieShotVisualState['trajectory'] {
+  if (scenario.windDirection === 'headwind' || scenario.pinPosition === 'front' || scenario.greenRisk === 'short-danger') {
+    return 'low';
+  }
+
+  if (scenario.windDirection === 'tailwind' || scenario.greenRisk === 'long-danger') {
+    return 'soft-landing';
+  }
+
+  return 'neutral';
+}
+
+function trajectoryReasonDetailFor(scenario: CaddieScenario): string {
+  if (scenario.windDirection === 'headwind') {
+    return `${windStrengthLabels[scenario.windStrength]} 맞바람은 공을 띄울수록 거리 편차가 커져 낮은 출발각으로 눌러 칩니다.`;
+  }
+
+  if (scenario.pinPosition === 'front') {
+    return `${pinPositionLabels[scenario.pinPosition]}은 짧은 착지가 필요해 높이보다 낮은 컨트롤 탄도로 첫 바운드를 줄입니다.`;
+  }
+
+  if (scenario.greenRisk === 'short-danger') {
+    return `${greenRiskLabels[scenario.greenRisk]}이면 뜬 공으로 짧아지는 미스를 피하려고 낮고 단단한 탄도를 고릅니다.`;
+  }
+
+  if (scenario.windDirection === 'tailwind') {
+    return `${windStrengthLabels[scenario.windStrength]} 뒷바람은 런이 길어질 수 있어 부드럽게 떨어지는 탄도로 속도를 줄입니다.`;
+  }
+
+  if (scenario.greenRisk === 'long-danger') {
+    return `${greenRiskLabels[scenario.greenRisk]}에서는 뒤쪽 미스를 줄이도록 착지 후 구르는 양이 적은 탄도를 우선합니다.`;
+  }
+
+  return `${windDirectionLabels[scenario.windDirection]}·${pinPositionLabels[scenario.pinPosition]} 조건이 크지 않아 기본 탄도로 중앙 착지를 먼저 봅니다.`;
+}
+
 function warningTextFor(scenario: CaddieScenario): string {
   if (scenario.sideSlope === 'left-slope') {
     return '공이 발보다 낮아 당김·토핑 주의';
@@ -216,6 +262,30 @@ function warningTextFor(scenario: CaddieScenario): string {
   }
 
   return '핀보다 큰 미스 방향만 피하기';
+}
+
+function aimBiasFor(scenario: CaddieScenario): CaddieShotVisualState['aimBias'] {
+  if (scenario.sideSlope === 'left-slope' || scenario.windDirection === 'right-to-left') {
+    return 'right';
+  }
+
+  if (scenario.sideSlope === 'right-slope' || scenario.windDirection === 'left-to-right') {
+    return 'left';
+  }
+
+  return 'center';
+}
+
+function ballHeightFor(scenario: CaddieScenario): CaddieShotVisualState['ballHeight'] {
+  if (scenario.sideSlope === 'left-slope') {
+    return 'below-feet';
+  }
+
+  if (scenario.sideSlope === 'right-slope') {
+    return 'above-feet';
+  }
+
+  return 'level';
 }
 
 function buildPrescription(preset: CaddieDistancePreset, scenario: CaddieScenario): CaddiePrescription {
@@ -259,7 +329,7 @@ function buildPrescription(preset: CaddieDistancePreset, scenario: CaddieScenari
         id: 'target-trajectory-reason',
         title: '목표 탄도 이유',
         summary: trajectoryText,
-        detail: `${windDirectionLabels[scenario.windDirection]} ${windStrengthLabels[scenario.windStrength]}·${pinPositionLabels[scenario.pinPosition]} 상황에서는 긴 설명보다 낮은 실행 처방이 빠릅니다.`,
+        detail: trajectoryReasonDetailFor(scenario),
       },
       {
         id: 'miss-warning-comment',
@@ -268,6 +338,14 @@ function buildPrescription(preset: CaddieDistancePreset, scenario: CaddieScenari
         detail: `${lieLabels[scenario.lie]} 라이에서 가장 큰 미스 하나만 먼저 지웁니다.`,
       },
     ],
+    shotVisual: {
+      aimBias: aimBiasFor(scenario),
+      ballHeight: ballHeightFor(scenario),
+      stanceTilt: scenario.stanceSlope,
+      windDirection: scenario.windDirection,
+      windStrength: scenario.windStrength,
+      trajectory: trajectoryVisualFor(scenario),
+    },
     shotDashboard: {
       targetLine: aimText,
       ballPosition: `${lieLabels[scenario.lie]} · ${sideSlopeLabels[scenario.sideSlope]} · ${stanceSlopeLabels[scenario.stanceSlope]}`,
