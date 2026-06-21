@@ -142,6 +142,27 @@ export const greenRiskLabels = {
   'safe-middle': '안전 중앙',
 } satisfies Record<CaddieGreenRisk, string>;
 
+export const handednessLabels = {
+  right: '우타',
+  left: '좌타',
+} satisfies Record<CaddieHandedness, string>;
+
+export const clubGroupLabels = {
+  driver: '드라이버',
+  'fairway-wood': '페어웨이 우드',
+  'long-iron': '롱 아이언',
+  'mid-iron': '미들 아이언',
+  wedge: '웨지',
+} satisfies Record<CaddieClubGroup, string>;
+
+export const ballPositionSlotLabels = {
+  forward: '왼발 뒤쪽',
+  'slightly-forward': '중앙보다 앞',
+  'center-forward': '중앙-앞',
+  center: '중앙',
+  'slightly-back': '중앙보다 뒤',
+} satisfies Record<CaddieBallPositionSlot, string>;
+
 function initialSavedPresets(): readonly CaddieDistancePreset[] {
   return loadCaddiePresets(availableLocalStorage());
 }
