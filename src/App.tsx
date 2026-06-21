@@ -102,27 +102,11 @@ export function App() {
 
   return (
     <main className="app-shell" aria-labelledby="app-title">
-      <section className="hero-card caddie-hero">
-        <p className="eyebrow">캐디 한줄 처방</p>
-        <h1 id="app-title">남은 거리와 라이만 빠르게 넣고 한 줄 조언을 먼저 봅니다.</h1>
-        <p className="hero-copy">
-          위치·날씨 자동 연동이나 로그인 없이 현장에서 직접 본 조건만 넣습니다. 거리 프리셋은 이 기기에 저장하고,
-          결과는 한 손으로 바로 읽히는 압축 카드로 보여줍니다.
-        </p>
-        <div className="hero-actions" aria-label="주요 캐디 카드 동작">
-          <a href="#preset-panel" className="primary-action">
-            거리 프리셋
-          </a>
-          <a href="#shot-panel" className="secondary-action">
-            샷 상황 입력
-          </a>
-        </div>
-      </section>
-
-      <section id="preset-panel" className="lab-panel" aria-labelledby="profile-title">
+      <section id="preset-panel" className="lab-panel" aria-labelledby="app-title">
         <div className="section-heading">
-          <p className="eyebrow">지금 처방</p>
-          <h2 id="analysis-title">상황별 샷 처방</h2>
+          <p className="eyebrow">1단계 · 거리 프리셋</p>
+          <h1 id="app-title">거리 프리셋</h1>
+          <p>내 클럽별 캐리 거리를 타이핑해서 맞추고, 자주 쓰는 거리표는 이 기기에 저장합니다.</p>
         </div>
 
         <label>
@@ -159,23 +143,16 @@ export function App() {
             </label>
           ))}
         </div>
-        <section className="shot-dashboard" aria-labelledby="shot-dashboard-title">
-          <div className="dashboard-display" aria-hidden="true">
-            <span className="dashboard-target-line" />
-            <span className="dashboard-shot-arc" />
-            <span className="dashboard-ball-dot" />
-          </div>
-          <div className="dashboard-copy">
-            <p className="eyebrow">정적 샷 대시보드</p>
-            <h3 id="shot-dashboard-title">한 장으로 보는 타깃 라인</h3>
-            <p>스크린 골프식 샷 요약을 필드형 숫자판처럼 고정 표시합니다.</p>
-          </div>
-        </section>
 
+        <button className="primary-action button-action sticky-action" type="button" onClick={saveCurrentPreset}>
+          로컬 프리셋 저장
+        </button>
+        <p className="storage-note">{storageMessage}</p>
       </section>
+
       <section id="shot-panel" className="lab-panel caddie-input-panel" aria-labelledby="scenario-title">
         <div className="section-heading">
-          <p className="eyebrow">2단계 · 수동 샷 입력</p>
+          <p className="eyebrow">2단계 · 샷 상황 입력</p>
           <h2 id="scenario-title">남은 거리, 라이, 바람</h2>
           <p>현장에서 보이는 조건만 직접 넣습니다. 대표값은 100m · 페어웨이 · 공이 발보다 낮음 · 약한 맞바람입니다.</p>
         </div>
@@ -205,10 +182,7 @@ export function App() {
           </label>
           <label>
             앞뒤 경사
-            <select
-              value={scenario.stanceSlope}
-              onChange={(event) => setScenario({ ...scenario, stanceSlope: event.target.value as CaddieStanceSlope })}
-            >
+            <select value={scenario.stanceSlope} onChange={(event) => setScenario({ ...scenario, stanceSlope: event.target.value as CaddieStanceSlope })}>
               {stanceSlopeOptions.map((option) => (
                 <option key={option} value={option}>
                   {stanceSlopeLabels[option]}
@@ -228,10 +202,7 @@ export function App() {
           </label>
           <label>
             바람 방향
-            <select
-              value={scenario.windDirection}
-              onChange={(event) => setScenario({ ...scenario, windDirection: event.target.value as CaddieWindDirection })}
-            >
+            <select value={scenario.windDirection} onChange={(event) => setScenario({ ...scenario, windDirection: event.target.value as CaddieWindDirection })}>
               {windDirectionOptions.map((option) => (
                 <option key={option} value={option}>
                   {windDirectionLabels[option]}
@@ -241,10 +212,7 @@ export function App() {
           </label>
           <label>
             바람 세기
-            <select
-              value={scenario.windStrength}
-              onChange={(event) => setScenario({ ...scenario, windStrength: event.target.value as CaddieWindStrength })}
-            >
+            <select value={scenario.windStrength} onChange={(event) => setScenario({ ...scenario, windStrength: event.target.value as CaddieWindStrength })}>
               {windStrengthOptions.map((option) => (
                 <option key={option} value={option}>
                   {windStrengthLabels[option]}
@@ -254,10 +222,7 @@ export function App() {
           </label>
           <label>
             핀 위치
-            <select
-              value={scenario.pinPosition}
-              onChange={(event) => setScenario({ ...scenario, pinPosition: event.target.value as CaddiePinPosition })}
-            >
+            <select value={scenario.pinPosition} onChange={(event) => setScenario({ ...scenario, pinPosition: event.target.value as CaddiePinPosition })}>
               {pinPositionOptions.map((option) => (
                 <option key={option} value={option}>
                   {pinPositionLabels[option]}
@@ -280,15 +245,10 @@ export function App() {
 
       <section id="analysis-panel" className="analysis-preview" aria-labelledby="analysis-title">
         <div className="section-heading">
-          <p className="eyebrow">지금 처방</p>
-          <h2 id="analysis-title">{prescription.headline}</h2>
-          <p>
-            처방 요약 · 클럽 {prescription.selectedClubLabel} · 스윙 {prescription.swingPercent}% · 플레이 거리 {prescription.playDistanceMeters}m
-          </p>
+          <p className="eyebrow">3단계 · 처방 결과</p>
+          <h2 id="analysis-title">왜 이렇게 치나요?</h2>
         </div>
 
-        <h3>왜 이렇게 치나요?</h3>
-        <p>상황별 이유</p>
         <div className="analysis-card-grid" aria-label="상황별 이유">
           {prescription.reasonCards.map((card) => (
             <article className="analysis-card" key={card.id}>
@@ -299,18 +259,6 @@ export function App() {
           ))}
         </div>
 
-        <div className="cue-strip" aria-label="핵심 보정">
-          <span>
-            <strong>조준</strong> {prescription.aimText}
-          </span>
-          <span>
-            <strong>탄도</strong> {prescription.trajectoryText}
-          </span>
-          <span>
-            <strong>미스 경고</strong> {prescription.warningText}
-          </span>
-        </div>
-
         <section className="shot-visual" aria-labelledby="shot-visual-title">
           <div
             className="shot-visual-stage"
@@ -319,6 +267,7 @@ export function App() {
             data-stance={prescription.shotVisual.stanceTilt}
             data-trajectory={prescription.shotVisual.trajectory}
             data-wind={prescription.shotVisual.windDirection}
+            data-wind-strength={prescription.shotVisual.windStrength}
             aria-hidden="true"
           >
             <span className="shot-visual-aim-line" />
@@ -333,32 +282,8 @@ export function App() {
             <h3 id="shot-visual-title">발, 공, 조준선이 상황에 맞춰 움직입니다</h3>
             <p>공 위치 높이·앞뒤 경사·조준·탄도·바람을 한 장의 2D 샷/스탠스 그림으로 보여줍니다.</p>
           </div>
-          <dl className="shot-visual-metrics" aria-label="2D 샷/스탠스 상태">
-            <div>
-              <dt>조준선</dt>
-              <dd>{prescription.shotDashboard.targetLine}</dd>
-            </div>
-            <div>
-              <dt>공/스탠스</dt>
-              <dd>{prescription.shotDashboard.ballPosition}</dd>
-            </div>
-            <div>
-              <dt>바람</dt>
-              <dd>{prescription.shotDashboard.wind}</dd>
-            </div>
-            <div>
-              <dt>탄도</dt>
-              <dd>{prescription.shotDashboard.trajectory}</dd>
-            </div>
-            <div>
-              <dt>요약</dt>
-              <dd>{prescription.shotDashboard.shotSummary}</dd>
-            </div>
-          </dl>
         </section>
-
       </section>
-
     </main>
   );
 }

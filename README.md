@@ -1,6 +1,6 @@
 # FunGolf Korean Caddie Card
 
-FunGolf is a mobile-first Korean web app prototype for serious golfers who want a fast field-side shot card. It lets a player enter manual shot context, load or save local club-distance presets, and read a result-first Korean recommendation with four short reasons and one reactive 2D shot/stance visual.
+FunGolf is a mobile-first Korean web app prototype for serious golfers who want a fast field-side shot card. It lets a player enter manual shot context, load or save local club-distance presets, and read four named Korean result panels: 클럽 선택이유, 조준 방향 이유, 목표 탄도 이유, 미스 경고 코멘트, plus one reactive 2D shot/stance visual.
 
 ## Current scope
 
@@ -9,15 +9,15 @@ This prototype includes:
 - Vite + React + TypeScript app shell optimized for one-hand mobile use.
 - Locally saved club-distance presets stored on the current device only.
 - Manual shot inputs for remaining distance, lie, front-back slope, ball position height, wind, pin, and green risk.
-- A deterministic Korean caddie prescription for club, swing percent, aim, trajectory, and miss warning.
-- A reactive 2D shot/stance visual for feet, ball height, target line, wind, trajectory, and recommendation cues without 3D, maps, backend, weather, or provider SDK dependencies.
+- A deterministic Korean caddie prescription presented through the four named result panels.
+- A reactive 2D shot/stance visual for feet, ball height, target line, wind direction/strength, and trajectory without 3D, maps, backend, weather, or provider SDK dependencies.
 - Vitest, TypeScript, ESLint, and production build scripts.
 
 ## Explicit non-goals
 
 - No backend, hosted persistence, database, 응용 인터페이스 server, or remote sync.
 - No authentication, accounts, invite rooms, multiplayer, or shared state.
-- No 위치 자동 인식, browser geolocation, maps, map tiles, weather feeds, forecasts, or location permissions.
+- No 위치 자동 인식, browser geolocation, maps, map tiles, weather integrations, forecasts, or location permissions.
 - No scorecards, betting, public social feed, followers, or discovery.
 - No rulings, rules advice, precision promises, 3D motion viewer, or English core UI.
 

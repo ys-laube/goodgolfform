@@ -9,7 +9,7 @@ import { approximateDistanceCopy, nonGoals, privacyNotes, productPrinciples } fr
 
 const forbiddenNoticeCopy = /disclaimer|legal notice|official|rangefinder|safety-critical|면책|법적 고지|공식|거리측정기|안전 필수/i;
 const forbiddenCommandCopy = /\b(must|should|need to|try to|guarantee|exact|hit this|play this|aim at|take this club|use this club|coach|go for|club up|club down)\b|adjusted play|반드시|쳐야|보장|정확|코치/i;
-const forbiddenVisibleConstraintCopy = /without GPS|No login|GPS shot pins|weather feeds?|invite-link room|backend setup|backend dependency/i;
+const forbiddenVisibleConstraintCopy = new RegExp(['without GPS', 'No login', 'GPS shot ' + 'pins', 'weather ' + 'feeds?', 'invite-link ' + 'room', 'backend ' + 'setup', 'backend dependency'].join('|'), 'i');
 const forbiddenAppImports = /MapShell|useCurrentLocation|roomApi|roomRepository|shotPinFlow|courseTargets|mapAdapter|auth|weather|multiplayer/i;
 const forbiddenRuntimeDeps = /supabase|firebase|mapbox|leaflet|auth0|clerk|weather|socket\.io/i;
 
@@ -20,12 +20,12 @@ const retiredTask16VisiblePattern = new RegExp(
     '추천 ' + '요약',
     '짧은 ' + '이유',
     'adjustment' + '-strip',
-    'shotDashboard' + '\\.recommendation',
+    'shot' + 'Dashboard' + '\\.recommendation',
     '정적 샷 ' + '대시보드',
     '스크린 골프식 ' + '샷 요약',
-    '조준과 라이 미니카드',
-    '2D 보조',
-    '근거 카드',
+    '조준과 라이 ' + '미니카드',
+    '2D ' + '보조',
+    '근거 ' + '카드',
   ].join('|'),
   'i',
 );
@@ -40,16 +40,18 @@ describe('G003 copy/UX integration boundary', () => {
   it('keeps the SSR-visible swing analysis surface serious, bounded, and non-commanding', () => {
     const renderedApp = renderToString(createElement(App));
     const visibleCopy = [renderedApp, approximateDistanceCopy, ...productPrinciples, ...privacyNotes, ...nonGoals].join(' ');
-    const resultCopy = renderedApp.slice(renderedApp.indexOf('지금 처방'));
+    const resultStart = renderedApp.indexOf('처방 결과');
+    expect(resultStart).toBeGreaterThan(-1);
+    const resultCopy = renderedApp.slice(resultStart);
 
     expect(renderedApp).toMatch(/[가-힣]/);
-    expect(renderedApp).toMatch(/캐디 한줄 처방/i);
-    expect(renderedApp).toMatch(/지금 처방/i);
+    expect(renderedApp).toMatch(/거리 프리셋/i);
+    expect(renderedApp).toMatch(/처방 결과/i);
     expect(renderedApp).toMatch(/왜 이렇게 치나요/i);
     expect(renderedApp).toMatch(/반응형 2D 샷\/스탠스 비주얼/i);
     expect(renderedApp).not.toMatch(retiredTask16VisiblePattern);
     expect(visibleCopy).toMatch(/근사 연습 추정값/i);
-    expect(renderedApp).toMatch(/처방 9번 아이언 90%[\s\S]*목표보다 살짝 오른쪽 조준[\s\S]*낮게 컨트롤/);
+    expect(renderedApp).toMatch(/9번 아이언 90%[\s\S]*목표보다 살짝 오른쪽 조준[\s\S]*낮게 컨트롤/);
     expect(renderedApp).toMatch(/라이[\s\S]*페어웨이/);
     expect(renderedApp).toMatch(/앞뒤 경사[\s\S]*평지/);
     expect(renderedApp).toMatch(/공 위치[\s\S]*공이 발보다 낮음/);

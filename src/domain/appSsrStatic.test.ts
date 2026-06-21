@@ -54,7 +54,7 @@ const retiredTask16SourcePattern = new RegExp(
     '추천 ' + '요약',
     '짧은 ' + '이유',
     'adjustment' + '-strip',
-    'shotDashboard' + '\\.recommendation',
+    'shot' + 'Dashboard' + '\\.recommendation',
     'shot' + '-dashboard',
     'dashboard' + '-metrics',
     'visual-card-grid',
@@ -118,15 +118,13 @@ describe('App SSR/static harness contract', () => {
     expect(renderedApp).toContain('id="app-title"');
     expect(renderedApp).toContain('id="shot-panel"');
     expect(renderedApp).toContain('id="preset-panel"');
-    expect(renderedApp).toContain('캐디 한줄 처방');
-    expect(renderedApp).toContain('남은 거리와 라이만 빠르게 넣고');
-    expect(renderedApp).toContain('지금 처방');
     expect(renderedApp).toContain('1단계 · 거리 프리셋');
-    expect(renderedApp).toContain('2단계 · 수동 샷 입력');
-    expect(renderedApp).toContain('처방 요약');
+    expect(renderedApp).toContain('거리 프리셋');
+    expect(renderedApp).toContain('3단계 · 처방 결과');
+    expect(renderedApp).toContain('1단계 · 거리 프리셋');
+    expect(renderedApp).toContain('2단계 · 샷 상황 입력');
     expect(renderedApp).toContain('반응형 2D 샷/스탠스 비주얼');
     expect(renderedApp).toContain('발, 공, 조준선이 상황에 맞춰 움직입니다');
-    expect(renderedApp).toContain('2D 샷/스탠스 상태');
     expect(renderedApp).toContain('샷 상황 입력');
     expect(renderedApp).toContain('남은 거리 (m)');
     expect(renderedApp).toContain('앞뒤 경사');
@@ -138,13 +136,12 @@ describe('App SSR/static harness contract', () => {
     expect(renderedApp).toContain('왜 이렇게 치나요?');
     expect(renderedApp).toContain('반응형 2D 샷/스탠스 비주얼');
     expect(renderedApp).toContain('발, 공, 조준선이 상황에 맞춰 움직입니다');
-    expect(renderedApp).toContain('처방 요약');
-    expect(renderedApp).toContain('공 위치');
+    expect(renderedApp).toContain('공 위치 높이');
     expect(renderedApp).not.toMatch(/Serious Golf Swing Lab|Profile panel|Scenario panel|Save profile locally|Live analysis report/);
-    expect(renderedApp).not.toMatch(/GPS shot pins|room-flow|map-shell|invite-link room/i);
-    expect(renderedApp).not.toMatch(/without GPS|No login|GPS shot pins|weather feeds?|invite-link room|backend setup|backend dependency/i);
+    expect(renderedApp).not.toMatch(new RegExp(['GPS shot ' + 'pins', 'room-flow', 'map-shell', 'invite-link ' + 'room'].join('|'), 'i'));
+    expect(renderedApp).not.toMatch(new RegExp(['without GPS', 'No login', 'GPS shot ' + 'pins', 'weather ' + 'feeds?', 'invite-link ' + 'room', 'backend ' + 'setup', 'backend dependency'].join('|'), 'i'));
 
-    expect(renderedApp).not.toMatch(/경사\/스탠스|좌우 경사|발끝 오르막|발끝 내리막|좌측 경사|우측 경사|조준과 라이 미니카드|2D 보조|근거 카드|근거카드/);
+    expect(renderedApp).not.toMatch(new RegExp(['경사\\/스탠스', '좌우 경사', '발끝 오르막', '발끝 내리막', '좌측 경사', '우측 경사', '조준과 라이 ' + '미니카드', '2D ' + '보조', '근거 ' + '카드', '근거' + '카드'].join('|')));
     expect(renderedApp).not.toMatch(/Build the shot|Read the swing card|Enter shot|Type the shot|choose a saved profile|get a deterministic|adjusted play|you should|let's|do this|next|now/i);
   });
 
@@ -171,12 +168,13 @@ describe('App SSR/static harness contract', () => {
   it('SSR-renders the representative 100m result-first prescription fields', () => {
     const renderedApp = withPoisonedBrowserStorage(() => renderToString(createElement(App)));
 
-    expect(renderedApp).toContain('처방 9번 아이언 90%');
+    expect(renderedApp).toContain('9번 아이언 90%');
     expect(renderedApp).toContain('목표보다 살짝 오른쪽 조준');
     expect(renderedApp).toContain('낮게 컨트롤');
     expect(renderedApp).toContain('약함 맞바람은 공을 띄울수록 거리 편차가 커져 낮은 출발각으로 눌러 칩니다.');
     expect(renderedApp).toContain('공이 발보다 낮아 당김·토핑 주의');
     expect(renderedApp).not.toContain('플레이 거리');
+    expect(renderedApp).not.toContain('처방 요약');
     expect(renderedApp).toMatch(/라이[\s\S]*페어웨이/);
     expect(renderedApp).toMatch(/앞뒤 경사[\s\S]*평지/);
     expect(renderedApp).toMatch(/공 위치[\s\S]*공이 발보다 낮음/);
@@ -186,9 +184,9 @@ describe('App SSR/static harness contract', () => {
   it('renders every required Korean caddie result card category from prescription output', () => {
     const renderedApp = withPoisonedBrowserStorage(() => renderToString(createElement(App)));
 
-    expect(renderedApp).toMatch(/지금 처방[\s\S]*처방 요약[\s\S]*클럽[\s\S]*스윙[\s\S]*플레이 거리/i);
-    expect(renderedApp).toMatch(/상황별 이유[\s\S]*9번 아이언 90%[\s\S]*목표보다 살짝 오른쪽 조준[\s\S]*낮게 컨트롤/i);
-    expect(renderedApp).toMatch(/반응형 2D 샷\/스탠스 비주얼[\s\S]*조준선[\s\S]*공\/스탠스[\s\S]*바람[\s\S]*탄도/i);
+    expect(renderedApp).toMatch(/처방 결과[\s\S]*클럽 선택이유[\s\S]*9번 아이언 90%[\s\S]*조준 방향 이유[\s\S]*목표보다 살짝 오른쪽 조준[\s\S]*목표 탄도 이유[\s\S]*낮게 컨트롤/i);
+    expect(renderedApp).toMatch(/반응형 2D 샷\/스탠스 비주얼[\s\S]*발, 공, 조준선/i);
+    expect(renderedApp).not.toMatch(/처방 요약|플레이 거리/);
     expect(renderedApp).not.toMatch(/\b(coach|must|should|need to|try to|guarantee|exact)\b|adjusted play|코치|보장|정확/i);
   });
 
@@ -215,7 +213,7 @@ describe('App SSR/static harness contract', () => {
     }
     expect(renderedApp.match(/class="analysis-card"/g)?.length).toBe(4);
     expect(renderedApp).toMatch(/클럽 선택이유[\s\S]*9번 아이언 90%/);
-    expect(renderedApp).not.toMatch(/근거 카드|근거카드/);
+    expect(renderedApp).not.toMatch(new RegExp(['근거 ' + '카드', '근거' + '카드'].join('|')));
   });
 
   it('keeps trajectory reason copy situation-specific instead of fixed filler', () => {
@@ -237,6 +235,7 @@ describe('App SSR/static harness contract', () => {
     expect(appSource).toMatch(/data-trajectory=\{prescription\.shotVisual\.trajectory\}/);
     expect(appSource).toMatch(/data-aim=\{prescription\.shotVisual\.aimBias\}/);
     expect(appSource).toMatch(/data-wind=\{prescription\.shotVisual\.windDirection\}/);
+    expect(appSource).toMatch(/data-wind-strength=\{prescription\.shotVisual\.windStrength\}/);
     expect(appSource).toMatch(/shot-visual-feet/);
     expect(appSource).toMatch(/shot-visual-stance/);
     expect(appSource).toMatch(/shot-visual-ball/);
@@ -245,6 +244,7 @@ describe('App SSR/static harness contract', () => {
     expect(stylesSource).toMatch(/data-aim="left"[\s\S]*--aim-offset/);
     expect(stylesSource).toMatch(/data-trajectory="low"[\s\S]*--arc-height/);
     expect(stylesSource).toMatch(/data-wind="right-to-left"[\s\S]*--wind-shift/);
+    expect(stylesSource).toMatch(/data-wind-strength="strong"[\s\S]*--wind-width/);
   });
 
   it('restores saved caddie distance presets through the App storage boundary when browser storage exists', () => {
@@ -288,7 +288,7 @@ describe('App SSR/static harness contract', () => {
     expect(appSessionSource).toMatch(/buildPrescription/);
     expect(appSessionSource).toMatch(/caddiePresets/);
     expect(appSource).toMatch(/shot-visual/);
-    expect(appSource).toMatch(/shot-visual-metrics/);
+    expect(appSource).not.toMatch(new RegExp('shot-visual-' + 'metrics'));
     expect(appSource).not.toMatch(retiredTask16SourcePattern);
     expect(appSource).not.toMatch(/TrackMan|FlightScope|Foresight|GCQuad|logo|brand|asset|img src|<img/i);
   });

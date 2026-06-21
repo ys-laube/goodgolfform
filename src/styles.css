@@ -49,22 +49,12 @@ a {
   padding: 1rem 1rem max(1rem, env(safe-area-inset-bottom));
 }
 
-.hero-card,
 .lab-panel,
 .analysis-preview {
   border: 1px solid rgba(228, 255, 232, 0.18);
   background: rgba(5, 25, 19, 0.76);
   box-shadow: 0 1.25rem 4rem rgba(0, 0, 0, 0.28);
   backdrop-filter: blur(1rem);
-}
-
-.hero-card {
-  display: grid;
-  gap: 1rem;
-  min-height: 32vh;
-  align-content: end;
-  border-radius: 2rem;
-  padding: clamp(1.25rem, 7vw, 4rem);
 }
 
 .eyebrow {
@@ -83,11 +73,10 @@ p {
 }
 
 h1 {
-  max-width: 13ch;
-  margin-bottom: 0;
-  font-size: clamp(2.65rem, 13vw, 6.8rem);
-  line-height: 0.9;
-  letter-spacing: -0.08em;
+  margin-bottom: 0.6rem;
+  font-size: clamp(1.55rem, 6vw, 2.65rem);
+  line-height: 1.02;
+  letter-spacing: -0.055em;
 }
 
 h2 {
@@ -96,29 +85,13 @@ h2 {
   letter-spacing: -0.045em;
 }
 
-.hero-copy,
 .section-heading p,
 .analysis-preview p {
   color: #d8f9df;
   line-height: 1.55;
 }
 
-.hero-copy {
-  max-width: 45rem;
-  font-size: clamp(1.05rem, 4vw, 1.4rem);
-}
-
-.hero-actions,
-.form-grid,
-.club-grid,
-.analysis-card-grid,
-.cue-strip {
-  display: grid;
-  gap: 0.85rem;
-}
-
-.primary-action,
-.secondary-action {
+.primary-action {
   min-height: 3.35rem;
   border-radius: 999px;
   display: inline-flex;
@@ -132,11 +105,6 @@ h2 {
 .primary-action {
   background: #b8ff68;
   color: #0a251c;
-}
-
-.secondary-action {
-  border: 1px solid rgba(247, 255, 247, 0.35);
-  color: #f7fff7;
 }
 
 .button-action {
@@ -195,24 +163,21 @@ select optgroup {
   border-color: rgba(184, 255, 104, 0.3);
 }
 
-.analysis-card,
-.cue-strip span {
+.form-grid,
+.club-grid,
+.analysis-card-grid {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.analysis-card {
   display: grid;
   gap: 0.35rem;
   border-radius: 1.1rem;
   background: rgba(255, 255, 255, 0.09);
   padding: 1rem;
   color: #d8f9df;
-}
 
-.analysis-card strong,
-.cue-strip strong {
-  color: #f7fff7;
-  font-size: 1.05rem;
-  text-transform: capitalize;
-}
-
-.analysis-card {
   position: relative;
   overflow: hidden;
   border: 1px solid rgba(184, 255, 104, 0.18);
@@ -256,8 +221,7 @@ select optgroup {
   transform: rotate(-8deg);
 }
 
-.analysis-card p,
-.cue-strip span {
+.analysis-card p {
   margin: 0;
 }
 
@@ -266,6 +230,7 @@ select optgroup {
 }
 
 .analysis-card strong {
+  color: #f7fff7;
   font-size: clamp(1.15rem, 6vw, 1.55rem);
   line-height: 1.05;
   letter-spacing: -0.035em;
@@ -281,17 +246,6 @@ select optgroup {
   font-weight: 900;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-}
-
-.cue-strip {
-  grid-template-columns: 1fr;
-}
-
-.cue-strip span {
-  border: 1px solid rgba(83, 209, 255, 0.18);
-  background:
-    linear-gradient(90deg, rgba(83, 209, 255, 0.13), transparent),
-    rgba(255, 255, 255, 0.08);
 }
 
  .shot-visual {
@@ -311,6 +265,8 @@ select optgroup {
   --stance-tilt: 0deg;
   --arc-height: 58%;
   --wind-shift: 0%;
+  --wind-width: 2.4rem;
+  --wind-opacity: 0.72;
   position: relative;
   min-height: 10rem;
   overflow: hidden;
@@ -363,6 +319,16 @@ select optgroup {
 .shot-visual-stage[data-wind="right-to-left"],
 .shot-visual-stage[data-wind="headwind"] {
   --wind-shift: -18%;
+}
+
+.shot-visual-stage[data-wind-strength="medium"] {
+  --wind-width: 3rem;
+  --wind-opacity: 0.84;
+}
+
+.shot-visual-stage[data-wind-strength="strong"] {
+  --wind-width: 3.8rem;
+  --wind-opacity: 0.96;
 }
 
 .shot-visual-aim-line,
@@ -422,11 +388,11 @@ select optgroup {
 
 .shot-visual-wind {
   top: 1rem;
-  left: calc(50% + var(--wind-shift) - 1.2rem);
-  width: 2.4rem;
+  left: calc(50% + var(--wind-shift) - (var(--wind-width) / 2));
+  width: var(--wind-width);
   height: 0.34rem;
   border-radius: 999px;
-  background: rgba(83, 209, 255, 0.72);
+  background: rgba(83, 209, 255, var(--wind-opacity));
   box-shadow: 0 0.7rem 0 rgba(83, 209, 255, 0.34);
 }
 
@@ -439,37 +405,11 @@ select optgroup {
   color: #9af1b4;
 }
 
-.shot-visual-metrics {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.7rem;
-  margin: 0;
-}
-
-.shot-visual-metrics div {
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 1rem;
-  background: rgba(255, 255, 255, 0.08);
-  padding: 0.8rem;
-}
-
-.shot-visual-metrics dt {
-  color: #9af1b4;
-  font-size: 0.78rem;
-}
-
-.shot-visual-metrics dd {
-  margin: 0.25rem 0 0;
-  font-size: 1.1rem;
-  font-weight: 800;
-}
-
 @media (min-width: 42rem) {
   .app-shell {
     padding: 2rem;
   }
 
-  .hero-actions,
   .club-grid {
     grid-template-columns: repeat(3, 1fr);
   }
@@ -478,7 +418,6 @@ select optgroup {
     grid-template-columns: repeat(2, 1fr);
   }
 
-  .cue-strip,
   .shot-visual {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -492,9 +431,6 @@ select optgroup {
     grid-row: span 2;
   }
 
-  .hero-actions {
-    grid-template-columns: repeat(2, max-content);
-  }
 }
 
 @media (min-width: 56rem) {
@@ -515,8 +451,7 @@ select optgroup {
     grid-template-columns: minmax(0, 0.8fr) minmax(18rem, 1.2fr);
   }
 
-  .shot-visual-copy,
-  .shot-visual-metrics {
+  .shot-visual-copy {
     grid-column: auto;
   }
 }

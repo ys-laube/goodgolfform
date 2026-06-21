@@ -39,14 +39,6 @@ export type CaddieReasonCard = {
 };
 
 export type CaddieShotVisualState = {
-  readonly targetLine: string;
-  readonly ballPosition: string;
-  readonly wind: string;
-  readonly trajectory: string;
-  readonly shotSummary: string;
-};
-
-export type CaddieShotVisualState = {
   readonly aimBias: 'left' | 'center' | 'right';
   readonly ballHeight: 'below-feet' | 'level' | 'above-feet';
   readonly stanceTilt: CaddieStanceSlope;
@@ -64,7 +56,7 @@ export type CaddiePrescription = {
   readonly trajectoryText: string;
   readonly warningText: string;
   readonly reasonCards: readonly CaddieReasonCard[];
-  readonly shotVisualState: CaddieShotVisualState;
+  readonly shotVisual: CaddieShotVisualState;
 };
 
 const defaultPreset = createCaddieDistancePreset({
@@ -302,7 +294,6 @@ function buildPrescription(preset: CaddieDistancePreset, scenario: CaddieScenari
   const selectedClubLabel = caddieClubLabels[selectedClub.selectedClub];
 
   return {
-    headline: `처방 ${selectedClubLabel} ${swingPercent}%, ${aimText}, ${trajectoryText} — ${warningText}.`,
     selectedClub: selectedClub.selectedClub,
     selectedClubLabel,
     swingPercent,
@@ -336,12 +327,13 @@ function buildPrescription(preset: CaddieDistancePreset, scenario: CaddieScenari
         detail: `${lieLabels[scenario.lie]} 라이에서 가장 큰 미스 하나만 먼저 지웁니다.`,
       },
     ],
-    shotVisualState: {
-      targetLine: aimText,
-      ballPosition: `${lieLabels[scenario.lie]} · ${sideSlopeLabels[scenario.sideSlope]} · ${stanceSlopeLabels[scenario.stanceSlope]}`,
-      wind: `${windDirectionLabels[scenario.windDirection]} · ${windStrengthLabels[scenario.windStrength]}`,
-      trajectory: trajectoryText,
-      shotSummary: `${selectedClubLabel} ${swingPercent}% · ${playDistanceMeters}m`,
+    shotVisual: {
+      aimBias: aimBiasFor(scenario),
+      ballHeight: ballHeightFor(scenario),
+      stanceTilt: scenario.stanceSlope,
+      windDirection: scenario.windDirection,
+      windStrength: scenario.windStrength,
+      trajectory: trajectoryVisualFor(scenario),
     },
   };
 }
