@@ -13,7 +13,7 @@ import {
 import { selectCaddieClubForPlayDistance } from './domain/caddieRecommendationEngine';
 
 export type CaddieLie = 'tee' | 'fairway' | 'rough' | 'bunker';
-export type CaddieStanceSlope = 'level' | 'uphill' | 'downhill' | 'ball-above-feet' | 'ball-below-feet';
+export type CaddieStanceSlope = 'level' | 'uphill' | 'downhill';
 export type CaddieSideSlope = 'none' | 'left-slope' | 'right-slope';
 export type CaddieWindDirection = 'none' | 'headwind' | 'tailwind' | 'left-to-right' | 'right-to-left';
 export type CaddieWindStrength = 'light' | 'medium' | 'strong';
@@ -34,14 +34,17 @@ export type CaddieScenario = {
 export type CaddieReasonCard = {
   readonly id: string;
   readonly title: string;
+  readonly summary: string;
   readonly detail: string;
 };
 
-export type CaddieVisualCard = {
-  readonly id: string;
-  readonly title: string;
-  readonly detail: string;
-  readonly marker: 'aim-left' | 'aim-right' | 'aim-center' | 'slope-up' | 'slope-down' | 'slope-side';
+export type CaddieShotDashboard = {
+  readonly lieSummary: string;
+  readonly slopeSummary: string;
+  readonly ballHeightSummary: string;
+  readonly windSummary: string;
+  readonly trajectorySummary: string;
+  readonly recommendationSummary: string;
 };
 
 export type CaddiePrescription = {
@@ -54,7 +57,7 @@ export type CaddiePrescription = {
   readonly trajectoryText: string;
   readonly warningText: string;
   readonly reasonCards: readonly CaddieReasonCard[];
-  readonly visualCards: readonly CaddieVisualCard[];
+  readonly shotDashboard: CaddieShotDashboard;
 };
 
 const defaultPreset = createCaddieDistancePreset({
@@ -66,7 +69,7 @@ const defaultPreset = createCaddieDistancePreset({
 const defaultScenario: CaddieScenario = {
   targetDistanceMeters: 100,
   lie: 'fairway',
-  stanceSlope: 'ball-below-feet',
+  stanceSlope: 'level',
   sideSlope: 'left-slope',
   windDirection: 'headwind',
   windStrength: 'light',
@@ -100,14 +103,12 @@ export const stanceSlopeLabels = {
   level: '평지',
   uphill: '오르막',
   downhill: '내리막',
-  'ball-above-feet': '발끝 오르막',
-  'ball-below-feet': '발끝 내리막',
 } satisfies Record<CaddieStanceSlope, string>;
 
 export const sideSlopeLabels = {
-  none: '없음',
-  'left-slope': '좌측 경사',
-  'right-slope': '우측 경사',
+  none: '발과 비슷함',
+  'left-slope': '공이 발보다 낮음',
+  'right-slope': '공이 발보다 높음',
 } satisfies Record<CaddieSideSlope, string>;
 
 export const windDirectionLabels = {
@@ -158,19 +159,20 @@ function distanceAdjustmentFor(scenario: CaddieScenario): number {
   const windBase = { none: 0, headwind: 6, tailwind: -5, 'left-to-right': 1, 'right-to-left': 1 }[scenario.windDirection];
   const windMultiplier = { light: 1, medium: 1.6, strong: 2.2 }[scenario.windStrength];
   const lieAdjustment = { tee: -1, fairway: 0, rough: 5, bunker: 8 }[scenario.lie];
-  const stanceAdjustment = { level: 0, uphill: 5, downhill: -4, 'ball-above-feet': 1, 'ball-below-feet': -2 }[scenario.stanceSlope];
+  const stanceAdjustment = { level: 0, uphill: 5, downhill: -4 }[scenario.stanceSlope];
+  const ballHeightAdjustment = { none: 0, 'left-slope': -2, 'right-slope': 1 }[scenario.sideSlope];
   const pinAdjustment = { front: -4, middle: 0, back: 4 }[scenario.pinPosition];
   const riskAdjustment = { 'short-danger': 3, 'long-danger': -3, 'safe-middle': 0 }[scenario.greenRisk];
 
-  return Math.round(windBase * windMultiplier + lieAdjustment + stanceAdjustment + pinAdjustment + riskAdjustment);
+  return Math.round(windBase * windMultiplier + lieAdjustment + stanceAdjustment + ballHeightAdjustment + pinAdjustment + riskAdjustment);
 }
 
 function aimTextFor(scenario: CaddieScenario): string {
-  if (scenario.stanceSlope === 'ball-below-feet' || scenario.sideSlope === 'left-slope') {
+  if (scenario.sideSlope === 'left-slope') {
     return '목표보다 살짝 오른쪽 조준';
   }
 
-  if (scenario.stanceSlope === 'ball-above-feet' || scenario.sideSlope === 'right-slope') {
+  if (scenario.sideSlope === 'right-slope') {
     return '목표보다 살짝 왼쪽 조준';
   }
 
@@ -198,12 +200,12 @@ function trajectoryTextFor(scenario: CaddieScenario): string {
 }
 
 function warningTextFor(scenario: CaddieScenario): string {
-  if (scenario.stanceSlope === 'ball-below-feet') {
-    return '발끝 내리막 당김·토핑 주의';
+  if (scenario.sideSlope === 'left-slope') {
+    return '공이 발보다 낮아 당김·토핑 주의';
   }
 
-  if (scenario.stanceSlope === 'ball-above-feet') {
-    return '발끝 오르막 훅성 당김 주의';
+  if (scenario.sideSlope === 'right-slope') {
+    return '공이 발보다 높아 훅성 당김 주의';
   }
 
   if (scenario.lie === 'rough') {
@@ -217,30 +219,6 @@ function warningTextFor(scenario: CaddieScenario): string {
   return '핀보다 큰 미스 방향만 피하기';
 }
 
-function markerForAim(aimText: string): CaddieVisualCard['marker'] {
-  if (aimText.includes('오른쪽')) {
-    return 'aim-right';
-  }
-
-  if (aimText.includes('왼쪽')) {
-    return 'aim-left';
-  }
-
-  return 'aim-center';
-}
-
-function markerForLie(scenario: CaddieScenario): CaddieVisualCard['marker'] {
-  if (scenario.stanceSlope === 'uphill' || scenario.stanceSlope === 'ball-above-feet') {
-    return 'slope-up';
-  }
-
-  if (scenario.stanceSlope === 'downhill' || scenario.stanceSlope === 'ball-below-feet') {
-    return 'slope-down';
-  }
-
-  return scenario.sideSlope === 'none' ? 'aim-center' : 'slope-side';
-}
-
 function buildPrescription(preset: CaddieDistancePreset, scenario: CaddieScenario): CaddiePrescription {
   const targetDistanceMeters = clampMeters(scenario.targetDistanceMeters);
   const playDistanceMeters = clampMeters(targetDistanceMeters + distanceAdjustmentFor(scenario));
@@ -248,7 +226,7 @@ function buildPrescription(preset: CaddieDistancePreset, scenario: CaddieScenari
     scenario.pinPosition === 'front' ||
     scenario.greenRisk === 'short-danger' ||
     scenario.windDirection === 'headwind' ||
-    scenario.stanceSlope === 'ball-below-feet';
+    scenario.sideSlope === 'left-slope';
   const selectedClub = selectCaddieClubForPlayDistance(preset, playDistanceMeters, { preferControl: controlTrouble });
   const swingPercent = selectedClub.swingPercent;
   const aimText = aimTextFor(scenario);
@@ -268,39 +246,37 @@ function buildPrescription(preset: CaddieDistancePreset, scenario: CaddieScenari
     reasonCards: [
       {
         id: 'club-swing',
-        title: `${selectedClubLabel} ${swingPercent}%`,
+        title: '클럽 선택이유',
+        summary: `${selectedClubLabel} ${swingPercent}%`,
         detail: `${targetDistanceMeters}m에 바람·라이·핀을 더해 ${playDistanceMeters}m처럼 보고 컨트롤 스윙을 고릅니다.`,
       },
       {
         id: 'aim-correction',
-        title: aimText,
-        detail: `${stanceSlopeLabels[scenario.stanceSlope]}과 ${sideSlopeLabels[scenario.sideSlope]} 때문에 시작 방향을 안전 쪽으로 둡니다.`,
+        title: '조준 방향 이유',
+        summary: aimText,
+        detail: `${stanceSlopeLabels[scenario.stanceSlope]} · ${sideSlopeLabels[scenario.sideSlope]} 조건이라 시작 방향을 안전 쪽으로 둡니다.`,
       },
       {
         id: 'trajectory-control',
-        title: trajectoryText,
-        detail: `${windDirectionLabels[scenario.windDirection]} ${windStrengthLabels[scenario.windStrength]}·${pinPositionLabels[scenario.pinPosition]} 상황에서는 긴 설명보다 낮은 실행 처방이 빠릅니다.`,
+        title: '목표 탄도 이유',
+        summary: trajectoryText,
+        detail: `${windDirectionLabels[scenario.windDirection]} ${windStrengthLabels[scenario.windStrength]} · ${pinPositionLabels[scenario.pinPosition]} 상황에서는 탄도만 간단히 정합니다.`,
       },
       {
         id: 'miss-warning',
-        title: warningText,
+        title: '미스 경고 코멘트',
+        summary: warningText,
         detail: `${lieLabels[scenario.lie]} 라이에서 가장 큰 미스 하나만 먼저 지웁니다.`,
       },
     ],
-    visualCards: [
-      {
-        id: 'aim-mini-map',
-        title: '조준 미니맵',
-        detail: aimText,
-        marker: markerForAim(aimText),
-      },
-      {
-        id: 'lie-mini-card',
-        title: '라이·스탠스',
-        detail: `${lieLabels[scenario.lie]} · ${stanceSlopeLabels[scenario.stanceSlope]} · ${sideSlopeLabels[scenario.sideSlope]}`,
-        marker: markerForLie(scenario),
-      },
-    ],
+    shotDashboard: {
+      lieSummary: lieLabels[scenario.lie],
+      slopeSummary: stanceSlopeLabels[scenario.stanceSlope],
+      ballHeightSummary: sideSlopeLabels[scenario.sideSlope],
+      windSummary: `${windDirectionLabels[scenario.windDirection]} · ${windStrengthLabels[scenario.windStrength]}`,
+      trajectorySummary: trajectoryText,
+      recommendationSummary: `${selectedClubLabel} ${swingPercent}% · ${playDistanceMeters}m`,
+    },
   };
 }
 
