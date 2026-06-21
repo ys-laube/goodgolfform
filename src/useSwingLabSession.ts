@@ -97,6 +97,11 @@ function initialStorageMessage(profiles: readonly SwingLabProfile[]): string {
     : '기본 프로필이 준비되었습니다. 저장 프로필은 이 기기에서만 불러옵니다.';
 }
 
+function initialProfileSession(): { readonly profiles: readonly SwingLabProfile[]; readonly storageMessage: string } {
+  const profiles = initialSavedProfiles();
+  return { profiles, storageMessage: initialStorageMessage(profiles) };
+}
+
 function cloneProfile(profile: SwingLabProfile): SwingLabProfile {
   return {
     ...profile,
@@ -122,11 +127,12 @@ export function presetSummary(profile: SwingLabProfile): string {
 }
 
 export function useSwingLabSession() {
-  const [savedProfiles, setSavedProfiles] = useState<readonly SwingLabProfile[]>(initialSavedProfiles);
+  const [initialSession] = useState(initialProfileSession);
+  const [savedProfiles, setSavedProfiles] = useState<readonly SwingLabProfile[]>(initialSession.profiles);
   const [activeProfile, setActiveProfile] = useState<SwingLabProfile>(() => cloneProfile(builtInProfilePresets[0]));
   const [selectedPresetId, setSelectedPresetId] = useState(builtInProfilePresets[0].id);
   const [scenario, setScenario] = useState<ShotScenario>(defaultScenario);
-  const [storageMessage, setStorageMessage] = useState(() => initialStorageMessage(initialSavedProfiles()));
+  const [storageMessage, setStorageMessage] = useState(initialSession.storageMessage);
 
   const selectableProfiles = useMemo(() => [...builtInProfilePresets, ...savedProfiles], [savedProfiles]);
   const recommendation = useMemo(() => recommendShot(activeProfile, scenario), [activeProfile, scenario]);

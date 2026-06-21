@@ -176,6 +176,16 @@ describe('App SSR/static harness contract', () => {
   });
 
 
+  it('keeps the local preset save boundary wired through Korean session copy', () => {
+    expect(appSource).toMatch(/onClick=\{saveCurrentProfile\}/);
+    expect(swingLabSessionSource).toMatch(/availableLocalStorage\(\)/);
+    expect(swingLabSessionSource).toMatch(/upsertProfilePreset/);
+    expect(swingLabSessionSource).toMatch(/saveProfilePresets/);
+    expect(swingLabSessionSource).toContain('프로필을 로컬에 저장했으며 프리셋 목록에서 불러올 수 있습니다.');
+    expect(swingLabSessionSource).toContain('프로필을 메모리에만 보관했습니다. 이 환경에서는 로컬 저장소를 사용할 수 없습니다.');
+  });
+
+
   it('restores saved profile presets through the App storage boundary when browser storage exists', () => {
     const descriptor = Object.getOwnPropertyDescriptor(globalThis, 'window');
     const savedProfile = {
@@ -183,8 +193,12 @@ describe('App SSR/static harness contract', () => {
       id: 'saved-smooth-draw-player',
       name: '저장된 부드러운 드로',
     };
+    let getItemCalls = 0;
     const storage: StorageLike = {
-      getItem: () => serializeProfilePresets([savedProfile]),
+      getItem: () => {
+        getItemCalls += 1;
+        return serializeProfilePresets([savedProfile]);
+      },
       setItem: () => undefined,
       removeItem: () => undefined,
     };
@@ -202,6 +216,7 @@ describe('App SSR/static harness contract', () => {
       expect(renderedApp).toContain('저장된 부드러운 드로');
       expect(renderedApp).toContain('성장 중 · 드로 · 높은 탄도 · 부드러운 템포');
       expect(renderedApp).not.toMatch(/developing · draw · high 탄도 · smooth 템포/);
+      expect(getItemCalls).toBe(1);
     } finally {
       if (descriptor) {
         Object.defineProperty(globalThis, 'window', descriptor);
