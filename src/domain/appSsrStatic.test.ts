@@ -158,6 +158,7 @@ describe('App SSR/static harness contract', () => {
     expect(renderedApp).toContain('추천: 9번 아이언 90%');
     expect(renderedApp).toContain('목표보다 살짝 오른쪽 조준');
     expect(renderedApp).toContain('낮게 컨트롤');
+    expect(renderedApp).toContain('약함 맞바람은 공을 띄울수록 거리 편차가 커져 낮은 출발각으로 눌러 칩니다.');
     expect(renderedApp).toContain('공이 발보다 낮아 당김·토핑 주의');
     expect(renderedApp).toContain('플레이 거리');
     expect(renderedApp).toContain('103');
@@ -200,6 +201,22 @@ describe('App SSR/static harness contract', () => {
     expect(renderedApp.match(/class="analysis-card"/g)?.length).toBe(4);
     expect(renderedApp).toMatch(/클럽 선택이유[\s\S]*9번 아이언 90%/);
     expect(renderedApp).not.toMatch(/근거 카드|근거카드/);
+  });
+
+  it('keeps trajectory reason copy situation-specific instead of fixed filler', () => {
+    expect(caddieSessionSource).toMatch(/function trajectoryReasonDetailFor/);
+    expect(caddieSessionSource).toMatch(/맞바람은 공을 띄울수록 거리 편차/);
+    expect(caddieSessionSource).toMatch(/짧은 착지가 필요/);
+    expect(caddieSessionSource).toMatch(/뒷바람은 런이 길어질 수/);
+    expect(caddieSessionSource).not.toMatch(/긴 설명보다 낮은 실행 처방이 빠릅니다/);
+  });
+
+  it('exposes a visual-only shot state separate from dashboard copy', () => {
+    expect(caddieSessionSource).toMatch(/export type CaddieShotVisualState/);
+    expect(caddieSessionSource).toMatch(/readonly shotVisual: CaddieShotVisualState/);
+    expect(caddieSessionSource).toMatch(/aimBias: aimBiasFor\(scenario\)/);
+    expect(caddieSessionSource).toMatch(/ballHeight: ballHeightFor\(scenario\)/);
+    expect(caddieSessionSource).toMatch(/trajectory: trajectoryVisualFor\(scenario\)/);
   });
 
   it('restores saved caddie distance presets through the App storage boundary when browser storage exists', () => {
