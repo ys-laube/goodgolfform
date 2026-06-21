@@ -30,6 +30,22 @@ function tempoLabel(value: SwingRecommendation['tempo']): string {
   return { smooth: '부드러운', neutral: '중립', assertive: '과감한' }[value];
 }
 
+function profileLevelLabel(value: SwingLabProfile['level']): string {
+  return { beginner: '입문', developing: '성장 중', 'single-digit': '싱글 핸디캡', scratch: '스크래치' }[value];
+}
+
+function profileShotShapeLabel(value: SwingLabProfile['shotShape']): string {
+  return { straight: '스트레이트', draw: '드로', fade: '페이드' }[value];
+}
+
+function profileTrajectoryLabel(value: SwingLabProfile['trajectoryTendency']): string {
+  return { low: '낮은 탄도', mid: '중간 탄도', high: '높은 탄도' }[value];
+}
+
+function profileTempoPreferenceLabel(value: SwingLabProfile['tempoPreference']): string {
+  return { smooth: '부드러운 템포', neutral: '중립 템포', assertive: '과감한 템포' }[value];
+}
+
 function pathBiasLabel(value: SwingRecommendation['pathBias']): string {
   return { neutral: '중립', 'draw-biased': '드로 성향', 'fade-biased': '페이드 성향' }[value];
 }
@@ -102,7 +118,7 @@ export function distanceFor(profile: SwingLabProfile, club: ClubKey): number {
 }
 
 export function presetSummary(profile: SwingLabProfile): string {
-  return `${profile.level} · ${profile.shotShape} · ${profile.trajectoryTendency} 탄도 · ${profile.tempoPreference} 템포`;
+  return `${profileLevelLabel(profile.level)} · ${profileShotShapeLabel(profile.shotShape)} · ${profileTrajectoryLabel(profile.trajectoryTendency)} · ${profileTempoPreferenceLabel(profile.tempoPreference)}`;
 }
 
 export function useSwingLabSession() {

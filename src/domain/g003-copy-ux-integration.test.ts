@@ -30,6 +30,8 @@ describe('G003 copy/UX integration boundary', () => {
     expect(renderedApp).toMatch(/비행 라인/i);
     expect(renderedApp).toMatch(/적합도/i);
     expect(visibleCopy).toMatch(/근사 연습 추정값/i);
+    expect(renderedApp).toMatch(/균형형 메이커[\s\S]*싱글 핸디캡[\s\S]*스트레이트[\s\S]*중간 탄도[\s\S]*중립 템포/);
+    expect(renderedApp).not.toMatch(/single-digit · straight · mid 탄도 · neutral 템포|developing · draw · high 탄도 · smooth 템포|scratch · fade · low 탄도 · assertive 템포/);
     expect(renderedApp).not.toMatch(/Serious Golf Swing Lab|Profile panel|Scenario panel|Save profile locally|Live analysis report/);
     expect(visibleCopy).not.toMatch(forbiddenNoticeCopy);
     expect(renderedApp).not.toMatch(forbiddenVisibleConstraintCopy);
