@@ -19,6 +19,9 @@ export type CaddieWindDirection = 'none' | 'headwind' | 'tailwind' | 'left-to-ri
 export type CaddieWindStrength = 'light' | 'medium' | 'strong';
 export type CaddiePinPosition = 'front' | 'middle' | 'back';
 export type CaddieGreenRisk = 'short-danger' | 'long-danger' | 'safe-middle';
+export type CaddieHandedness = 'right' | 'left';
+export type CaddieClubGroup = 'driver' | 'fairway-wood' | 'long-iron' | 'mid-iron' | 'wedge';
+export type CaddieBallPositionSlot = 'forward' | 'slightly-forward' | 'center-forward' | 'center' | 'slightly-back';
 
 export type CaddieScenario = {
   readonly targetDistanceMeters: number;
@@ -29,6 +32,7 @@ export type CaddieScenario = {
   readonly windStrength: CaddieWindStrength;
   readonly pinPosition: CaddiePinPosition;
   readonly greenRisk: CaddieGreenRisk;
+  readonly handedness: CaddieHandedness;
 };
 
 export type CaddieReasonCard = {
@@ -39,12 +43,13 @@ export type CaddieReasonCard = {
 };
 
 export type CaddieShotVisualState = {
-  readonly aimBias: 'left' | 'center' | 'right';
-  readonly ballHeight: 'below-feet' | 'level' | 'above-feet';
-  readonly stanceTilt: CaddieStanceSlope;
-  readonly windDirection: CaddieWindDirection;
-  readonly windStrength: CaddieWindStrength;
-  readonly trajectory: 'low' | 'neutral' | 'soft-landing';
+  readonly handedness: CaddieHandedness;
+  readonly clubGroup: CaddieClubGroup;
+  readonly ballPositionSlot: CaddieBallPositionSlot;
+  readonly ballPositionPercentRightHanded: number;
+  readonly ballPositionPercent: number;
+  readonly frontBackSlope: CaddieStanceSlope;
+  readonly sideHillRelation: 'below-feet' | 'level' | 'above-feet';
 };
 
 export type CaddiePrescription = {
@@ -74,6 +79,7 @@ const defaultScenario: CaddieScenario = {
   windStrength: 'light',
   pinPosition: 'front',
   greenRisk: 'short-danger',
+  handedness: 'right',
 };
 
 export const caddieClubLabels = {
@@ -198,18 +204,6 @@ function trajectoryTextFor(scenario: CaddieScenario): string {
   return '기본 탄도로 중앙 공략';
 }
 
-function trajectoryVisualFor(scenario: CaddieScenario): CaddieShotVisualState['trajectory'] {
-  if (scenario.windDirection === 'headwind' || scenario.pinPosition === 'front' || scenario.greenRisk === 'short-danger') {
-    return 'low';
-  }
-
-  if (scenario.windDirection === 'tailwind' || scenario.greenRisk === 'long-danger') {
-    return 'soft-landing';
-  }
-
-  return 'neutral';
-}
-
 function trajectoryReasonDetailFor(scenario: CaddieScenario): string {
   if (scenario.windDirection === 'headwind') {
     return `${windStrengthLabels[scenario.windStrength]} 맞바람은 공을 띄울수록 거리 편차가 커져 낮은 출발각으로 눌러 칩니다.`;
@@ -254,19 +248,7 @@ function warningTextFor(scenario: CaddieScenario): string {
   return '핀보다 큰 미스 방향만 피하기';
 }
 
-function aimBiasFor(scenario: CaddieScenario): CaddieShotVisualState['aimBias'] {
-  if (scenario.sideSlope === 'left-slope' || scenario.windDirection === 'right-to-left') {
-    return 'right';
-  }
-
-  if (scenario.sideSlope === 'right-slope' || scenario.windDirection === 'left-to-right') {
-    return 'left';
-  }
-
-  return 'center';
-}
-
-function ballHeightFor(scenario: CaddieScenario): CaddieShotVisualState['ballHeight'] {
+function sideHillRelationFor(scenario: CaddieScenario): CaddieShotVisualState['sideHillRelation'] {
   if (scenario.sideSlope === 'left-slope') {
     return 'below-feet';
   }
@@ -278,7 +260,41 @@ function ballHeightFor(scenario: CaddieScenario): CaddieShotVisualState['ballHei
   return 'level';
 }
 
-function buildPrescription(preset: CaddieDistancePreset, scenario: CaddieScenario): CaddiePrescription {
+const caddieClubVisualGroups = {
+  driver: { clubGroup: 'driver', ballPositionSlot: 'forward', ballPositionPercentRightHanded: 82 },
+  '3w': { clubGroup: 'fairway-wood', ballPositionSlot: 'slightly-forward', ballPositionPercentRightHanded: 72 },
+  '5w': { clubGroup: 'fairway-wood', ballPositionSlot: 'slightly-forward', ballPositionPercentRightHanded: 72 },
+  '4i': { clubGroup: 'long-iron', ballPositionSlot: 'center-forward', ballPositionPercentRightHanded: 62 },
+  '5i': { clubGroup: 'long-iron', ballPositionSlot: 'center-forward', ballPositionPercentRightHanded: 62 },
+  '6i': { clubGroup: 'mid-iron', ballPositionSlot: 'center', ballPositionPercentRightHanded: 50 },
+  '7i': { clubGroup: 'mid-iron', ballPositionSlot: 'center', ballPositionPercentRightHanded: 50 },
+  '8i': { clubGroup: 'mid-iron', ballPositionSlot: 'center', ballPositionPercentRightHanded: 50 },
+  '9i': { clubGroup: 'wedge', ballPositionSlot: 'slightly-back', ballPositionPercentRightHanded: 42 },
+  pw: { clubGroup: 'wedge', ballPositionSlot: 'slightly-back', ballPositionPercentRightHanded: 42 },
+  gw: { clubGroup: 'wedge', ballPositionSlot: 'slightly-back', ballPositionPercentRightHanded: 42 },
+  sw: { clubGroup: 'wedge', ballPositionSlot: 'slightly-back', ballPositionPercentRightHanded: 42 },
+} satisfies Record<CaddieClubKey, Pick<CaddieShotVisualState, 'clubGroup' | 'ballPositionSlot' | 'ballPositionPercentRightHanded'>>;
+
+export function createCaddieShotVisualState(
+  selectedClub: CaddieClubKey,
+  scenario: Pick<CaddieScenario, 'handedness' | 'stanceSlope' | 'sideSlope'>,
+): CaddieShotVisualState {
+  const clubVisual = caddieClubVisualGroups[selectedClub];
+  const ballPositionPercent =
+    scenario.handedness === 'left'
+      ? 100 - clubVisual.ballPositionPercentRightHanded
+      : clubVisual.ballPositionPercentRightHanded;
+
+  return {
+    ...clubVisual,
+    handedness: scenario.handedness,
+    ballPositionPercent,
+    frontBackSlope: scenario.stanceSlope,
+    sideHillRelation: sideHillRelationFor({ ...defaultScenario, ...scenario }),
+  };
+}
+
+export function buildCaddiePrescription(preset: CaddieDistancePreset, scenario: CaddieScenario): CaddiePrescription {
   const targetDistanceMeters = clampMeters(scenario.targetDistanceMeters);
   const playDistanceMeters = clampMeters(targetDistanceMeters + distanceAdjustmentFor(scenario));
   const controlTrouble =
@@ -328,12 +344,7 @@ function buildPrescription(preset: CaddieDistancePreset, scenario: CaddieScenari
       },
     ],
     shotVisual: {
-      aimBias: aimBiasFor(scenario),
-      ballHeight: ballHeightFor(scenario),
-      stanceTilt: scenario.stanceSlope,
-      windDirection: scenario.windDirection,
-      windStrength: scenario.windStrength,
-      trajectory: trajectoryVisualFor(scenario),
+      ...createCaddieShotVisualState(selectedClub.selectedClub, scenario),
     },
   };
 }
@@ -377,7 +388,7 @@ export function useCaddieSession() {
   const [storageMessage, setStorageMessage] = useState(() => initialStorageMessage(savedPresets));
 
   const selectablePresets = useMemo(() => [defaultPreset, ...savedPresets], [savedPresets]);
-  const prescription = useMemo(() => buildPrescription(activePreset, scenario), [activePreset, scenario]);
+  const prescription = useMemo(() => buildCaddiePrescription(activePreset, scenario), [activePreset, scenario]);
 
   function selectPreset(presetId: string) {
     const nextPreset = selectablePresets.find((preset) => preset.id === presetId) ?? defaultPreset;
