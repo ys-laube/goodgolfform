@@ -1,23 +1,23 @@
 export const productPrinciples = [
-  'One-handed, outdoor-readable round companion.',
+  'One-handed, outdoor-readable swing lab.',
   'Profile-aware distance feel and swing context stay approximate by design.',
-  'Invite-link rooms for friends, not public discovery.',
-  'Shot pins stay playful and lightweight.',
+  'Manual scenario inputs drive deterministic analysis cards.',
+  'Pseudo-3D motion values stay parameterized and dependency-free.',
 ] as const;
 
 export const nonGoals = [
-  'No rulings, scoring judgments, or rules-advice workflow.',
-  'No scorecards, betting, or settlement flows.',
-  'No public social feed, search, followers, or discovery.',
-  'No precision-promise panel or measuring-device workflow.',
-  'No map-provider-specific SDK coupling in the foundation.',
+  'No backend, hosted persistence, database, API server, or remote sync.',
+  'No authentication, accounts, invite rooms, multiplayer, or shared state.',
+  'No GPS, browser geolocation, maps, map tiles, weather feeds, forecasts, or location permissions.',
+  'No scorecards, betting, public social feed, followers, or discovery.',
+  'No official rules, rulings, rangefinder-grade precision promises, or command-style coaching.',
 ] as const;
 
 export const privacyNotes = [
-  'Location permission is requested only when a round feature uses it.',
-  'MVP sharing is scoped to invite-link rooms.',
-  'Shared persistence is MVP-critical later, but this foundation does not implement backend storage.',
+  'Saved profiles use local device storage only when the browser provides it.',
+  'Manual shot context stays in React state unless a profile is saved locally.',
+  'The prototype does not create remote accounts or transmit player context.',
 ] as const;
 
 export const approximateDistanceCopy =
-  'Distance feel uses approximate practice estimates shaped by player profile, course context, and conditions.';
+  'Distance feel uses approximate practice estimates shaped by player profile and manual shot conditions.';
