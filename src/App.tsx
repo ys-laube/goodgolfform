@@ -180,7 +180,7 @@ export function App() {
         <h1 id="app-title">Player profile in. Scenario context out. Analysis card ready.</h1>
         <p className="hero-copy">
           A mobile-first practice lab for golf friends: saved profiles, core tendencies, and manual shot context produce
-          a deterministic analysis card without GPS, maps, weather feeds, rooms, auth, or backend setup.
+          a deterministic analysis card, motion-viewer state, and serious practice read.
         </p>
         <div className="hero-actions" aria-label="Primary swing lab actions">
           <a href="#profile-panel" className="primary-action">
@@ -190,12 +190,6 @@ export function App() {
             Scenario panel
           </a>
         </div>
-      </section>
-
-      <section className="status-strip" aria-label="Swing lab constraints">
-        <span>No login, GPS, map, weather, room, or backend dependency</span>
-        <span>Versioned local presets stay on this device</span>
-        <span>Manual scenario inputs recompute the analysis instantly</span>
       </section>
 
       <section id="profile-panel" className="lab-panel" aria-labelledby="profile-title">

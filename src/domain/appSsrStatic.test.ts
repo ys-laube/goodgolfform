@@ -74,6 +74,7 @@ describe('App SSR/static harness contract', () => {
     expect(renderedApp).toMatch(/fit score/i);
     expect(renderedApp).toMatch(/adjusted target/i);
     expect(renderedApp).not.toMatch(/GPS shot pins|room-flow|map-shell|invite-link room/i);
+    expect(renderedApp).not.toMatch(/without GPS|No login|GPS shot pins|weather feeds?|invite-link room|backend setup|backend dependency/i);
     expect(renderedApp).not.toMatch(/\b(coach|caddie|caddy)\b/i);
     expect(renderedApp).not.toMatch(/Build the shot|Read the swing card|Enter shot|Type the shot|choose a saved profile|get a deterministic|becoming commands|adjusted play|you should|let's|do this|next|now/i);
   });

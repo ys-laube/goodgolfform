@@ -48,7 +48,6 @@ a {
 }
 
 .hero-card,
-.status-strip,
 .lab-panel,
 .analysis-preview {
   border: 1px solid rgba(228, 255, 232, 0.18);
@@ -98,8 +97,7 @@ h2 {
 .hero-copy,
 .section-heading p,
 .analysis-preview p,
-.why-list,
-.status-strip {
+.why-list {
   color: #d8f9df;
   line-height: 1.55;
 }
@@ -114,8 +112,7 @@ h2 {
 .club-grid,
 .metric-grid,
 .analysis-card-grid,
-.adjustment-strip,
-.status-strip {
+.adjustment-strip {
   display: grid;
   gap: 0.85rem;
 }
@@ -147,18 +144,11 @@ h2 {
   border: 0;
 }
 
-.status-strip,
 .lab-panel,
 .analysis-preview {
   margin-top: 1rem;
   border-radius: 1.5rem;
   padding: 1rem;
-}
-
-.status-strip span::before {
-  content: '• ';
-  color: #b8ff68;
-  font-weight: 900;
 }
 
 .lab-panel {
@@ -270,7 +260,6 @@ select optgroup {
   }
 
   .hero-actions,
-  .status-strip,
   .club-grid,
   .metric-grid {
     grid-template-columns: repeat(3, 1fr);

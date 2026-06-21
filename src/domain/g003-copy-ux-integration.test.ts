@@ -8,6 +8,7 @@ import { approximateDistanceCopy, nonGoals, privacyNotes, productPrinciples } fr
 
 const forbiddenNoticeCopy = /disclaimer|legal notice|official|rangefinder|safety-critical/i;
 const forbiddenCommandCopy = /\b(must|should|need to|try to|guarantee|exact|hit this|play this|aim at|take this club|use this club|caddie|caddy|coach|go for|club up|club down)\b|adjusted play/i;
+const forbiddenVisibleConstraintCopy = /without GPS|No login|GPS shot pins|weather feeds?|invite-link room|backend setup|backend dependency/i;
 const forbiddenAppImports = /MapShell|useCurrentLocation|roomApi|roomRepository|shotPinFlow|courseTargets|mapAdapter|auth|weather|multiplayer/i;
 const forbiddenRuntimeDeps = /supabase|firebase|mapbox|leaflet|auth0|clerk|weather|socket\.io/i;
 const forbiddenRuntimeFiles = /(?:MapShell|useCurrentLocation|roomApi|roomRepository|shotPinFlow|courseTargets|geo|mapAdapter|fieldReadiness)\.(?:ts|tsx)$/;
@@ -28,6 +29,7 @@ describe('G003 copy/UX integration boundary', () => {
     expect(renderedApp).toMatch(/fit score/i);
     expect(visibleCopy).toMatch(/approximate practice estimates/i);
     expect(visibleCopy).not.toMatch(forbiddenNoticeCopy);
+    expect(renderedApp).not.toMatch(forbiddenVisibleConstraintCopy);
     expect(analysisCardCopy).not.toMatch(forbiddenCommandCopy);
   });
 
