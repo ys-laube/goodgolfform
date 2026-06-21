@@ -185,7 +185,7 @@ describe('App SSR/static harness contract', () => {
     expect(scannedSources).not.toMatch(/navigator\.geolocation|VITE_MAP_|VITE_ROOM_API_|mapbox|maplibre|leaflet|firebase|supabase/i);
     expect(motionParametersSource).toMatch(/accessibleSummary/);
     expect(motionParametersSource).toMatch(/reducedMotionPose/);
-    expect(swingMotionViewerSource).toMatch(/typeof window === 'undefined'/);
+    expect(swingMotionViewerSource).toMatch(/Object\.getOwnPropertyDescriptor\(globalThis, 'window'\)/);
     expect(swingMotionViewerSource).toMatch(/forceReducedMotion/);
     expect(appSource).toMatch(/Motion meter/);
   });

@@ -45,7 +45,7 @@ describe('G004 parameterized motion viewer static contract', () => {
     expect(renderedViewer).toContain('class="swing-arc-svg"');
     expect(renderedViewer).toContain('role="img"');
     expect(renderedViewer).toMatch(/Golfer motion viewer: .* tempo, .* path, .* launch/i);
-    expect(renderedViewer).toContain('Swipe the stage for pseudo-3D rotation');
+    expect(renderedViewer).toContain('Drag the stage to rotate the pseudo-3D view');
     expect(renderedViewer).toContain('Current motion parameters');
     expect(renderedViewer).not.toMatch(/canvas|webgl|three|@react-three/i);
   });
