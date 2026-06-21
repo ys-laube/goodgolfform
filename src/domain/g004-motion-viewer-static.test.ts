@@ -38,14 +38,14 @@ describe('G004 stale Swing Lab removal guard', () => {
     expect(caddieSessionSource).toMatch(/buildPrescription/);
     expect(caddieSessionSource).toMatch(/caddiePresets/);
     expect(caddieSessionSource).toMatch(/CaddieShotVisualState/);
-    expect(caddieSessionSource).toMatch(/shotVisualState: \{/);
+    expect(caddieSessionSource).toMatch(/shotVisualState:\s*\{/);
     expect(caddieSessionSource).not.toMatch(/CaddieShotDashboard|shotDashboard|recommendation:/);
     expect(`${appSource}\n${caddieSessionSource}`).not.toMatch(/SwingMotionViewer|motionParameters|useSwingLabSession|recommendShot|profilePresets|swingLabModels/);
   });
 
   it('keeps visual state free of recommendation, play-distance, and swing summary fields', () => {
     const visualTypeBody = caddieSessionSource.match(/type CaddieShotVisualState = \{([\s\S]*?)\};/)?.[1] ?? '';
-    const visualStateBody = caddieSessionSource.match(/shotVisualState: \{([\s\S]*?)\n    \},/)?.[1] ?? '';
+    const visualStateBody = caddieSessionSource.match(/shotVisualState:\s*\{([\s\S]*?)\n {4}\},/)?.[1] ?? '';
 
     expect(visualTypeBody).toMatch(/targetLine/);
     expect(visualTypeBody).toMatch(/ballPosition/);
