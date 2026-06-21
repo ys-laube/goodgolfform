@@ -287,24 +287,35 @@ export function App() {
           </span>
         </div>
 
-        <section className="shot-dashboard" aria-labelledby="shot-dashboard-title">
-          <div className="dashboard-display" aria-hidden="true">
-            <span className="dashboard-target-line" />
-            <span className="dashboard-shot-arc" />
-            <span className="dashboard-ball-dot" />
+        <section className="shot-visual" aria-labelledby="shot-visual-title">
+          <div
+            className="shot-visual-stage"
+            data-aim={prescription.shotVisual.aimBias}
+            data-ball-height={prescription.shotVisual.ballHeight}
+            data-stance={prescription.shotVisual.stanceTilt}
+            data-trajectory={prescription.shotVisual.trajectory}
+            data-wind={prescription.shotVisual.windDirection}
+            aria-hidden="true"
+          >
+            <span className="shot-visual-aim-line" />
+            <span className="shot-visual-arc" />
+            <span className="shot-visual-feet" />
+            <span className="shot-visual-stance" />
+            <span className="shot-visual-ball" />
+            <span className="shot-visual-wind" />
           </div>
-          <div className="dashboard-copy">
-            <p className="eyebrow">정적 샷 대시보드</p>
-            <h3 id="shot-dashboard-title">한 장으로 보는 타깃 라인</h3>
-            <p>스크린 골프식 샷 요약을 필드형 숫자판처럼 고정 표시합니다.</p>
+          <div className="shot-visual-copy">
+            <p className="eyebrow">반응형 2D 샷/스탠스 비주얼</p>
+            <h3 id="shot-visual-title">발, 공, 조준선이 상황에 맞춰 움직입니다</h3>
+            <p>공 위치 높이·앞뒤 경사·조준·탄도·바람을 한 장의 2D 샷/스탠스 그림으로 보여줍니다.</p>
           </div>
-          <dl className="dashboard-metrics" aria-label="정적 샷 지표">
+          <dl className="shot-visual-metrics" aria-label="2D 샷/스탠스 상태">
             <div>
-              <dt>타깃 라인</dt>
+              <dt>조준선</dt>
               <dd>{prescription.shotDashboard.targetLine}</dd>
             </div>
             <div>
-              <dt>공 위치</dt>
+              <dt>공/스탠스</dt>
               <dd>{prescription.shotDashboard.ballPosition}</dd>
             </div>
             <div>
