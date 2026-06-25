@@ -1,10 +1,12 @@
 import { useMemo, useState } from 'react';
 
 import { availableLocalStorage } from './browserEnvironment';
+import { eventBasePoints, type BettingEventType } from './domain/bettingLedger';
 import {
   bettingActiveRoundStorageKey,
   clearBettingRound,
   cloneBettingRound,
+  createDefaultBettingPlayers,
   createDefaultBettingRound,
   loadBettingRound,
   purgeKnownLegacyShotAdviceStorage,
@@ -35,6 +37,7 @@ export type BettingRoundSessionState = {
 export type BettingRoundSession = BettingRoundSessionState & {
   readonly gameAvailability: Record<BettingGameKey, { readonly available: boolean; readonly reason: string | null }>;
   readonly updateRoundSetup: (patch: Partial<BettingRoundSettings>) => void;
+  readonly setPlayerCount: (playerCount: number) => void;
   readonly updatePlayer: (playerId: string, patch: Partial<Pick<BettingPlayer, 'name' | 'handicap'>>) => void;
   readonly setGameEnabled: (game: BettingGameKey, enabled: boolean) => void;
   readonly updateGameUnit: (game: BettingGameKey, patch: Partial<BettingGameUnit>) => void;
@@ -84,6 +87,38 @@ export function applyRoundSetupMutation(
   };
 
   return stampRound({ ...round, settings }, now);
+}
+
+export function applyPlayerCountMutation(round: BettingRound, playerCount: number, now = new Date().toISOString()): BettingRound {
+  const nextPlayerCount = clampInteger(playerCount, 2, 4);
+  const defaultPlayers = createDefaultBettingPlayers(4);
+  const usedPlayerIds = new Set<string>();
+  const players = Array.from({ length: nextPlayerCount }, (_, index) => {
+    const player = round.players[index] ?? defaultPlayers[index];
+    const id = uniquePlayerId(player.id, usedPlayerIds, index + 1);
+    usedPlayerIds.add(id);
+    return { ...player, id };
+  });
+  const activePlayerIds = new Set(players.map((player) => player.id));
+  const holes = round.holes.map((hole) => ({
+    ...hole,
+    scores: hole.scores.filter((score) => activePlayerIds.has(score.playerId)),
+    events: hole.events.filter((event) => activePlayerIds.has(event.playerId)),
+    missions: hole.missions.filter((mission) => activePlayerIds.has(mission.playerId)),
+  }));
+
+  return stampRound(
+    {
+      ...round,
+      players,
+      enabledGames: {
+        ...round.enabledGames,
+        vegas: nextPlayerCount === 4 ? round.enabledGames.vegas : false,
+      },
+      holes,
+    },
+    now,
+  );
 }
 
 export function applyPlayerMutation(
@@ -272,6 +307,7 @@ export function useBettingRoundSession(storageProvider: () => StorageLike | unde
     ...sessionState,
     gameAvailability,
     updateRoundSetup: (patch) => mutateRound((round) => applyRoundSetupMutation(round, patch), '라운드 설정을 이 기기에 저장했습니다.'),
+    setPlayerCount: (playerCount) => mutateRound((round) => applyPlayerCountMutation(round, playerCount), '플레이어 수를 이 기기에 저장했습니다.'),
     updatePlayer: (playerId, patch) => mutateRound((round) => applyPlayerMutation(round, playerId, patch), '플레이어 설정을 이 기기에 저장했습니다.'),
     setGameEnabled: (game, enabled) => mutateRound((round) => applyGameEnabledMutation(round, game, enabled), '게임 구성을 이 기기에 저장했습니다.'),
     updateGameUnit: (game, patch) => mutateRound((round) => applyGameUnitMutation(round, game, patch), '게임 단위를 이 기기에 저장했습니다.'),
@@ -360,7 +396,7 @@ function missionEventId(holeNumber: number, missionId: string, playerId: string)
 }
 
 function defaultEventPoints(event: BettingEventKey): number {
-  return event === 'ob-penalty' ? -3 : 3;
+  return eventBasePoints[event as BettingEventType];
 }
 
 function hasPlayer(round: BettingRound, playerId: string): boolean {
@@ -378,6 +414,23 @@ function normalizePlayerName(name: string, fallback: string): string {
 function clampInteger(value: number, min: number, max: number): number {
   const integer = Number.isFinite(value) ? Math.round(value) : min;
   return Math.min(max, Math.max(min, integer));
+}
+
+function uniquePlayerId(preferredId: string, usedPlayerIds: ReadonlySet<string>, oneBasedIndex: number): string {
+  const baseId = preferredId.trim() || `player-${oneBasedIndex}`;
+
+  if (!usedPlayerIds.has(baseId)) {
+    return baseId;
+  }
+
+  for (let suffix = 2; suffix <= 9; suffix += 1) {
+    const candidate = `${baseId}-${suffix}`;
+    if (!usedPlayerIds.has(candidate)) {
+      return candidate;
+    }
+  }
+
+  return `player-${oneBasedIndex}-${usedPlayerIds.size + 1}`;
 }
 
 export type { BettingEventKey, BettingGameKey, BettingHandicapMode, BettingMissionOutcome, BettingScoringMode };

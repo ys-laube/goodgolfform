@@ -3,6 +3,7 @@ export const bettingLedgerStoragePrefix = 'golf-bet-ledger';
 export const bettingActiveRoundStorageKey = `${bettingLedgerStoragePrefix}:active-round:v${bettingLedgerStorageVersion}`;
 export const legacyShotAdvicePresetStorageKey = 'korean-caddie:preset-distances:v1';
 export const knownLegacyShotAdviceStorageKeys = [legacyShotAdvicePresetStorageKey] as const;
+export const bettingPlayerCountOptions = [2, 3, 4] as const;
 
 export type StorageLike = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>;
 
@@ -106,14 +107,19 @@ const missionOutcomes: readonly BettingMissionOutcome[] = ['pending', 'success',
 const scoringModes: readonly BettingScoringMode[] = ['points', 'money'];
 const handicapModes: readonly BettingHandicapMode[] = ['final-total', 'hole-allocation'];
 
-export function createDefaultBettingRound(input: { readonly id?: string; readonly now?: string } = {}): BettingRound {
+export function createDefaultBettingPlayers(playerCount = 4): readonly BettingPlayer[] {
+  const count = normalizePlayerCount(playerCount);
+  return defaultPlayers.slice(0, count).map((player) => ({ ...player }));
+}
+
+export function createDefaultBettingRound(input: { readonly id?: string; readonly now?: string; readonly playerCount?: number } = {}): BettingRound {
   const now = input.now ?? new Date(0).toISOString();
 
   return {
     id: input.id?.trim() || 'round-local-active',
     createdAt: now,
     updatedAt: now,
-    players: defaultPlayers.map((player) => ({ ...player })),
+    players: createDefaultBettingPlayers(input.playerCount ?? 4),
     settings: { holeCount: 18, scoringMode: 'money', handicapMode: 'final-total' },
     enabledGames: { ...defaultGameFlags },
     gameUnits: cloneGameUnits(defaultGameUnits),
@@ -342,4 +348,9 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function includesValue<T extends string>(values: readonly T[], value: unknown): value is T {
   return typeof value === 'string' && values.includes(value as T);
+}
+
+function normalizePlayerCount(playerCount: number): 2 | 3 | 4 {
+  const rounded = Number.isFinite(playerCount) ? Math.round(playerCount) : 4;
+  return Math.min(4, Math.max(2, rounded)) as 2 | 3 | 4;
 }

@@ -71,6 +71,13 @@ describe('betting ledger local storage boundary', () => {
     expect(loadBettingRound(storage)).toEqual(round);
   });
 
+  it('creates default 2, 3, and 4 player rounds for setup flows', () => {
+    expect(createDefaultBettingRound({ playerCount: 2 }).players).toHaveLength(2);
+    expect(createDefaultBettingRound({ playerCount: 3 }).players).toHaveLength(3);
+    expect(createDefaultBettingRound({ playerCount: 4 }).players).toHaveLength(4);
+    expect(createDefaultBettingRound({ playerCount: 99 }).players).toHaveLength(4);
+  });
+
   it('never reads or migrates old Korean caddie presets into betting round state', () => {
     const storage = new MemoryStorage({
       [legacyShotAdvicePresetStorageKey]: JSON.stringify({ version: 1, presets: [{ name: '저장된 캐디 거리표' }] }),

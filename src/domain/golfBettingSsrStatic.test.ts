@@ -2,6 +2,7 @@ import { createElement } from 'react';
 import { renderToString } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import designSource from '../../DESIGN.md?raw';
+import indexSource from '../../index.html?raw';
 import readmeSource from '../../README.md?raw';
 import appSource from '../App.tsx?raw';
 import stylesSource from '../styles.css?raw';
@@ -99,6 +100,12 @@ describe('Korean betting-ledger SSR/static integration contract', () => {
     expect(docs).toMatch(/Apple-inspired|Apple-inspired visual polish|Apple-inspired styling/i);
     expect(docs).toMatch(/no Apple logo|Apple logos|애플.*로고/i);
     expect(docs).toMatch(/No backend|No payment execution|No URL or QR app-state sharing/i);
+  });
+
+  it('keeps browser metadata on the betting-ledger product instead of the retired caddie app', () => {
+    expect(indexSource).toMatch(/펀골프 정산 장부/);
+    expect(indexSource).toMatch(/골프.*내기|정산 장부/);
+    expect(indexSource).not.toMatch(retiredCaddieVisiblePattern);
   });
 
   it('keeps the app source and stylesheet oriented around mobile betting-ledger surfaces', () => {

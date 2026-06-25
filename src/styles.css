@@ -292,6 +292,11 @@ button:focus-visible {
   color: #fff;
 }
 
+.game-card button:disabled {
+  cursor: not-allowed;
+  opacity: 0.56;
+}
+
 .game-card p {
   margin: 0;
   color: #667085;

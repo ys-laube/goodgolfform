@@ -3,6 +3,7 @@ import { useMemo, useState, type CSSProperties } from 'react';
 import {
   calculateRoundLedger,
   drawMissionCard,
+  eventBasePoints,
   type BettingEventType,
   type BettingRound as LedgerBettingRound,
   type PlayerId,
@@ -72,14 +73,6 @@ function playerTeam(index: number): '청팀' | '백팀' {
 
 function playerStyle(index: number): CSSProperties {
   return { '--player-tone': playerTones[index % playerTones.length] } as CSSProperties;
-}
-
-function defaultEventPoints(event: BettingEventKey): number {
-  if (event === 'ob-penalty') {
-    return -2;
-  }
-
-  return event === 'birdie' ? 3 : 2;
 }
 
 function toLedgerRound(round: StoredBettingRound): LedgerBettingRound {
@@ -177,6 +170,9 @@ export function App() {
   const shareCopy = `${roundName} ${completedHoleCount || holeNumber}H 정산 · ${balanceRows
     .map((entry) => `${entry.player.name} ${signedAmountLabel(entry.amount, settlementUnit)}`)
     .join(' / ')}`;
+  const activeMissionPlayerId = round.players.some((player) => player.id === missionPlayerId)
+    ? missionPlayerId
+    : (round.players[0]?.id ?? '');
 
   function scoreInputValue(playerId: string): string {
     const draftKey = `${holeNumber}:${playerId}`;
@@ -216,7 +212,7 @@ export function App() {
     <main className="app-shell" aria-labelledby="app-title" data-mobile-layout="safe-area-inset">
       <section className="hero-card" aria-labelledby="app-title">
         <div className="hero-copy">
-          <p className="eyebrow">FunGolf Ledger</p>
+          <p className="eyebrow">펀골프 정산 장부</p>
           <h1 id="app-title">한국형 골프 내기 정산</h1>
           <p>2~4명 라운드 세팅부터 홀 입력, 이벤트, 미션, 순정산, 공유 카드까지 한 화면에서 처리하는 모바일 우선 장부입니다.</p>
         </div>
@@ -257,6 +253,14 @@ export function App() {
               <option value="hole-allocation">홀별 핸디 배분</option>
             </select>
           </label>
+          <label>
+            플레이어 수
+            <select value={round.players.length} onChange={(event) => session.setPlayerCount(parseIntegerDraft(event.currentTarget.value, round.players.length))}>
+              <option value={2}>2명</option>
+              <option value={3}>3명</option>
+              <option value={4}>4명</option>
+            </select>
+          </label>
         </div>
 
         <div className="player-strip" aria-label="플레이어와 핸디캡">
@@ -280,31 +284,36 @@ export function App() {
         </div>
 
         <div className="game-stack" aria-label="내기 게임 구성">
-          {gameKeys.map((game) => (
-            <article key={game} className={round.enabledGames[game] ? 'game-card active' : 'game-card'}>
-              <button type="button" onClick={() => session.setGameEnabled(game, !round.enabledGames[game])}>
-                <span>{round.enabledGames[game] ? '켜짐' : '꺼짐'}</span>
-                <strong>{gameLabels[game]}</strong>
-              </button>
-              <p>{gameDescriptions[game]}</p>
-              <label>
-                점수 단위
-                <input
-                  inputMode="numeric"
-                  value={round.gameUnits[game].points}
-                  onChange={(event) => session.updateGameUnit(game, { points: parseIntegerDraft(event.currentTarget.value, round.gameUnits[game].points) })}
-                />
-              </label>
-              <label>
-                1점 금액
-                <input
-                  inputMode="numeric"
-                  value={round.gameUnits[game].money}
-                  onChange={(event) => session.updateGameUnit(game, { money: parseIntegerDraft(event.currentTarget.value, round.gameUnits[game].money) })}
-                />
-              </label>
-            </article>
-          ))}
+          {gameKeys.map((game) => {
+            const availability = session.gameAvailability[game];
+            const isEnabled = round.enabledGames[game] && availability.available;
+
+            return (
+              <article key={game} className={isEnabled ? 'game-card active' : 'game-card'}>
+                <button type="button" disabled={!availability.available} onClick={() => session.setGameEnabled(game, !round.enabledGames[game])}>
+                  <span>{availability.available ? (isEnabled ? '켜짐' : '꺼짐') : '사용 불가'}</span>
+                  <strong>{gameLabels[game]}</strong>
+                </button>
+                <p>{availability.reason ?? gameDescriptions[game]}</p>
+                <label>
+                  점수 단위
+                  <input
+                    inputMode="numeric"
+                    value={round.gameUnits[game].points}
+                    onChange={(event) => session.updateGameUnit(game, { points: parseIntegerDraft(event.currentTarget.value, round.gameUnits[game].points) })}
+                  />
+                </label>
+                <label>
+                  1점 금액
+                  <input
+                    inputMode="numeric"
+                    value={round.gameUnits[game].money}
+                    onChange={(event) => session.updateGameUnit(game, { money: parseIntegerDraft(event.currentTarget.value, round.gameUnits[game].money) })}
+                  />
+                </label>
+              </article>
+            );
+          })}
         </div>
       </section>
 
@@ -367,13 +376,13 @@ export function App() {
         <div className="mission-controls">
           <label>
             대상자
-            <select value={missionPlayerId} onChange={(event) => updateMission(event.currentTarget.value, missionCleared)}>
+            <select value={activeMissionPlayerId} onChange={(event) => updateMission(event.currentTarget.value, missionCleared)}>
               {round.players.map((player) => (
                 <option key={player.id} value={player.id}>{player.name}</option>
               ))}
             </select>
           </label>
-          <button className={missionCleared ? 'toggle-action active' : 'toggle-action'} type="button" onClick={() => updateMission(missionPlayerId || round.players[0].id, !missionCleared)}>
+          <button className={missionCleared ? 'toggle-action active' : 'toggle-action'} type="button" onClick={() => updateMission(activeMissionPlayerId, !missionCleared)}>
             {missionCleared ? '성공 반영' : '실패 반영'}
           </button>
         </div>
@@ -393,7 +402,7 @@ export function App() {
               type="button"
               onClick={() => {
                 setShareReady(false);
-                session.toggleHoleEvent(holeNumber, event, player.id, defaultEventPoints(event));
+                session.toggleHoleEvent(holeNumber, event, player.id, eventBasePoints[event as BettingEventType]);
               }}
             >
               <span>{eventLabels[event]}</span>

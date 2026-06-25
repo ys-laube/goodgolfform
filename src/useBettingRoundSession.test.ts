@@ -16,6 +16,7 @@ import {
   applyHoleScoreMutation,
   applyMissionOutcomeMutation,
   applyPlayerMutation,
+  applyPlayerCountMutation,
   applyRoundSetupMutation,
   bettingGameAvailability,
   createInitialBettingRoundSessionState,
@@ -98,6 +99,38 @@ describe('useBettingRoundSession local state helpers', () => {
     expect(unitRound.updatedAt).toBe('2026-06-25T01:03:00.000Z');
   });
 
+  it('resizes a round to 2–4 players, prunes inactive hole data, and disables Vegas below four players', () => {
+    const round = {
+      ...createDefaultBettingRound({ now: '2026-06-25T00:00:00.000Z' }),
+      holes: [
+        {
+          holeNumber: 1,
+          scores: [
+            { playerId: 'player-1', strokes: 4 },
+            { playerId: 'player-2', strokes: 5 },
+            { playerId: 'player-3', strokes: 6 },
+          ],
+          events: [{ id: 'event-1', playerId: 'player-3', event: 'near-pin' as const, points: 2 }],
+          missions: [{ id: 'mission-1', playerId: 'player-4', missionId: 'fairway-keeper', title: '페어웨이 지킴이', points: 2, outcome: 'success' as const }],
+        },
+      ],
+    };
+
+    const twoPlayerRound = applyPlayerCountMutation(round, 2, '2026-06-25T01:00:00.000Z');
+    const restoredRound = applyPlayerCountMutation(twoPlayerRound, 4, '2026-06-25T01:01:00.000Z');
+
+    expect(twoPlayerRound.players.map((player) => player.id)).toEqual(['player-1', 'player-2']);
+    expect(twoPlayerRound.enabledGames.vegas).toBe(false);
+    expect(twoPlayerRound.holes[0]?.scores).toEqual([
+      { playerId: 'player-1', strokes: 4 },
+      { playerId: 'player-2', strokes: 5 },
+    ]);
+    expect(twoPlayerRound.holes[0]?.events).toEqual([]);
+    expect(twoPlayerRound.holes[0]?.missions).toEqual([]);
+    expect(restoredRound.players).toHaveLength(4);
+    expect(new Set(restoredRound.players.map((player) => player.id))).toHaveProperty('size', 4);
+  });
+
   it('supports hole score, event, and mission session mutations', () => {
     const round = createDefaultBettingRound({ now: '2026-06-25T00:00:00.000Z' });
     const scoredRound = applyHoleScoreMutation(round, 1, 'player-1', 4, '2026-06-25T01:00:00.000Z');
@@ -132,6 +165,17 @@ describe('useBettingRoundSession local state helpers', () => {
         points: 7,
         outcome: 'success',
       },
+    ]);
+  });
+
+  it('uses the same default event points as the ledger when points are omitted', () => {
+    const round = createDefaultBettingRound({ now: '2026-06-25T00:00:00.000Z' });
+    const eventRound = applyHoleEventToggleMutation(round, 1, 'near-pin', 'player-2', undefined, '2026-06-25T01:01:00.000Z');
+    const penaltyRound = applyHoleEventToggleMutation(eventRound, 1, 'ob-penalty', 'player-1', undefined, '2026-06-25T01:02:00.000Z');
+
+    expect(penaltyRound.holes[0]?.events).toEqual([
+      { id: 'hole-1:near-pin:player-2', playerId: 'player-2', event: 'near-pin', points: 2 },
+      { id: 'hole-1:ob-penalty:player-1', playerId: 'player-1', event: 'ob-penalty', points: -2 },
     ]);
   });
 
