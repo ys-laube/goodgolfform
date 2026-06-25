@@ -176,7 +176,7 @@ describe('per-game settlement formulas', () => {
 
     expect(balanceSum(events.pointBalances)).toBeCloseTo(0, 2);
     expect(events.pointBalances.a).toBeCloseTo(2.67, 2);
-    expect(events.pointBalances.d).toBeCloseTo(-2.66, 2);
+    expect(events.pointBalances.d).toBeCloseTo(-2.67, 2);
     expect(events.rows).toHaveLength(2);
   });
 

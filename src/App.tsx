@@ -6,7 +6,7 @@ import {
   type BettingEventType,
   type BettingRound as LedgerBettingRound,
   type PlayerId,
-} from './domain/golfBettingLedger';
+} from './domain/bettingLedger';
 import { type BettingRound as StoredBettingRound } from './domain/bettingStorage';
 import { useBettingRoundSession, type BettingEventKey, type BettingGameKey } from './useBettingRoundSession';
 
