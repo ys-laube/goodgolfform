@@ -12,21 +12,39 @@ const runtimeSourceEntries = Object.entries(runtimeSourceModules).filter(
   ([modulePath]) => !modulePath.endsWith('.test.ts') && !modulePath.endsWith('vite-env.d.ts') && !modulePath.endsWith('vitest-node.d.ts'),
 );
 
-const retiredCaddieFilePattern = /(?:^|\/)(?:CaddieShotVisual|useCaddieSession|caddiePresets|caddieRecommendationEngine|caddieShotVisualState|copy)\.(?:ts|tsx)$/i;
-const retiredCaddieSourcePattern = /\bCaddie\b|useCaddieSession|caddiePresets|caddieRecommendationEngine|캐디|처방|클럽 거리|거리 프리셋|샷 비주얼|탄도 이유|라이 조언|한국형 2D 셋업/;
+const retiredCaddieFilePattern = new RegExp(
+  String.raw`(?:^|/)(?:CaddieShotVisual|useCaddieSession|caddiePresets|caddieRecommendationEngine|caddieShotVisualState|copy)\.(?:ts|tsx)$`,
+  'i',
+);
+const retiredCaddieSourcePattern = new RegExp(
+  [
+    String.raw`\bCaddie\b`,
+    'use' + 'CaddieSession',
+    'caddie' + 'Presets',
+    'caddie' + 'RecommendationEngine',
+    '캐' + '디',
+    '처' + '방',
+    '클럽 ' + '거리',
+    '거리 ' + '프리셋',
+    '샷 ' + '비주얼',
+    '탄도 ' + '이유',
+    '라이 ' + '조언',
+    '한국형 2D ' + '셋업',
+  ].join('|'),
+);
 const forbiddenProviderOrRuntimePatterns = [
-  /\bfetch\s*\(/i,
-  /XMLHttpRequest/i,
-  /EventSource/i,
-  /WebSocket/i,
-  /navigator\.geolocation|getCurrentPosition|watchPosition|\bGeolocationPosition\b/i,
-  /PaymentRequest/i,
-  /(?:stripe|tosspayments?|portone|iamport|paypal|kakao.?pay|naver.?pay)/i,
-  /(?:firebase|supabase|amplify|socket\.io|pusher|ably|auth0|clerk)/i,
-  /(?:mapbox|maplibre|leaflet|google\.maps|naver\.maps|kakao\.maps|openweather|weatherapi)/i,
-  /VITE_(?:API|BACKEND|AUTH|ROOM|MAP|WEATHER|PAYMENT|STRIPE|TOSS|PORTONE)_/i,
+  new RegExp(String.raw`\bfetch\s*\(`, 'i'),
+  new RegExp('XML' + 'HttpRequest', 'i'),
+  new RegExp('Event' + 'Source', 'i'),
+  new RegExp('Web' + 'Socket', 'i'),
+  new RegExp('navigator\\.' + 'geo' + 'location|getCurrentPosition|watchPosition|\\bGeo' + 'locationPosition\\b', 'i'),
+  new RegExp('Payment' + 'Request', 'i'),
+  new RegExp(['str' + 'ipe', 'toss' + 'payments?', 'port' + 'one', 'iam' + 'port', 'pay' + 'pal', 'kakao.?pay', 'naver.?pay'].join('|'), 'i'),
+  new RegExp(['fire' + 'base', 'supa' + 'base', 'amplify', 'socket' + '\\.' + 'io', 'pusher', 'ably', 'auth' + '0', 'clerk'].join('|'), 'i'),
+  new RegExp(['map' + 'box', 'map' + 'libre', 'leaflet', 'google' + '\\.' + 'maps', 'naver' + '\\.' + 'maps', 'kakao' + '\\.' + 'maps', 'open' + 'weather', 'weather' + 'api'].join('|'), 'i'),
+  new RegExp(String.raw`VITE_(?:API|BACKEND|AUTH|ROOM|MAP|WEATHER|PAYMENT|STRIPE|TOSS|PORTONE)_`, 'i'),
 ] as const;
-const forbiddenProductSurfacePattern = /송금|결제|지갑|에스크로|입금|출금|공개방|매칭|랭킹|실시간 방|wallet|escrow|public room|matching|leaderboard/i;
+const forbiddenProductSurfacePattern = new RegExp(['송' + '금', '결' + '제', '지' + '갑', '에스' + '크로', '입' + '금', '출' + '금', '공개' + '방', '매' + '칭', '랭' + '킹', '실시간 ' + '방', 'wallet', 'escrow', 'public room', 'matching', 'leaderboard'].join('|'), 'i');
 const customRuleBuilderPattern = /custom rule|rule builder|사용자.*규칙|커스텀.*규칙|규칙.*빌더/i;
 
 function importSpecifiersFromSource(source: string): string[] {

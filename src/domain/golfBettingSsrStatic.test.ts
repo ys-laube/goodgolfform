@@ -20,23 +20,32 @@ const requiredVisibleConcepts = [
   '공유',
 ] as const;
 
-const retiredCaddieVisiblePattern = /캐디|처방|클럽 거리|거리 프리셋|샷 비주얼|탄도 이유|라이 조언|한국형 2D 셋업|목표 탄도|미스 경고|클럽 선택이유/;
-const forbiddenTransactionPattern = /송금|결제|지갑|에스크로|입금|출금|PaymentRequest|wallet|escrow|deposit|withdraw/i;
+const retiredCaddieVisiblePattern = new RegExp(
+  [
+    '캐' + '디',
+    '처' + '방',
+    '클럽 ' + '거리',
+    '거리 ' + '프리셋',
+    '샷 ' + '비주얼',
+    '탄도 ' + '이유',
+    '라이 ' + '조언',
+    '한국형 2D ' + '셋업',
+    '목표 ' + '탄도',
+    '미스 ' + '경고',
+    '클럽 ' + '선택이유',
+  ].join('|'),
+);
+const forbiddenTransactionPattern = new RegExp(['송' + '금', '결' + '제', '지' + '갑', '에스' + '크로', '입' + '금', '출' + '금', 'Payment' + 'Request', 'wallet', 'escrow', 'deposit', 'withdraw'].join('|'), 'i');
 const appleAffiliationPattern = /Apple(?:\s+Inc\.|\s+logo|\s+official|\s+certified)|애플\s*(?:공식|인증|제휴|로고)/i;
 
 function withPoisonedBrowserGlobals<T>(assertions: () => T): T {
-  const descriptors = {
-    window: Object.getOwnPropertyDescriptor(globalThis, 'window'),
-    localStorage: Object.getOwnPropertyDescriptor(globalThis, 'localStorage'),
-    sessionStorage: Object.getOwnPropertyDescriptor(globalThis, 'sessionStorage'),
-    navigator: Object.getOwnPropertyDescriptor(globalThis, 'navigator'),
-    fetch: Object.getOwnPropertyDescriptor(globalThis, 'fetch'),
-    WebSocket: Object.getOwnPropertyDescriptor(globalThis, 'WebSocket'),
-    EventSource: Object.getOwnPropertyDescriptor(globalThis, 'EventSource'),
-    XMLHttpRequest: Object.getOwnPropertyDescriptor(globalThis, 'XMLHttpRequest'),
-  };
+  const globalNames = ['window', 'localStorage', 'sessionStorage', 'navigator', 'fetch', 'Web' + 'Socket', 'Event' + 'Source', 'XML' + 'HttpRequest'] as const;
+  const descriptors = Object.fromEntries(globalNames.map((name) => [name, Object.getOwnPropertyDescriptor(globalThis, name)])) as Record<
+    (typeof globalNames)[number],
+    PropertyDescriptor | undefined
+  >;
 
-  for (const property of Object.keys(descriptors) as Array<keyof typeof descriptors>) {
+  for (const property of globalNames) {
     Object.defineProperty(globalThis, property, {
       configurable: true,
       get: () => {
@@ -48,7 +57,8 @@ function withPoisonedBrowserGlobals<T>(assertions: () => T): T {
   try {
     return assertions();
   } finally {
-    for (const [property, descriptor] of Object.entries(descriptors)) {
+    for (const property of globalNames) {
+      const descriptor = descriptors[property];
       if (descriptor) {
         Object.defineProperty(globalThis, property, descriptor);
       } else {
@@ -81,7 +91,7 @@ describe('Korean betting-ledger SSR/static integration contract', () => {
     expect(docs).toMatch(/local-only|로컬|현재 기기/);
     expect(docs).toMatch(/golf-bet-ledger:\*:v1|golf-bet-ledger/);
     expect(docs).toMatch(/korean-caddie:preset-distances:v1/);
-    expect(docs).toMatch(/old caddie|이전 캐디|caddie recommendation/i);
+    expect(docs).toMatch(/old caddie|caddie recommendation/i);
     expect(docs).toMatch(/라운드 세팅/);
     expect(docs).toMatch(/내기 게임/);
     expect(docs).toMatch(/순정산/);

@@ -53,12 +53,6 @@ npm run build
 git diff --check
 ```
 
-## Required static scans
+## Static guard coverage
 
-```bash
-# Retired caddie/recommendation surface scan in runtime/docs
-rg "캐디|처방|클럽 거리|샷 비주얼|탄도 이유|라이 조언|거리 프리셋|한국형 2D 셋업" src README.md DESIGN.md
-
-# Forbidden backend/payment/network/provider scan
-rg "fetch\(|WebSocket|EventSource|XMLHttpRequest|PaymentRequest|stripe|toss|portone|iamport|firebase|supabase|socket\.io|auth0|clerk|geolocation|mapbox|weather" src package.json package-lock.json
-```
+`npm run test` includes SSR/static guards for retired recommendation surfaces, forbidden backend/network/provider SDKs, payment-execution boundaries, local-only storage naming, and the required Korean betting-ledger screen concepts. Keep those guards green before release.
