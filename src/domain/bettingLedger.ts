@@ -451,7 +451,7 @@ function calculateSkinsLedger(round: BettingRound, handicap: AppliedHandicap): G
   let carryover = 0;
 
   for (const hole of completedHoles(round)) {
-    const scores = scoreEntriesForHole(round, handicap, hole, 'skins');
+    const scores = scoreEntriesForHole(round, handicap, hole);
     const lowestScore = Math.min(...scores.map((entry) => entry.score));
     const winners = scores.filter((entry) => entry.score === lowestScore);
 
@@ -523,7 +523,7 @@ function calculateVegasLedger(round: BettingRound, handicap: AppliedHandicap): G
   for (const hole of completedHoles(round)) {
     const teams = resolveVegasTeams(hole, round.players);
     const teamScores = teams.map((team) => {
-      const scores = team.map((playerId) => scoreForHole(round, handicap, hole, playerId, 'vegas')).sort((a, b) => a - b);
+      const scores = team.map((playerId) => scoreForHole(round, handicap, hole, playerId)).sort((a, b) => a - b);
       return { team, number: scores[0] * 10 + scores[1], scores };
     });
 
@@ -727,11 +727,10 @@ function scoreEntriesForHole(
   round: BettingRound,
   handicap: AppliedHandicap,
   hole: HoleResult,
-  game: 'skins' | 'vegas',
 ): readonly { readonly player: Player; readonly score: number }[] {
   return round.players.map((player) => ({
     player,
-    score: scoreForHole(round, handicap, hole, player.id, game),
+    score: scoreForHole(round, handicap, hole, player.id),
   }));
 }
 
@@ -740,7 +739,6 @@ function scoreForHole(
   handicap: AppliedHandicap,
   hole: HoleResult,
   playerId: PlayerId,
-  _game: 'skins' | 'vegas',
 ): number {
   if (round.settings.handicapMode === 'hole-allocation') {
     return handicap.netHoleScores[hole.holeNumber]?.[playerId] ?? (hole.strokes[playerId] ?? 0);
