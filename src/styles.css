@@ -263,6 +263,53 @@ button:focus-visible {
   padding: 0.9rem;
 }
 
+.game-card {
+  gap: 0.7rem !important;
+}
+
+.game-card button,
+.event-pill,
+.secondary-action {
+  border: 0;
+  border-radius: 1rem;
+  background: rgba(226, 232, 240, 0.9);
+  color: #334155;
+  font-weight: 900;
+}
+
+.game-card button {
+  display: grid;
+  gap: 0.2rem;
+  width: 100%;
+  min-height: 3.6rem;
+  padding: 0.85rem;
+  text-align: left;
+}
+
+.game-card.active button,
+.event-pill.active {
+  background: #101828;
+  color: #fff;
+}
+
+.game-card p {
+  margin: 0;
+  color: #667085;
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.editable-chip label {
+  gap: 0.28rem;
+  font-size: 0.72rem;
+}
+
+.editable-chip input {
+  min-height: 2.5rem;
+  border-radius: 0.8rem;
+  padding-inline: 0.7rem;
+}
+
 .hole-panel {
   background: rgba(16, 24, 40, 0.9);
   color: #fff;
@@ -332,6 +379,32 @@ button:focus-visible {
   gap: 0.75rem;
 }
 
+.event-card {
+  background:
+    radial-gradient(circle at 0% 0%, rgba(79, 140, 255, 0.2), transparent 12rem),
+    rgba(255, 255, 255, 0.78);
+}
+
+.event-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.event-pill {
+  display: grid;
+  gap: 0.1rem;
+  min-height: 3.2rem;
+  padding: 0.65rem;
+  text-align: left;
+}
+
+.event-pill span {
+  color: inherit;
+  opacity: 0.72;
+  font-size: 0.72rem;
+}
+
 .toggle-action,
 .primary-action {
   min-height: 3.2rem;
@@ -391,6 +464,12 @@ button:focus-visible {
   grid-template-columns: 1fr auto 1fr auto;
 }
 
+.transfer-list .empty-row {
+  grid-template-columns: 1fr;
+  color: #667085;
+  font-weight: 800;
+}
+
 .transfer-list span {
   color: #94a3b8;
   font-weight: 900;
@@ -436,6 +515,40 @@ button:focus-visible {
   color: #101828;
 }
 
+.share-actions {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.6rem;
+}
+
+.secondary-action {
+  min-height: 3.2rem;
+  color: #101828;
+  background: rgba(255, 255, 255, 0.78);
+}
+
+.qr-chip {
+  display: grid;
+  grid-template-columns: repeat(2, 1rem);
+  gap: 0.32rem;
+  width: max-content;
+  border-radius: 1rem;
+  background: #fff;
+  padding: 0.7rem;
+}
+
+.qr-chip span {
+  width: 1rem;
+  height: 1rem;
+  border-radius: 0.24rem;
+  background: #101828;
+}
+
+.qr-chip span:nth-child(2),
+.qr-chip span:nth-child(3) {
+  opacity: 0.35;
+}
+
 .share-status {
   margin-bottom: 0;
   color: rgba(255, 255, 255, 0.74) !important;
@@ -469,6 +582,14 @@ button:focus-visible {
   }
 
   .game-stack {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+
+  .event-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .share-actions {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }

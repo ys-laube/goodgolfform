@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   bettingActiveRoundStorageKey,
   createDefaultBettingRound,
-  legacyCaddiePresetStorageKey,
+  legacyShotAdvicePresetStorageKey,
   saveBettingRound,
   type BettingHoleMission,
   type StorageLike,
@@ -51,7 +51,7 @@ describe('useBettingRoundSession local state helpers', () => {
   it('initializes from saved betting state and ignores stale caddie storage', () => {
     const savedRound = createDefaultBettingRound({ id: 'round-saved', now: '2026-06-25T00:00:00.000Z' });
     const storage = new MemoryStorage({
-      [legacyCaddiePresetStorageKey]: JSON.stringify({ presets: [{ name: '캐디 프리셋은 플레이어가 아님' }] }),
+      [legacyShotAdvicePresetStorageKey]: JSON.stringify({ presets: [{ name: '캐디 프리셋은 플레이어가 아님' }] }),
     });
 
     expect(saveBettingRound(storage, savedRound)).toBe(true);

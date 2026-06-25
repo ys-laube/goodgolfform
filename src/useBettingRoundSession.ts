@@ -7,13 +7,12 @@ import {
   cloneBettingRound,
   createDefaultBettingRound,
   loadBettingRound,
-  purgeKnownLegacyCaddieStorage,
+  purgeKnownLegacyShotAdviceStorage,
   saveBettingRound,
   type BettingEventKey,
   type BettingGameKey,
   type BettingGameUnit,
   type BettingHandicapMode,
-  type BettingHoleEvent,
   type BettingHoleMission,
   type BettingHoleResult,
   type BettingMissionOutcome,
@@ -46,7 +45,7 @@ export type BettingRoundSession = BettingRoundSessionState & {
   readonly saveRound: () => boolean;
   readonly resetRound: () => void;
   readonly clearSavedRound: () => boolean;
-  readonly purgeLegacyCaddiePresets: () => readonly string[];
+  readonly purgeLegacyShotAdvicePresets: () => readonly string[];
 };
 
 export function createInitialBettingRoundSessionState(storage: StorageLike | undefined, now = new Date().toISOString()): BettingRoundSessionState {
@@ -307,7 +306,7 @@ export function useBettingRoundSession(storageProvider: () => StorageLike | unde
       });
       return cleared;
     },
-    purgeLegacyCaddiePresets: () => purgeKnownLegacyCaddieStorage(storageProvider()),
+    purgeLegacyShotAdvicePresets: () => purgeKnownLegacyShotAdviceStorage(storageProvider()),
   };
 }
 

@@ -6,10 +6,10 @@ import {
   clearBettingRound,
   createDefaultBettingRound,
   deserializeBettingRound,
-  knownLegacyCaddieStorageKeys,
-  legacyCaddiePresetStorageKey,
+  knownLegacyShotAdviceStorageKeys,
+  legacyShotAdvicePresetStorageKey,
   loadBettingRound,
-  purgeKnownLegacyCaddieStorage,
+  purgeKnownLegacyShotAdviceStorage,
   saveBettingRound,
   serializeBettingRound,
   type StorageLike,
@@ -73,35 +73,35 @@ describe('betting ledger local storage boundary', () => {
 
   it('never reads or migrates old Korean caddie presets into betting round state', () => {
     const storage = new MemoryStorage({
-      [legacyCaddiePresetStorageKey]: JSON.stringify({ version: 1, presets: [{ name: '저장된 캐디 거리표' }] }),
+      [legacyShotAdvicePresetStorageKey]: JSON.stringify({ version: 1, presets: [{ name: '저장된 캐디 거리표' }] }),
     });
 
     expect(loadBettingRound(storage)).toBeNull();
     expect(storage.calls).toEqual([`get:${bettingActiveRoundStorageKey}`]);
-    expect(storage.peek(legacyCaddiePresetStorageKey)).toContain('저장된 캐디 거리표');
+    expect(storage.peek(legacyShotAdvicePresetStorageKey)).toContain('저장된 캐디 거리표');
   });
 
   it('purges only known old caddie keys when the user requests a legacy cleanup', () => {
     const unrelatedKey = 'golf-bet-ledger:recent-rounds:v1';
     const storage = new MemoryStorage({
-      [legacyCaddiePresetStorageKey]: 'legacy caddie preset',
+      [legacyShotAdvicePresetStorageKey]: 'legacy caddie preset',
       [unrelatedKey]: 'keep me',
     });
 
-    expect(purgeKnownLegacyCaddieStorage(storage)).toEqual(knownLegacyCaddieStorageKeys);
-    expect(storage.peek(legacyCaddiePresetStorageKey)).toBeNull();
+    expect(purgeKnownLegacyShotAdviceStorage(storage)).toEqual(knownLegacyShotAdviceStorageKeys);
+    expect(storage.peek(legacyShotAdvicePresetStorageKey)).toBeNull();
     expect(storage.peek(unrelatedKey)).toBe('keep me');
   });
 
   it('falls back for corrupt betting state without consulting old caddie keys', () => {
     const storage = new MemoryStorage({
       [bettingActiveRoundStorageKey]: '{bad json',
-      [legacyCaddiePresetStorageKey]: 'do not touch',
+      [legacyShotAdvicePresetStorageKey]: 'do not touch',
     });
 
     expect(loadBettingRound(storage)).toBeNull();
     expect(storage.calls).toEqual([`get:${bettingActiveRoundStorageKey}`]);
-    expect(storage.peek(legacyCaddiePresetStorageKey)).toBe('do not touch');
+    expect(storage.peek(legacyShotAdvicePresetStorageKey)).toBe('do not touch');
   });
 
   it('rejects invalid saved payloads and unavailable storage safely', () => {
@@ -117,7 +117,7 @@ describe('betting ledger local storage boundary', () => {
     expect(loadBettingRound(throwingStorage)).toBeNull();
     expect(saveBettingRound(throwingStorage, round)).toBe(false);
     expect(clearBettingRound(throwingStorage)).toBe(false);
-    expect(purgeKnownLegacyCaddieStorage(throwingStorage)).toEqual([]);
+    expect(purgeKnownLegacyShotAdviceStorage(throwingStorage)).toEqual([]);
   });
 
   it('returns cloned rounds so callers cannot mutate storage-owned data by reference', () => {

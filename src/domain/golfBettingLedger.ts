@@ -451,7 +451,7 @@ function calculateSkinsLedger(round: BettingRound, handicap: AppliedHandicap): G
   let carryover = 0;
 
   for (const hole of completedHoles(round)) {
-    const scores = scoreEntriesForHole(round, handicap, hole, 'skins');
+    const scores = scoreEntriesForHole(round, handicap, hole);
     const lowestScore = Math.min(...scores.map((entry) => entry.score));
     const winners = scores.filter((entry) => entry.score === lowestScore);
 
@@ -523,7 +523,7 @@ function calculateVegasLedger(round: BettingRound, handicap: AppliedHandicap): G
   for (const hole of completedHoles(round)) {
     const teams = resolveVegasTeams(hole, round.players);
     const teamScores = teams.map((team) => {
-      const scores = team.map((playerId) => scoreForHole(round, handicap, hole, playerId, 'vegas')).sort((a, b) => a - b);
+      const scores = team.map((playerId) => scoreForHole(round, handicap, hole, playerId)).sort((a, b) => a - b);
       return { team, number: scores[0] * 10 + scores[1], scores };
     });
 
@@ -646,11 +646,13 @@ function buildGameLedger(
   unclaimedPoints = 0,
   unavailableReason?: string,
 ): GameLedger {
+  const roundedPointBalances = roundBalances(pointBalances);
+
   return {
     game,
     label,
-    pointBalances: roundBalances(pointBalances),
-    moneyBalances: toMoneyBalances(pointBalances, round.settings.scoringMode, unit),
+    pointBalances: roundedPointBalances,
+    moneyBalances: toMoneyBalances(roundedPointBalances, round.settings.scoringMode, unit),
     rows,
     unclaimedPoints: roundToTwo(unclaimedPoints),
     unavailableReason,
@@ -727,11 +729,10 @@ function scoreEntriesForHole(
   round: BettingRound,
   handicap: AppliedHandicap,
   hole: HoleResult,
-  game: 'skins' | 'vegas',
 ): readonly { readonly player: Player; readonly score: number }[] {
   return round.players.map((player) => ({
     player,
-    score: scoreForHole(round, handicap, hole, player.id, game),
+    score: scoreForHole(round, handicap, hole, player.id),
   }));
 }
 
@@ -740,7 +741,6 @@ function scoreForHole(
   handicap: AppliedHandicap,
   hole: HoleResult,
   playerId: PlayerId,
-  _game: 'skins' | 'vegas',
 ): number {
   if (round.settings.handicapMode === 'hole-allocation') {
     return handicap.netHoleScores[hole.holeNumber]?.[playerId] ?? (hole.strokes[playerId] ?? 0);
@@ -756,22 +756,15 @@ function resolveVegasTeams(hole: HoleResult, players: readonly Player[]): VegasT
 function distributeAgainstField(players: readonly Player[], playerId: PlayerId, points: number): Record<PlayerId, number> {
   const deltas = createMutableBalances(players);
   const others = players.filter((player) => player.id !== playerId);
-  deltas[playerId] = roundToTwo(points);
+  deltas[playerId] = points;
 
   if (others.length === 0) {
     return deltas;
   }
 
-  const counterDelta = roundToTwo(-points / others.length);
-  let allocatedCounter = 0;
-  for (const other of others.slice(0, -1)) {
+  const counterDelta = -points / others.length;
+  for (const other of others) {
     deltas[other.id] = counterDelta;
-    allocatedCounter = roundToTwo(allocatedCounter + counterDelta);
-  }
-
-  const lastOther = others.at(-1);
-  if (lastOther) {
-    deltas[lastOther.id] = roundToTwo(-points - allocatedCounter);
   }
 
   return deltas;
@@ -848,7 +841,28 @@ function mergeBalances(target: Record<PlayerId, number>, source: BalanceMap): vo
 }
 
 function roundBalances(balances: BalanceMap): BalanceMap {
-  return Object.fromEntries(Object.entries(balances).map(([playerId, balance]) => [playerId, roundToTwo(balance)]));
+  const roundedEntries = Object.entries(balances).map(([playerId, balance]) => [playerId, roundToTwo(balance)] as const);
+  const residual = roundToTwo(-roundedEntries.reduce((sum, [, balance]) => sum + balance, 0));
+
+  if (residual === 0 || roundedEntries.length === 0) {
+    return Object.fromEntries(roundedEntries);
+  }
+
+  let correctionIndex = roundedEntries.length - 1;
+  let smallestNonZeroBalance = Number.POSITIVE_INFINITY;
+
+  roundedEntries.forEach(([, balance], index) => {
+    const absoluteBalance = Math.abs(balance);
+    if (absoluteBalance > 0 && absoluteBalance <= smallestNonZeroBalance) {
+      smallestNonZeroBalance = absoluteBalance;
+      correctionIndex = index;
+    }
+  });
+
+  return Object.fromEntries(roundedEntries.map(([playerId, balance], index) => [
+    playerId,
+    index === correctionIndex ? roundToTwo(balance + residual) : balance,
+  ]));
 }
 
 function normalizeNumber(value: number, fallback = 0): number {

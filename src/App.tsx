@@ -1,226 +1,229 @@
 import { useMemo, useState, type CSSProperties } from 'react';
 
-type PlayerId = 'minjun' | 'seoyeon' | 'taeo' | 'jian';
+import {
+  calculateRoundLedger,
+  drawMissionCard,
+  type BettingEventType,
+  type BettingRound as LedgerBettingRound,
+  type PlayerId,
+} from './domain/golfBettingLedger';
+import { type BettingRound as StoredBettingRound } from './domain/bettingStorage';
+import { useBettingRoundSession, type BettingEventKey, type BettingGameKey } from './useBettingRoundSession';
 
-type Player = {
-  readonly id: PlayerId;
-  readonly name: string;
-  readonly handicap: number;
-  readonly team: '청팀' | '백팀';
-  readonly tone: string;
-};
-
-type StrokeDrafts = Record<PlayerId, string>;
-type PlayerMoneyMap = Record<PlayerId, number>;
-
-type CalculationLine = {
-  readonly label: string;
-  readonly detail: string;
-  readonly amount: number;
-};
-
-type Transfer = {
-  readonly from: Player;
-  readonly to: Player;
-  readonly amount: number;
-};
-
-const players: readonly Player[] = [
-  { id: 'minjun', name: '민준', handicap: 8, team: '청팀', tone: '#4f8cff' },
-  { id: 'seoyeon', name: '서연', handicap: 14, team: '백팀', tone: '#ff8aab' },
-  { id: 'taeo', name: '태오', handicap: 4, team: '청팀', tone: '#6ee7b7' },
-  { id: 'jian', name: '지안', handicap: 18, team: '백팀', tone: '#fbbf24' },
-] as const;
-
-const initialStrokeDrafts: StrokeDrafts = {
-  minjun: '5',
-  seoyeon: '4',
-  taeo: '5',
-  jian: '6',
-};
-
-const playerById = Object.fromEntries(players.map((player) => [player.id, player])) as Record<PlayerId, Player>;
+const gameKeys: readonly BettingGameKey[] = ['stroke', 'skins', 'vegas', 'events', 'missions'];
+const eventKeys: readonly BettingEventKey[] = ['near-pin', 'longest-drive', 'birdie', 'ob-penalty'];
+const playerTones = ['#4f8cff', '#ff8aab', '#6ee7b7', '#fbbf24'] as const;
 const currencyFormatter = new Intl.NumberFormat('ko-KR');
 
-function parseDraft(value: string, fallback: number): number {
+const gameLabels: Record<BettingGameKey, string> = {
+  stroke: '스트로크',
+  skins: '스킨스',
+  vegas: '팀 베가스',
+  events: '이벤트',
+  missions: '미션 카드',
+};
+
+const gameDescriptions: Record<BettingGameKey, string> = {
+  stroke: '보정 타수 차이로 1:1 정산',
+  skins: '홀 단독 최저타가 스킨 획득',
+  vegas: '1·2번 vs 3·4번 팀 숫자 대결',
+  events: '니어핀, 롱기스트, 버디, OB',
+  missions: '고정 미션 성공/실패 보너스',
+};
+
+const eventLabels: Record<BettingEventKey, string> = {
+  'near-pin': '니어핀',
+  'longest-drive': '롱기스트',
+  birdie: '버디',
+  'ob-penalty': 'OB/벌타',
+};
+
+function parseIntegerDraft(value: string, fallback: number): number {
   const parsed = Number.parseInt(value, 10);
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
-function moneyLabel(amount: number): string {
-  if (amount === 0) {
-    return '₩0';
+function roundToTwo(value: number): number {
+  return Math.round((value + Number.EPSILON) * 100) / 100;
+}
+
+function signedAmountLabel(amount: number, mode: 'money' | 'points'): string {
+  if (Math.abs(amount) < 0.005) {
+    return mode === 'money' ? '₩0' : '0점';
   }
 
-  return `${amount > 0 ? '+' : '-'}₩${currencyFormatter.format(Math.abs(amount))}`;
+  const sign = amount > 0 ? '+' : '-';
+  const absoluteAmount = Math.abs(amount);
+
+  if (mode === 'money') {
+    return `${sign}₩${currencyFormatter.format(Math.round(absoluteAmount))}`;
+  }
+
+  return `${sign}${roundToTwo(absoluteAmount)}점`;
 }
 
-function addAmount(map: PlayerMoneyMap, playerId: PlayerId, amount: number) {
-  map[playerId] += amount;
+function transferAmountLabel(amount: number, unit: 'money' | 'points'): string {
+  return unit === 'money' ? `₩${currencyFormatter.format(Math.round(amount))}` : `${roundToTwo(amount)}점`;
 }
 
-function createEmptyMoneyMap(): PlayerMoneyMap {
+function playerTeam(index: number): '청팀' | '백팀' {
+  return index < 2 ? '청팀' : '백팀';
+}
+
+function playerStyle(index: number): CSSProperties {
+  return { '--player-tone': playerTones[index % playerTones.length] } as CSSProperties;
+}
+
+function defaultEventPoints(event: BettingEventKey): number {
+  if (event === 'ob-penalty') {
+    return -2;
+  }
+
+  return event === 'birdie' ? 3 : 2;
+}
+
+function toLedgerRound(round: StoredBettingRound): LedgerBettingRound {
   return {
-    minjun: 0,
-    seoyeon: 0,
-    taeo: 0,
-    jian: 0,
+    id: round.id,
+    createdAt: round.createdAt,
+    updatedAt: round.updatedAt,
+    players: round.players.map((player) => ({
+      id: player.id,
+      name: player.name,
+      handicap: player.handicap,
+    })),
+    settings: {
+      holeCount: round.settings.holeCount,
+      scoringMode: round.settings.scoringMode,
+      handicapMode: round.settings.handicapMode,
+    },
+    enabledGames: {
+      stroke: round.enabledGames.stroke,
+      skins: round.enabledGames.skins,
+      vegas: round.enabledGames.vegas,
+      events: round.enabledGames.events,
+      missions: round.enabledGames.missions,
+    },
+    gameUnits: {
+      stroke: { pointValue: round.gameUnits.stroke.points, moneyPerPoint: round.gameUnits.stroke.money },
+      skins: { pointValue: round.gameUnits.skins.points, moneyPerPoint: round.gameUnits.skins.money },
+      vegas: { pointValue: round.gameUnits.vegas.points, moneyPerPoint: round.gameUnits.vegas.money },
+      events: { pointValue: round.gameUnits.events.points, moneyPerPoint: round.gameUnits.events.money },
+      missions: { pointValue: round.gameUnits.missions.points, moneyPerPoint: round.gameUnits.missions.money },
+    },
+    holes: round.holes.map((hole) => ({
+      holeNumber: hole.holeNumber,
+      strokes: Object.fromEntries(round.players.map((player) => [
+        player.id,
+        hole.scores.find((score) => score.playerId === player.id)?.strokes ?? 0,
+      ])) as Record<PlayerId, number>,
+      events: hole.events.map((event) => ({
+        type: event.event as BettingEventType,
+        playerId: event.playerId,
+        points: event.points,
+        label: eventLabels[event.event],
+      })),
+      missions: hole.missions
+        .filter((mission) => mission.outcome !== 'pending')
+        .map((mission) => ({
+          cardId: mission.missionId,
+          playerId: mission.playerId,
+          result: mission.outcome === 'success' ? 'success' : 'fail',
+        })),
+    })),
   };
 }
 
-function calculateTransfers(balanceByPlayer: PlayerMoneyMap): readonly Transfer[] {
-  const debtors = players
-    .map((player) => ({ player, amount: Math.max(0, -balanceByPlayer[player.id]) }))
-    .filter((entry) => entry.amount > 0)
-    .sort((a, b) => b.amount - a.amount);
-  const creditors = players
-    .map((player) => ({ player, amount: Math.max(0, balanceByPlayer[player.id]) }))
-    .filter((entry) => entry.amount > 0)
-    .sort((a, b) => b.amount - a.amount);
-  const transfers: Transfer[] = [];
-  let debtorIndex = 0;
-  let creditorIndex = 0;
+function scoreForPlayer(round: StoredBettingRound, holeNumber: number, playerId: string): number | undefined {
+  return round.holes
+    .find((hole) => hole.holeNumber === holeNumber)
+    ?.scores.find((score) => score.playerId === playerId)?.strokes;
+}
 
-  while (debtorIndex < debtors.length && creditorIndex < creditors.length) {
-    const debtor = debtors[debtorIndex];
-    const creditor = creditors[creditorIndex];
-    const amount = Math.min(debtor.amount, creditor.amount);
-
-    if (amount > 0) {
-      transfers.push({ from: debtor.player, to: creditor.player, amount });
-      debtor.amount -= amount;
-      creditor.amount -= amount;
-    }
-
-    if (debtor.amount === 0) {
-      debtorIndex += 1;
-    }
-
-    if (creditor.amount === 0) {
-      creditorIndex += 1;
-    }
-  }
-
-  return transfers;
+function eventIsActive(round: StoredBettingRound, holeNumber: number, event: BettingEventKey, playerId: string): boolean {
+  return round.holes
+    .find((hole) => hole.holeNumber === holeNumber)
+    ?.events.some((item) => item.event === event && item.playerId === playerId) ?? false;
 }
 
 export function App() {
+  const session = useBettingRoundSession();
+  const { round } = session;
   const [roundName, setRoundName] = useState('금요 새벽 라운드');
   const [courseName, setCourseName] = useState('남서울 · OUT');
-  const [currentHoleDraft, setCurrentHoleDraft] = useState('7');
+  const [currentHoleDraft, setCurrentHoleDraft] = useState('1');
   const [parDraft, setParDraft] = useState('4');
-  const [strokeDrafts, setStrokeDrafts] = useState<StrokeDrafts>(initialStrokeDrafts);
-  const [skinWinnerId, setSkinWinnerId] = useState<PlayerId>('seoyeon');
-  const [missionPlayerId, setMissionPlayerId] = useState<PlayerId>('minjun');
+  const [scoreDrafts, setScoreDrafts] = useState<Record<string, string>>({});
+  const [missionPlayerId, setMissionPlayerId] = useState(round.players[0]?.id ?? '');
   const [missionCleared, setMissionCleared] = useState(true);
   const [shareReady, setShareReady] = useState(false);
 
-  const holeNumber = parseDraft(currentHoleDraft, 7);
-  const holePar = parseDraft(parDraft, 4);
-  const settlement = useMemo(() => {
-    const balanceByPlayer = createEmptyMoneyMap();
-    const calculationLines: CalculationLine[] = [];
-    const netScores = players.map((player) => {
-      const gross = parseDraft(strokeDrafts[player.id], holePar + 1);
-      const handicapStroke = player.handicap >= holeNumber ? 1 : 0;
-      const net = Math.max(1, gross - handicapStroke);
-      const strokeAmount = (holePar - net) * 1_000;
-
-      addAmount(balanceByPlayer, player.id, strokeAmount);
-
-      return { player, gross, handicapStroke, net, strokeAmount };
-    });
-
-    const skinWinner = playerById[skinWinnerId];
-    const skinPrize = 2_000 * (players.length - 1);
-    players.forEach((player) => addAmount(balanceByPlayer, player.id, player.id === skinWinnerId ? skinPrize : -2_000));
-    calculationLines.push({
-      label: '스킨스',
-      detail: `${skinWinner.name} 단독 승 · 기본 2,000원 × ${players.length - 1}`,
-      amount: skinPrize,
-    });
-
-    const teamTotals = players.reduce<Record<Player['team'], number>>(
-      (totals, player) => {
-        const score = netScores.find((entry) => entry.player.id === player.id)?.net ?? holePar;
-        totals[player.team] += score;
-        return totals;
-      },
-      { 청팀: 0, 백팀: 0 },
-    );
-    const teamDifference = Math.abs(teamTotals.청팀 - teamTotals.백팀);
-    const vegasAmount = teamDifference * 1_500;
-    const winningTeam: Player['team'] = teamTotals.청팀 <= teamTotals.백팀 ? '청팀' : '백팀';
-
-    players.forEach((player) => addAmount(balanceByPlayer, player.id, player.team === winningTeam ? vegasAmount / 2 : -vegasAmount / 2));
-    calculationLines.push({
-      label: '팀 베가스',
-      detail: `${winningTeam} ${teamDifference}타 우세 · 팀당 ${currencyFormatter.format(vegasAmount)}원`,
-      amount: vegasAmount,
-    });
-
-    if (missionCleared) {
-      const missionPrize = 3_000;
-      const splitPenalty = missionPrize / (players.length - 1);
-      players.forEach((player) => addAmount(balanceByPlayer, player.id, player.id === missionPlayerId ? missionPrize : -splitPenalty));
-      calculationLines.push({
-        label: '고정 미션',
-        detail: `${playerById[missionPlayerId].name} 니어 핀 성공 · 나머지 균등 정산`,
-        amount: missionPrize,
-      });
-    } else {
-      calculationLines.push({
-        label: '고정 미션',
-        detail: '이번 홀 성공자 없음 · 다음 홀로 이월',
-        amount: 0,
-      });
-    }
-
-    netScores.forEach((entry) => {
-      calculationLines.unshift({
-        label: `${entry.player.name} 스트로크`,
-        detail: `${entry.gross}타 - 핸디 ${entry.handicapStroke} = 네트 ${entry.net}타`,
-        amount: entry.strokeAmount,
-      });
-    });
-
-    const sortedBalances = [...players]
-      .map((player) => ({ player, amount: Math.round(balanceByPlayer[player.id]) }))
-      .sort((a, b) => b.amount - a.amount);
-
-    return {
-      balanceByPlayer,
-      calculationLines,
-      netScores,
-      sortedBalances,
-      transfers: calculateTransfers(balanceByPlayer),
-      winningTeam,
-    };
-  }, [holeNumber, holePar, missionCleared, missionPlayerId, skinWinnerId, strokeDrafts]);
-
-  const shareCopy = `${roundName} ${holeNumber}H 정산 · ${settlement.sortedBalances
-    .map((entry) => `${entry.player.name} ${moneyLabel(entry.amount)}`)
+  const holeNumber = Math.min(round.settings.holeCount, Math.max(1, parseIntegerDraft(currentHoleDraft, 1)));
+  const holePar = Math.max(3, Math.min(5, parseIntegerDraft(parDraft, 4)));
+  const missionCard = drawMissionCard(holeNumber);
+  const ledger = useMemo(() => calculateRoundLedger(toLedgerRound(round)), [round]);
+  const settlementUnit = round.settings.scoringMode;
+  const balanceRows = round.players
+    .map((player, index) => ({
+      player,
+      index,
+      amount: settlementUnit === 'money'
+        ? (ledger.playerBalances[player.id]?.money ?? 0)
+        : (ledger.playerBalances[player.id]?.points ?? 0),
+    }))
+    .sort((left, right) => right.amount - left.amount);
+  const completedHoleCount = ledger.handicap.completedHoleNumbers.length;
+  const leader = balanceRows[0];
+  const shareCopy = `${roundName} ${completedHoleCount || holeNumber}H 정산 · ${balanceRows
+    .map((entry) => `${entry.player.name} ${signedAmountLabel(entry.amount, settlementUnit)}`)
     .join(' / ')}`;
 
-  function updateStrokeDraft(playerId: PlayerId, value: string) {
-    setStrokeDrafts((current) => ({ ...current, [playerId]: value }));
+  function scoreInputValue(playerId: string): string {
+    const draftKey = `${holeNumber}:${playerId}`;
+    return scoreDrafts[draftKey] ?? scoreForPlayer(round, holeNumber, playerId)?.toString() ?? '';
+  }
+
+  function updateScore(playerId: string, value: string) {
+    const draftKey = `${holeNumber}:${playerId}`;
+    setScoreDrafts((current) => ({ ...current, [draftKey]: value }));
+    setShareReady(false);
+
+    if (/^\d{1,2}$/.test(value)) {
+      session.updateHoleScore(holeNumber, playerId, parseIntegerDraft(value, holePar + 1));
+    }
+  }
+
+  function updateMission(playerId: string, cleared: boolean) {
+    setMissionPlayerId(playerId);
+    setMissionCleared(cleared);
+    setShareReady(false);
+    session.setHoleMission(holeNumber, {
+      id: `hole-${holeNumber}:mission:${missionCard.id}:${playerId}`,
+      playerId,
+      missionId: missionCard.id,
+      title: missionCard.title,
+      points: cleared ? missionCard.successPoints : -missionCard.failPenaltyPoints,
+      outcome: cleared ? 'success' : 'fail',
+    });
+  }
+
+  function updateHoleDraft(value: string) {
+    setCurrentHoleDraft(value);
     setShareReady(false);
   }
 
   return (
-    <main className="app-shell" aria-labelledby="app-title">
+    <main className="app-shell" aria-labelledby="app-title" data-mobile-layout="safe-area-inset">
       <section className="hero-card" aria-labelledby="app-title">
         <div className="hero-copy">
           <p className="eyebrow">FunGolf Ledger</p>
           <h1 id="app-title">한국형 골프 내기 정산</h1>
-          <p>
-            라운드 세팅부터 홀 입력, 미션, 순정산, 공유 카드까지 한 화면에서 확인하는 모바일 우선 베팅 장부입니다.
-          </p>
+          <p>2~4명 라운드 세팅부터 홀 입력, 이벤트, 미션, 순정산, 공유 카드까지 한 화면에서 처리하는 모바일 우선 장부입니다.</p>
         </div>
         <div className="hero-metric" aria-label="현재 1위">
-          <span>현재 리더</span>
-          <strong>{settlement.sortedBalances[0]?.player.name}</strong>
-          <em>{moneyLabel(settlement.sortedBalances[0]?.amount ?? 0)}</em>
+          <span>{completedHoleCount}개 홀 반영</span>
+          <strong>{leader?.player.name ?? '대기'}</strong>
+          <em>{signedAmountLabel(leader?.amount ?? 0, settlementUnit)}</em>
         </div>
       </section>
 
@@ -228,7 +231,7 @@ export function App() {
         <div className="section-heading">
           <p className="eyebrow">라운드 세팅</p>
           <h2 id="setup-title">플레이어와 내기 룰</h2>
-          <p>로컬 화면에서만 쓰는 입력값입니다. 팀, 핸디, 스킨스, 팀 베가스, 고정 미션을 함께 보여줍니다.</p>
+          <p>{session.storageMessage}</p>
         </div>
 
         <div className="setup-grid">
@@ -240,31 +243,68 @@ export function App() {
             코스 / 티
             <input value={courseName} onChange={(event) => setCourseName(event.currentTarget.value)} />
           </label>
+          <label>
+            정산 방식
+            <select value={round.settings.scoringMode} onChange={(event) => session.updateRoundSetup({ scoringMode: event.currentTarget.value as 'money' | 'points' })}>
+              <option value="money">원화 정산</option>
+              <option value="points">포인트 정산</option>
+            </select>
+          </label>
+          <label>
+            핸디 방식
+            <select value={round.settings.handicapMode} onChange={(event) => session.updateRoundSetup({ handicapMode: event.currentTarget.value as 'final-total' | 'hole-allocation' })}>
+              <option value="final-total">최종 합계 보정</option>
+              <option value="hole-allocation">홀별 핸디 배분</option>
+            </select>
+          </label>
         </div>
 
         <div className="player-strip" aria-label="플레이어와 핸디캡">
-          {players.map((player) => (
-            <article className="player-chip" key={player.id} style={{ '--player-tone': player.tone } as CSSProperties}>
-              <span>{player.team}</span>
-              <strong>{player.name}</strong>
-              <em>핸디 {player.handicap}</em>
+          {round.players.map((player, index) => (
+            <article className="player-chip editable-chip" key={player.id} style={playerStyle(index)}>
+              <span>{playerTeam(index)}</span>
+              <label>
+                이름
+                <input value={player.name} onChange={(event) => session.updatePlayer(player.id, { name: event.currentTarget.value })} />
+              </label>
+              <label>
+                핸디
+                <input
+                  inputMode="numeric"
+                  value={player.handicap}
+                  onChange={(event) => session.updatePlayer(player.id, { handicap: parseIntegerDraft(event.currentTarget.value, player.handicap) })}
+                />
+              </label>
             </article>
           ))}
         </div>
 
         <div className="game-stack" aria-label="내기 게임 구성">
-          <article>
-            <span>스트로크</span>
-            <strong>네트 파 기준 ±1,000원</strong>
-          </article>
-          <article>
-            <span>스킨스</span>
-            <strong>홀 단독 승 2,000원</strong>
-          </article>
-          <article>
-            <span>팀 베가스</span>
-            <strong>청팀 vs 백팀 · 차이당 1,500원</strong>
-          </article>
+          {gameKeys.map((game) => (
+            <article key={game} className={round.enabledGames[game] ? 'game-card active' : 'game-card'}>
+              <button type="button" onClick={() => session.setGameEnabled(game, !round.enabledGames[game])}>
+                <span>{round.enabledGames[game] ? '켜짐' : '꺼짐'}</span>
+                <strong>{gameLabels[game]}</strong>
+              </button>
+              <p>{gameDescriptions[game]}</p>
+              <label>
+                점수 단위
+                <input
+                  inputMode="numeric"
+                  value={round.gameUnits[game].points}
+                  onChange={(event) => session.updateGameUnit(game, { points: parseIntegerDraft(event.currentTarget.value, round.gameUnits[game].points) })}
+                />
+              </label>
+              <label>
+                1점 금액
+                <input
+                  inputMode="numeric"
+                  value={round.gameUnits[game].money}
+                  onChange={(event) => session.updateGameUnit(game, { money: parseIntegerDraft(event.currentTarget.value, round.gameUnits[game].money) })}
+                />
+              </label>
+            </article>
+          ))}
         </div>
       </section>
 
@@ -277,65 +317,89 @@ export function App() {
         <div className="hole-toolbar">
           <label>
             홀
-            <input inputMode="numeric" value={currentHoleDraft} onChange={(event) => setCurrentHoleDraft(event.currentTarget.value)} />
+            <input inputMode="numeric" value={currentHoleDraft} onChange={(event) => updateHoleDraft(event.currentTarget.value)} />
           </label>
           <label>
             파
             <input inputMode="numeric" value={parDraft} onChange={(event) => setParDraft(event.currentTarget.value)} />
           </label>
           <label>
-            스킨 승자
-            <select value={skinWinnerId} onChange={(event) => setSkinWinnerId(event.currentTarget.value as PlayerId)}>
-              {players.map((player) => (
-                <option key={player.id} value={player.id}>
-                  {player.name}
-                </option>
-              ))}
-            </select>
+            총 홀 수
+            <input
+              inputMode="numeric"
+              value={round.settings.holeCount}
+              onChange={(event) => session.updateRoundSetup({ holeCount: parseIntegerDraft(event.currentTarget.value, round.settings.holeCount) })}
+            />
           </label>
         </div>
 
         <div className="score-list" aria-label="홀별 타수 입력">
-          {settlement.netScores.map((entry) => (
-            <label className="score-row" key={entry.player.id}>
-              <span>
-                <strong>{entry.player.name}</strong>
-                <em>
-                  {entry.player.team} · 핸디 보정 {entry.handicapStroke}
-                </em>
-              </span>
-              <input
-                inputMode="numeric"
-                value={strokeDrafts[entry.player.id]}
-                onChange={(event) => updateStrokeDraft(entry.player.id, event.currentTarget.value)}
-                aria-label={`${entry.player.name} 타수`}
-              />
-              <b>{moneyLabel(entry.strokeAmount)}</b>
-            </label>
-          ))}
+          {round.players.map((player, index) => {
+            const rawScore = scoreForPlayer(round, holeNumber, player.id) ?? 0;
+            const netScore = ledger.handicap.netHoleScores[holeNumber]?.[player.id] ?? rawScore;
+
+            return (
+              <label className="score-row" key={player.id}>
+                <span>
+                  <strong>{player.name}</strong>
+                  <em>{playerTeam(index)} · 네트 {netScore || '-'}</em>
+                </span>
+                <input
+                  inputMode="numeric"
+                  value={scoreInputValue(player.id)}
+                  placeholder={`${holePar + 1}`}
+                  onChange={(event) => updateScore(player.id, event.currentTarget.value)}
+                  aria-label={`${player.name} 타수`}
+                />
+                <b>{signedAmountLabel(ledger.playerBalances[player.id]?.money ?? 0, 'money')}</b>
+              </label>
+            );
+          })}
         </div>
       </section>
 
       <section className="mission-card" aria-labelledby="mission-title">
         <div>
           <p className="eyebrow">미션 카드</p>
-          <h2 id="mission-title">니어 핀 챌린지</h2>
-          <p>고정 미션 3,000원. 성공자는 보너스를 받고 나머지는 균등 부담합니다.</p>
+          <h2 id="mission-title">{missionCard.title}</h2>
+          <p>{missionCard.description}</p>
         </div>
         <div className="mission-controls">
           <label>
-            성공자
-            <select value={missionPlayerId} onChange={(event) => setMissionPlayerId(event.currentTarget.value as PlayerId)}>
-              {players.map((player) => (
-                <option key={player.id} value={player.id}>
-                  {player.name}
-                </option>
+            대상자
+            <select value={missionPlayerId} onChange={(event) => updateMission(event.currentTarget.value, missionCleared)}>
+              {round.players.map((player) => (
+                <option key={player.id} value={player.id}>{player.name}</option>
               ))}
             </select>
           </label>
-          <button className={missionCleared ? 'toggle-action active' : 'toggle-action'} type="button" onClick={() => setMissionCleared((value) => !value)}>
-            {missionCleared ? '성공 반영됨' : '이월 처리'}
+          <button className={missionCleared ? 'toggle-action active' : 'toggle-action'} type="button" onClick={() => updateMission(missionPlayerId || round.players[0].id, !missionCleared)}>
+            {missionCleared ? '성공 반영' : '실패 반영'}
           </button>
+        </div>
+      </section>
+
+      <section className="mission-card event-card" aria-labelledby="event-title">
+        <div>
+          <p className="eyebrow">이벤트 보너스</p>
+          <h2 id="event-title">한 번 터치로 반영</h2>
+          <p>니어핀, 롱기스트, 버디, OB/벌타를 현재 홀에 바로 넣고 정산표에 근거를 남깁니다.</p>
+        </div>
+        <div className="event-grid">
+          {eventKeys.flatMap((event) => round.players.map((player) => (
+            <button
+              className={eventIsActive(round, holeNumber, event, player.id) ? 'event-pill active' : 'event-pill'}
+              key={`${event}-${player.id}`}
+              type="button"
+              onClick={() => {
+                setShareReady(false);
+                session.toggleHoleEvent(holeNumber, event, player.id, defaultEventPoints(event));
+              }}
+            >
+              <span>{eventLabels[event]}</span>
+              <strong>{player.name}</strong>
+            </button>
+          )))}
         </div>
       </section>
 
@@ -346,13 +410,13 @@ export function App() {
             <h2>순정산</h2>
           </div>
           <div className="balance-list">
-            {settlement.sortedBalances.map((entry) => (
+            {balanceRows.map((entry) => (
               <div className="balance-row" key={entry.player.id}>
                 <span>
                   <strong>{entry.player.name}</strong>
-                  <em>{entry.player.team}</em>
+                  <em>{playerTeam(entry.index)}</em>
                 </span>
-                <b className={entry.amount >= 0 ? 'positive' : 'negative'}>{moneyLabel(entry.amount)}</b>
+                <b className={entry.amount >= 0 ? 'positive' : 'negative'}>{signedAmountLabel(entry.amount, settlementUnit)}</b>
               </div>
             ))}
           </div>
@@ -360,16 +424,16 @@ export function App() {
 
         <article className="ledger-card transfer-card">
           <div className="section-heading compact-heading">
-            <p className="eyebrow">정산 보드</p>
+            <p className="eyebrow">정산표</p>
             <h2>보낼 금액</h2>
           </div>
           <div className="transfer-list">
-            {settlement.transfers.map((transfer) => (
-              <p key={`${transfer.from.id}-${transfer.to.id}-${transfer.amount}`}>
-                <strong>{transfer.from.name}</strong>
+            {ledger.netTransfers.length === 0 ? <p className="empty-row">아직 정산할 금액이 없습니다.</p> : ledger.netTransfers.map((transfer) => (
+              <p key={`${transfer.payerId}-${transfer.payeeId}-${transfer.amount}`}>
+                <strong>{round.players.find((player) => player.id === transfer.payerId)?.name ?? transfer.payerId}</strong>
                 <span>→</span>
-                <strong>{transfer.to.name}</strong>
-                <b>₩{currencyFormatter.format(transfer.amount)}</b>
+                <strong>{round.players.find((player) => player.id === transfer.payeeId)?.name ?? transfer.payeeId}</strong>
+                <b>{transferAmountLabel(transfer.amount, transfer.unit)}</b>
               </p>
             ))}
           </div>
@@ -379,16 +443,17 @@ export function App() {
       <section className="calculation-card" aria-labelledby="calculation-title">
         <div className="section-heading compact-heading">
           <p className="eyebrow">계산 내역</p>
-          <h2 id="calculation-title">{settlement.winningTeam} 우세 흐름</h2>
+          <h2 id="calculation-title">공식별 근거</h2>
         </div>
         <div className="calculation-list">
-          {settlement.calculationLines.map((line) => (
-            <article key={`${line.label}-${line.detail}`}>
+          {ledger.breakdownRows.slice(0, 12).map((line) => (
+            <article key={line.id}>
               <span>{line.label}</span>
               <strong>{line.detail}</strong>
-              <b className={line.amount >= 0 ? 'positive' : 'negative'}>{moneyLabel(line.amount)}</b>
+              <b className={line.money >= 0 ? 'positive' : 'negative'}>{signedAmountLabel(line.money, 'money')}</b>
             </article>
           ))}
+          {ledger.breakdownRows.length === 0 ? <article><span>대기</span><strong>각 플레이어 타수를 입력하면 계산 근거가 여기에 쌓입니다.</strong><b>₩0</b></article> : null}
         </div>
       </section>
 
@@ -398,11 +463,19 @@ export function App() {
           <h2 id="share-title">{courseName}</h2>
           <p>{shareCopy}</p>
         </div>
-        <button className="primary-action" type="button" onClick={() => setShareReady(true)}>
-          공유 문구 준비
-        </button>
+        <div className="qr-chip" aria-label="공유 카드 장식 QR">
+          <span />
+          <span />
+          <span />
+          <span />
+        </div>
+        <div className="share-actions">
+          <button className="primary-action" type="button" onClick={() => setShareReady(true)}>공유 문구 고정</button>
+          <button className="secondary-action" type="button" onClick={() => session.saveRound()}>로컬 저장</button>
+          <button className="secondary-action" type="button" onClick={() => session.resetRound()}>새 라운드</button>
+        </div>
         <p className="share-status" aria-live="polite">
-          {shareReady ? '카카오톡이나 문자에 붙여넣기 좋은 요약이 준비되었습니다.' : '버튼을 누르면 현재 홀 정산 요약을 카드 형태로 고정합니다.'}
+          {shareReady ? '카카오톡이나 문자에 붙여넣기 좋은 요약이 준비되었습니다.' : '입력값은 이 기기에 저장되고, 버튼을 누르면 현재 정산 요약을 고정합니다.'}
         </p>
       </section>
     </main>

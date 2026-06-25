@@ -1,8 +1,8 @@
 export const bettingLedgerStorageVersion = 1;
 export const bettingLedgerStoragePrefix = 'golf-bet-ledger';
 export const bettingActiveRoundStorageKey = `${bettingLedgerStoragePrefix}:active-round:v${bettingLedgerStorageVersion}`;
-export const legacyCaddiePresetStorageKey = 'korean-caddie:preset-distances:v1';
-export const knownLegacyCaddieStorageKeys = [legacyCaddiePresetStorageKey] as const;
+export const legacyShotAdvicePresetStorageKey = 'korean-caddie:preset-distances:v1';
+export const knownLegacyShotAdviceStorageKeys = [legacyShotAdvicePresetStorageKey] as const;
 
 export type StorageLike = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>;
 
@@ -176,13 +176,13 @@ export function clearBettingRound(storage: StorageLike | undefined): boolean {
   }
 }
 
-export function purgeKnownLegacyCaddieStorage(storage: StorageLike | undefined): readonly string[] {
+export function purgeKnownLegacyShotAdviceStorage(storage: StorageLike | undefined): readonly string[] {
   if (!storage) {
     return [];
   }
 
   const purgedKeys: string[] = [];
-  for (const key of knownLegacyCaddieStorageKeys) {
+  for (const key of knownLegacyShotAdviceStorageKeys) {
     try {
       storage.removeItem(key);
       purgedKeys.push(key);
