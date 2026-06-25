@@ -39,9 +39,9 @@ const forbiddenProviderOrRuntimePatterns = [
   new RegExp('Web' + 'Socket', 'i'),
   new RegExp('navigator\\.' + 'geo' + 'location|getCurrentPosition|watchPosition|\\bGeo' + 'locationPosition\\b', 'i'),
   new RegExp('Payment' + 'Request', 'i'),
-  new RegExp(['str' + 'ipe', 'toss' + 'payments?', 'port' + 'one', 'iam' + 'port', 'pay' + 'pal', 'kakao.?pay', 'naver.?pay'].join('|'), 'i'),
-  new RegExp(['fire' + 'base', 'supa' + 'base', 'amplify', 'socket' + '\\.' + 'io', 'pusher', 'ably', 'auth' + '0', 'clerk'].join('|'), 'i'),
-  new RegExp(['map' + 'box', 'map' + 'libre', 'leaflet', 'google' + '\\.' + 'maps', 'naver' + '\\.' + 'maps', 'kakao' + '\\.' + 'maps', 'open' + 'weather', 'weather' + 'api'].join('|'), 'i'),
+  new RegExp(['str' + 'ipe', 'to' + 'ss' + 'payments?', 'port' + 'one', 'iam' + 'port', 'pay' + 'pal', 'kakao.?pay', 'naver.?pay'].join('|'), 'i'),
+  new RegExp(['fire' + 'base', 'supa' + 'base', 'amplify', 'socket' + '\\.' + 'io', 'pusher', 'ably', 'auth' + '0', 'cle' + 'rk'].join('|'), 'i'),
+  new RegExp(['map' + 'box', 'map' + 'libre', 'leaflet', 'google' + '\\.' + 'maps', 'naver' + '\\.' + 'maps', 'kakao' + '\\.' + 'maps', 'open' + 'wea' + 'ther', 'wea' + 'ther' + 'api'].join('|'), 'i'),
   new RegExp(String.raw`VITE_(?:API|BACKEND|AUTH|ROOM|MAP|WEATHER|PAYMENT|STRIPE|TOSS|PORTONE)_`, 'i'),
 ] as const;
 const forbiddenProductSurfacePattern = new RegExp(['송' + '금', '결' + '제', '지' + '갑', '에스' + '크로', '입' + '금', '출' + '금', '공개' + '방', '매' + '칭', '랭' + '킹', '실시간 ' + '방', 'wallet', 'escrow', 'public room', 'matching', 'leaderboard'].join('|'), 'i');
