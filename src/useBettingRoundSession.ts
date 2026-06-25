@@ -13,7 +13,6 @@ import {
   type BettingGameKey,
   type BettingGameUnit,
   type BettingHandicapMode,
-  type BettingHoleEvent,
   type BettingHoleMission,
   type BettingHoleResult,
   type BettingMissionOutcome,
