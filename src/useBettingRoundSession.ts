@@ -9,6 +9,7 @@ import {
   createDefaultBettingPlayers,
   createDefaultBettingRound,
   loadBettingRound,
+  maximumHoleScoreStrokes,
   purgeKnownLegacyShotAdviceStorage,
   saveBettingRound,
   type BettingEventKey,
@@ -192,7 +193,7 @@ export function applyHoleScoreMutation(
     holeNumber,
     (hole) => ({
       ...hole,
-      scores: upsertByPlayer(hole.scores, playerId, { playerId, strokes: clampInteger(strokes, 1, 20) }),
+      scores: upsertByPlayer(hole.scores, playerId, { playerId, strokes: clampInteger(strokes, 1, maximumHoleScoreStrokes) }),
     }),
     now,
   );
