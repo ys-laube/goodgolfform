@@ -470,6 +470,8 @@ export function App() {
     setPlayerHandicapDrafts({ 'player-1': '', 'player-2': '', 'player-3': '', 'player-4': '' });
     setGameUnitDrafts({});
     setScoreDrafts({});
+    setMissionPlayerId('player-1');
+    setMissionCleared(true);
     setShareReady(false);
   }
 
