@@ -28,10 +28,12 @@ describe('editable input draft helpers', () => {
     expect(appSource).toContain("const [roundName, setRoundName] = useState('')");
     expect(appSource).toContain("const [courseName, setCourseName] = useState('')");
     expect(appSource).toContain("const [currentHoleDraft, setCurrentHoleDraft] = useState('')");
-    expect(appSource).toContain("const [parDraft, setParDraft] = useState('')");
+    expect(appSource).toContain('const [parDraftsByHole, setParDraftsByHole]');
+    expect(appSource).toContain('const [backdoorOpenByHole, setBackdoorOpenByHole]');
     expect(appSource).toContain('function resetEditableRound()');
     expect(appSource).toContain("setCurrentHoleDraft('')");
-    expect(appSource).toContain("setParDraft('')");
+    expect(appSource).toContain('setParDraftsByHole({})');
+    expect(appSource).toContain('setBackdoorOpenByHole({})');
     expect(appSource).toContain("setHoleCountDraft('')");
     expect(appSource).toContain('onClick={() => resetEditableRound()}');
     expect(appSource).not.toContain("useState('금요 새벽 라운드')");
