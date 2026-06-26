@@ -475,21 +475,6 @@ export function App() {
     setShareReady(false);
   }
 
-  function resetEditableRound() {
-    session.resetRound();
-    setRoundName('');
-    setCourseName('');
-    setCurrentHoleDraft('');
-    setParDraft('');
-    setHoleCountDraft('');
-    setPlayerHandicapDrafts({ 'player-1': '', 'player-2': '', 'player-3': '', 'player-4': '' });
-    setGameUnitDrafts({});
-    setScoreDrafts({});
-    setMissionPlayerId('player-1');
-    setMissionCleared(true);
-    setShareReady(false);
-  }
-
   return (
     <main className="app-shell" aria-labelledby="app-title" data-mobile-layout="safe-area-inset">
       <section className="hero-card" aria-labelledby="app-title">
