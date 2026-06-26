@@ -151,7 +151,8 @@ export function restoreBettingRoundShareHashToStorage(rawHash: string, storage: 
     return { restored: false, reason: 'storage-unavailable', payloadLength };
   }
 
-  return { restored: true, round, payloadLength, saved: saveBettingRound(storage, round) };
+  const saved = saveBettingRound(storage, round);
+  return saved ? { restored: true, round, payloadLength, saved } : { restored: false, reason: 'storage-unavailable', payloadLength };
 }
 
 function compactPayload(round: BettingRound): CompactPayload {
