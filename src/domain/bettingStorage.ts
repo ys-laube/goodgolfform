@@ -4,6 +4,7 @@ export const bettingActiveRoundStorageKey = `${bettingLedgerStoragePrefix}:activ
 export const legacyShotAdvicePresetStorageKey = 'korean-caddie:preset-distances:v1';
 export const knownLegacyShotAdviceStorageKeys = [legacyShotAdvicePresetStorageKey] as const;
 export const bettingPlayerCountOptions = [2, 3, 4] as const;
+export const maximumHoleScoreStrokes = 30;
 
 export type StorageLike = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>;
 
@@ -301,7 +302,7 @@ function isBettingHoleResult(value: unknown, players: readonly BettingPlayer[]):
 }
 
 function isBettingHoleScore(value: unknown, players: readonly BettingPlayer[]): value is BettingHoleScore {
-  return isRecord(value) && isPlayerId(value.playerId, players) && isIntegerInRange(value.strokes, 1, 20);
+  return isRecord(value) && isPlayerId(value.playerId, players) && isIntegerInRange(value.strokes, 1, maximumHoleScoreStrokes);
 }
 
 function isBettingHoleEvent(value: unknown, players: readonly BettingPlayer[]): value is BettingHoleEvent {
