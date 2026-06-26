@@ -49,3 +49,14 @@ npm run test
 npm run build
 git diff --check
 ```
+
+## GitHub Pages deployment
+
+This repository includes `.github/workflows/deploy.yml` for GitHub Pages.
+
+1. Create an empty GitHub repository.
+2. Push this project to `main`.
+3. In the GitHub repository, open **Settings → Pages**.
+4. Under **Build and deployment**, set **Source** to **GitHub Actions**.
+5. Push to `main` or run the workflow manually from **Actions → Deploy to GitHub Pages**.
+6. The deployed URL will be shown in the workflow summary, usually `https://<username>.github.io/<repo>/`.
