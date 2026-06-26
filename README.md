@@ -4,13 +4,15 @@ FunGolf is a Korean, mobile-first traditional 오장 settlement ledger for frien
 
 ## Product scope
 
-- Hero title is exactly `오늘 폼 정말 좋으시네요 ^0^` with an `오장 룰 자세히 보기` button for the built-in rule explanation.
-- 2–4 player setup with editable blank names, final-total handicaps, and configurable 타당 금액. Default 타당 금액 is 1,000원.
-- One ruleset only: traditional 오장. Previous side-mode toggles, bonus cards, team side games, scoring-mode switches, and hole-allocation handicap modes are intentionally removed.
-- Front/back scorecard input with 1–18 holes, par row, 뒷문오픈 row, player rows, 온/펏 buttons, 홀인원, 파3 니어 selection, and optional direct backdoor strokes.
-- Settlement engine calculates pairwise 타수차, 배판, 4명 동타 이월, 버디/이글/홀인원 값, 파3 니어/니뻐, and final-total handicap delta.
-- Bottom share card has only local SVG scorecard export and QR/result-link URL-hash snapshots.
-- Browser `localStorage` persistence stays on the current device. URL-hash sharing uses only the `#fg=` fragment.
+This prototype focuses on private score and settlement bookkeeping:
+
+- Opening hero copy uses the exact field-friendly title `오늘 폼 정말 좋으시네요 ^0^` and an `오장 룰 자세히 보기` disclosure for the local Ojang rule explanation.
+- 2–4 player round setup with player names, final-total handicaps, and a single Ojang `타당 금액` unit amount.
+- Fixed first-version rule set: Ojang-only hole-by-hole score-difference settlement with 배판/near-pin bookkeeping where supported by stored data.
+- Front/back scorecard input with 1–18 hole grid, par row, 뒷문오픈 row, player rows, relative-to-par score buttons, and running settlement updates.
+- Deterministic calculation breakdowns showing raw scores, Ojang ledger rows, aggregate balances, and final payer → receiver settlement suggestions.
+- Bottom share card with only local SVG scorecard export and QR/result-link URL-hash snapshots.
+- Browser `localStorage` persistence on the current device plus optional URL-hash snapshots carried only in the shared `#fg=` fragment.
 
 ## Replacement and stale data policy
 
@@ -28,7 +30,7 @@ FunGolf is a private ledger/calculator, not a payment or social platform.
 - No payment execution, wallet, escrow, deposit, withdrawal, payment API, or in-app settlement transfer.
 - URL/QR sharing is limited to local URL-hash snapshots (`#fg=`) and QR-like result-link rendering in the browser; no backend, account, provider, network API, or new dependency may be added for sharing.
 - No GPS, map, weather, location permission, caddie recommendation, club-distance advice, shot coaching, or 3D visual runtime.
-- No custom rule builder; only 타당 금액 and final-total player handicaps are configurable.
+- No custom rule builder in v1; use the fixed Ojang rule set.
 - Apple-inspired visual polish is used only as general design inspiration. There is no Apple logo, asset, trademark affiliation, or endorsement claim.
 
 ## Setup
