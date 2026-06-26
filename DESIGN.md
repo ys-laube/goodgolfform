@@ -7,11 +7,12 @@ FunGolf should feel like a premium Korean mobile utility for a foursome standing
 ## Core screens
 
 1. **라운드 세팅** — choose 2–4 players, names, handicaps, scoring mode, and unit values.
-2. **내기 게임** — enable the fixed v1 games: stroke/per-point, skins, Vegas/team, events, and mission cards.
-3. **홀 입력** — front/back scorecard grid with hole tabs, par row, 뒷문오픈 row, player rows, plus selected-hole relative score buttons, quick events, and mission outcomes.
-4. **실시간 정산 요약** — compact running totals with points and optional money-display values.
-5. **순정산 / 계산 내역** — final payer → receiver suggestions plus expandable per-game rows.
-6. **공유 카드** — bottom-only Korean summary card with two actions: local SVG scorecard export and local QR/result-link URL-hash snapshot.
+2. **오장 룰 자세히 보기** — keep the hero title exactly `오늘 폼 정말 좋으시네요 ^0^` and disclose the local Ojang formula without adding transaction or network actions.
+3. **내기 게임** — enable the fixed v1 games: stroke/per-point, skins, Vegas/team, events, and mission cards.
+4. **홀 입력** — front/back scorecard grid with hole tabs, par row, 뒷문오픈 row, player rows, plus selected-hole relative score buttons, quick events, and mission outcomes.
+5. **실시간 정산 요약** — compact running totals with points and optional money-display values.
+6. **순정산 / 계산 내역** — final payer → receiver suggestions plus expandable per-game rows.
+7. **공유 카드** — bottom-only Korean summary card with two actions: local SVG scorecard export and local QR/result-link URL-hash snapshot.
 
 ## Interaction principles
 

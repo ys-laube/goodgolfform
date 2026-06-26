@@ -5,6 +5,7 @@ import designSource from '../../DESIGN.md?raw';
 import indexSource from '../../index.html?raw';
 import readmeSource from '../../README.md?raw';
 import appSource from '../App.tsx?raw';
+import scorecardGridSource from '../ScorecardGrid.tsx?raw';
 import stylesSource from '../styles.css?raw';
 import { App } from '../App';
 
@@ -82,6 +83,8 @@ describe('Korean betting-ledger SSR/static integration contract', () => {
     expect(renderedApp).toMatch(/스트로크|스킨|베가스|이벤트|미션/);
     expect(renderedApp).toMatch(/포인트|금액|받을 금액|줄 금액/);
     expect(renderedApp).toMatch(/스코어카드 캡처|QR·결과 링크|로컬 결과 링크/);
+    expect(renderedApp).toContain('오늘 폼 정말 좋으시네요 ^0^');
+    expect(renderedApp).toContain('오장 룰 자세히 보기');
     expect(renderedApp).not.toMatch(retiredCaddieVisiblePattern);
     expect(renderedApp).not.toMatch(forbiddenTransactionPattern);
     expect(renderedApp).not.toMatch(appleAffiliationPattern);
@@ -98,6 +101,8 @@ describe('Korean betting-ledger SSR/static integration contract', () => {
     expect(docs).toMatch(/내기 게임/);
     expect(docs).toMatch(/순정산/);
     expect(docs).toMatch(/공유 카드/);
+    expect(docs).toMatch(/오늘 폼 정말 좋으시네요 \^0\^/);
+    expect(docs).toMatch(/오장 룰 자세히 보기/);
     expect(docs).toMatch(/Apple-inspired|Apple-inspired visual polish|Apple-inspired styling/i);
     expect(docs).toMatch(/no Apple logo|Apple logos|애플.*로고/i);
     expect(docs).toMatch(/No backend|No payment execution/i);
@@ -116,6 +121,11 @@ describe('Korean betting-ledger SSR/static integration contract', () => {
 
     expect(appAndStyles).toMatch(/라운드 세팅|round setup|RoundSetup/i);
     expect(appAndStyles).toMatch(/홀 입력|hole input|HoleInput/i);
+    expect(appSource).toMatch(/<h1 id="app-title">오늘 폼 정말 좋으시네요 \^0\^<\/h1>/);
+    expect(appSource).toMatch(/<summary>오장 룰 자세히 보기<\/summary>/);
+    expect(appSource).not.toMatch(/한국형 골프 내기 정산/);
+    expect(appSource).not.toMatch(/2~4명 라운드 세팅부터 홀 입력, 이벤트, 미션, 순정산, 공유 카드까지/);
+    expect(scorecardGridSource).not.toMatch(/scorecard-hole-grid|scorecard-hole/);
     expect(appSource).toMatch(/score-row-context/);
     expect(appSource).toMatch(/score-event-grid/);
     expect(appSource).toMatch(/mission-button-row/);

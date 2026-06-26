@@ -6,6 +6,7 @@ FunGolf is now a Korean, mobile-first golf side-game ledger for friends on the c
 
 This prototype focuses on private score and settlement bookkeeping:
 
+- Opening hero copy uses the exact field-friendly title `오늘 폼 정말 좋으시네요 ^0^` and an `오장 룰 자세히 보기` disclosure for the local Ojang rule explanation.
 - 2–4 player round setup with player names, optional handicaps, point-only or money-display mode, and per-game units.
 - Fixed first-version game set: stroke/per-point, skins with carryover, 4-player Vegas/team mode, event bonus/penalty rows, and a pre-authored Korean mission card deck.
 - Front/back scorecard input with 1–18 hole grid, par row, 뒷문오픈 row, player rows, relative-to-par score buttons, event markers, mission outcomes, and running settlement updates.
