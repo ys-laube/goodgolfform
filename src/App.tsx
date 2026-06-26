@@ -427,7 +427,8 @@ export function App() {
 
   function updateScoreDraft(playerId: string, value: string) {
     const draftKey = `${holeNumber}:${playerId}`;
-    setShareReady(false);
+    setScoreDrafts((current) => ({ ...current, [draftKey]: value }));
+    markShareDirty();
 
     if (value === '') {
       setScoreDrafts((current) => ({ ...current, [draftKey]: value }));
@@ -452,7 +453,7 @@ export function App() {
   function updateMission(playerId: string, cleared: boolean) {
     setMissionPlayerId(playerId);
     setMissionCleared(cleared);
-    setShareReady(false);
+    markShareDirty();
     session.setHoleMission(holeNumber, {
       id: `hole-${holeNumber}:mission:${missionCard.id}:${playerId}`,
       playerId,
@@ -465,7 +466,7 @@ export function App() {
 
   function updateHoleDraft(value: string) {
     setCurrentHoleDraft(value);
-    setShareReady(false);
+    markShareDirty();
   }
 
   function resetEditableRound() {
