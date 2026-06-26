@@ -635,8 +635,8 @@ function roundBalances(balances: BalanceMap): BalanceMap {
   return Object.fromEntries(roundedEntries);
 }
 
-function hasNonZeroBalance(balances: BalanceMap): boolean {
-  return Object.values(balances).some((balance) => Math.abs(balance) > 0.005);
+function normalizeNumber(value: number | undefined, fallback = 0): number {
+  return Number.isFinite(value) ? value : fallback;
 }
 
 function positiveTotal(balances: BalanceMap): number {
