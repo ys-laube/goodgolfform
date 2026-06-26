@@ -127,10 +127,14 @@ describe('betting ledger local storage boundary', () => {
     const round = createDefaultBettingRound({ now: '2026-06-25T00:00:00.000Z' });
     const tooFewPlayers = { ...round, players: round.players.slice(0, 1) };
     const badHolePlayer = { ...round, holes: [{ holeNumber: 1, scores: [{ playerId: 'ghost', strokes: 4 }], events: [], missions: [] }] };
+    const extendedBackdoorScore = { ...round, holes: [{ holeNumber: 1, scores: [{ playerId: 'player-1', strokes: 30 }], events: [], missions: [] }] };
+    const tooHighBackdoorScore = { ...round, holes: [{ holeNumber: 1, scores: [{ playerId: 'player-1', strokes: 31 }], events: [], missions: [] }] };
 
     expect(deserializeBettingRound(JSON.stringify({ version: 999, round }))).toBeNull();
     expect(deserializeBettingRound(JSON.stringify({ version: 1, round: tooFewPlayers }))).toBeNull();
     expect(deserializeBettingRound(JSON.stringify({ version: 1, round: badHolePlayer }))).toBeNull();
+    expect(deserializeBettingRound(JSON.stringify({ version: 1, round: extendedBackdoorScore }))).toEqual(extendedBackdoorScore);
+    expect(deserializeBettingRound(JSON.stringify({ version: 1, round: tooHighBackdoorScore }))).toBeNull();
 
     const throwingStorage = new ThrowingStorage();
     expect(loadBettingRound(throwingStorage)).toBeNull();
