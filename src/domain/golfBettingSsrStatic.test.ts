@@ -116,6 +116,11 @@ describe('Korean betting-ledger SSR/static integration contract', () => {
 
     expect(appAndStyles).toMatch(/라운드 세팅|round setup|RoundSetup/i);
     expect(appAndStyles).toMatch(/홀 입력|hole input|HoleInput/i);
+    expect(appSource).toMatch(/score-row-context/);
+    expect(appSource).toMatch(/score-event-grid/);
+    expect(appSource).toMatch(/mission-button-row/);
+    expect(appSource).not.toMatch(/className="mission-card"/);
+    expect(appSource).not.toMatch(/className="mission-card event-card"/);
     expect(appAndStyles).toMatch(/정산|settlement|ledger/i);
     expect(appAndStyles).toMatch(/공유|share/i);
     expect(appAndStyles).toMatch(/@media|min-width|safe-area-inset|touch-action|min-height/);
