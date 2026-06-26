@@ -15,7 +15,8 @@ import {
   restoreBettingRoundShareHashToStorage,
   type BettingShareRestoreResult,
 } from './domain/bettingShareSnapshot';
-import { type BettingRound as StoredBettingRound } from './domain/bettingStorage';
+import { maximumHoleScoreStrokes, type BettingRound as StoredBettingRound } from './domain/bettingStorage';
+import { parseEditableIntegerDraft } from './inputDrafts';
 import { useBettingRoundSession, type BettingEventKey, type BettingGameKey } from './useBettingRoundSession';
 
 const gameKeys: readonly BettingGameKey[] = ['stroke', 'skins', 'vegas', 'events', 'missions'];
@@ -90,16 +91,6 @@ const eventLabels: Record<BettingEventKey, string> = {
 };
 
 type GameUnitField = 'points' | 'money';
-
-function parseEditableIntegerDraft(value: string): number | null {
-  const trimmed = value.trim();
-
-  if (trimmed === '' || !/^-?\d+$/.test(trimmed)) {
-    return null;
-  }
-
-  return Number.parseInt(trimmed, 10);
-}
 
 function parseIntegerDraft(value: string, fallback: number): number {
   return parseEditableIntegerDraft(value) ?? fallback;
