@@ -101,11 +101,6 @@ function clampInteger(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, integer));
 }
 
-function clampInteger(value: number, min: number, max: number): number {
-  const integer = Number.isFinite(value) ? Math.round(value) : min;
-  return Math.min(max, Math.max(min, integer));
-}
-
 function roundToTwo(value: number): number {
   return Math.round((value + Number.EPSILON) * 100) / 100;
 }
@@ -436,20 +431,6 @@ export function App() {
       setScoreDrafts((current) => ({ ...current, [draftKey]: normalizedScore.toString() }));
       session.updateHoleScore(holeNumber, playerId, normalizedScore);
     }
-
-    if (/^\d{1,2}$/.test(value)) {
-      const normalizedScore = clampInteger(parseIntegerDraft(value, holePar + 1), 1, maximumHoleScoreStrokes);
-      setScoreDrafts((current) => ({ ...current, [draftKey]: normalizedScore.toString() }));
-      session.updateHoleScore(holeNumber, playerId, normalizedScore);
-    }
-  }
-
-  function updateScoreButton(playerId: string, strokes: number) {
-    const normalizedScore = clampInteger(strokes, 1, maximumHoleScoreStrokes);
-    const draftKey = `${holeNumber}:${playerId}`;
-    setScoreDrafts((current) => ({ ...current, [draftKey]: normalizedScore.toString() }));
-    setShareReady(false);
-    session.updateHoleScore(holeNumber, playerId, normalizedScore);
   }
 
   function updateScoreButton(playerId: string, strokes: number) {
@@ -492,16 +473,6 @@ export function App() {
     setScoreDrafts({});
     setMissionPlayerId('player-1');
     setMissionCleared(true);
-    setShareReady(false);
-  }
-
-  function updateParDraft(value: string) {
-    setParDraftsByHole((current) => ({ ...current, [holeNumber]: value }));
-    setShareReady(false);
-  }
-
-  function toggleBackdoorOpen() {
-    setBackdoorOpenByHole((current) => ({ ...current, [holeNumber]: !backdoorOpen }));
     setShareReady(false);
   }
 
