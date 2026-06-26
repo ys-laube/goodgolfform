@@ -8,22 +8,26 @@ export type Player = {
 
 export type OjangRoundSettings = {
   readonly holeCount: number;
+  readonly unitAmount: number;
 };
 
 export type ScoreEntryMode = 'on-putt' | 'hio' | 'manual';
 
-export type GameUnit = {
-  readonly pointValue: number;
-  readonly moneyPerPoint: number;
+export type HoleScore = {
+  readonly playerId: PlayerId;
+  readonly strokes: number;
+  readonly entryMode?: ScoreEntryMode;
+  readonly onGreenShots?: number;
+  readonly putts?: number;
+  readonly holeInOne?: boolean;
 };
-
-export type GameUnitMap = Readonly<Record<BettingGameId, GameUnit>>;
-export type HoleScoreMap = Readonly<Record<PlayerId, number>>;
 
 export type HoleResult = {
   readonly holeNumber: number;
   readonly par: number;
-  readonly strokes: HoleScoreMap;
+  readonly backdoorOpen: boolean;
+  readonly nearPlayerId?: PlayerId | null;
+  readonly scores: readonly HoleScore[];
 };
 
 export type BettingRound = {
@@ -52,26 +56,6 @@ export type LedgerBreakdownRow = {
   readonly balanceDeltas: BalanceMap;
 };
 
-export type GameLedger = {
-  readonly game: BettingGameId;
-  readonly label: string;
-  readonly pointBalances: BalanceMap;
-  readonly moneyBalances: BalanceMap;
-  readonly rows: readonly LedgerBreakdownRow[];
-  readonly unclaimedPoints: number;
-  readonly unavailableReason?: string;
-};
-
-export type AppliedHandicap = {
-  readonly rawTotals: BalanceMap;
-  readonly adjustedTotals: BalanceMap;
-  readonly allocatedStrokes: Readonly<Record<number, BalanceMap>>;
-  readonly netHoleScores: Readonly<Record<number, BalanceMap>>;
-  readonly completedHoleNumbers: readonly number[];
-};
-
-export type NetTransferUnit = 'money';
-
 export type NetTransfer = {
   readonly payerId: PlayerId;
   readonly payeeId: PlayerId;
@@ -95,23 +79,14 @@ export const defaultOjangUnitAmount = 1_000;
 export const maximumOjangScoreStrokes = 30;
 
 export const ledgerCalculationOrder = [
-  'normalize round input',
-  'derive final-total handicap view',
-  'calculate traditional Ojang hole-by-hole stroke ledger',
-  'apply minpan/baepan board multipliers',
-  'convert Ojang point units to money units',
-  'aggregate player balances',
-  'net money balances into minimal transfers',
-  'emit inspectable calculation breakdown rows',
+  'normalize Ojang round input',
+  'calculate completed-hole pairwise Ojang settlement',
+  'apply double-plate triggers and four-way-tie carry',
+  'apply under-par and par-3 near zero-sum rows',
+  'apply final-total handicap adjustment delta',
+  'net balances into minimal transfers',
+  'emit inspectable Korean calculation breakdown rows',
 ] as const;
-
-export const defaultEnabledGames: EnabledGames = {
-  ojang: true,
-};
-
-export const defaultGameUnits: GameUnitMap = {
-  ojang: { pointValue: 1, moneyPerPoint: 5000 },
-};
 
 const fallbackPlayers: readonly Player[] = [
   { id: 'p1', name: '', handicap: 0 },
@@ -128,6 +103,7 @@ type ScoreEntry = {
 export function createDefaultRound(options: {
   readonly playerCount?: number;
   readonly now?: string;
+  readonly unitAmount?: number;
 } = {}): BettingRound {
   const playerCount = options.playerCount ?? 4;
   assertPlayerCount(playerCount);
@@ -138,21 +114,109 @@ export function createDefaultRound(options: {
     createdAt: timestamp,
     updatedAt: timestamp,
     players: fallbackPlayers.slice(0, playerCount),
-    settings: { holeCount: 18 },
-    enabledGames: defaultEnabledGames,
-    gameUnits: defaultGameUnits,
+    settings: {
+      holeCount: 18,
+      unitAmount: positiveInteger(options.unitAmount, defaultOjangUnitAmount),
+    },
     holes: [],
   });
 }
 
 export function calculateRoundLedger(round: BettingRound): RoundLedger {
   const normalizedRound = normalizeBettingRound(round);
-  const handicap = applyHandicap(normalizedRound);
-  const gameLedgers = bettingGameIds
-    .filter((game) => normalizedRound.enabledGames[game])
-    .map((game) => calculateGameLedger(game, normalizedRound, handicap));
-  const totals = aggregateGameLedgers(normalizedRound, gameLedgers);
-  const netTransfers = calculateNetTransfers(mapPlayerBalances(totals, 'money'));
+  const moneyBalances = createMutableBalances(normalizedRound.players);
+  const rows: LedgerBreakdownRow[] = [];
+  const completed = completedHoles(normalizedRound);
+  let carryDoublePlate = false;
+
+  for (const hole of completed) {
+    const scores = scoreEntriesForHole(normalizedRound, hole);
+    const fourWayTie = scores.length === 4 && new Set(scores.map((entry) => entry.score.strokes)).size === 1;
+
+    if (fourWayTie) {
+      rows.push(createBreakdownRow({
+        game: 'ojang',
+        id: `hole-${hole.holeNumber}-four-way-carry`,
+        holeNumber: hole.holeNumber,
+        label: '4명 동타 · 다음 홀 배판',
+        detail: `${hole.holeNumber}번 홀 4명 동타로 현재 홀 타수차 정산은 0원, 다음 완료 홀에 배판을 넘깁니다.`,
+        money: 0,
+        balanceDeltas: createMutableBalances(normalizedRound.players),
+      }));
+      carryDoublePlate = true;
+      continue;
+    }
+
+    const triggerReasons = doublePlateTriggerReasons(hole, scores);
+    if (carryDoublePlate) {
+      triggerReasons.unshift('이전 4명 동타 이월');
+    }
+    const holeMultiplier = triggerReasons.length > 0 ? 2 : 1;
+
+    if (triggerReasons.length > 0) {
+      rows.push(createBreakdownRow({
+        game: 'ojang',
+        id: `hole-${hole.holeNumber}-double-plate`,
+        holeNumber: hole.holeNumber,
+        label: '배판 적용',
+        detail: `${hole.holeNumber}번 홀 ${dedupe(triggerReasons).join(', ')} 조건으로 타수차 정산을 ${holeMultiplier}배 적용합니다.`,
+        money: 0,
+        balanceDeltas: createMutableBalances(normalizedRound.players),
+      }));
+    }
+
+    const pairwiseDeltas = calculatePairwiseScoreDeltas(normalizedRound.players, scores, normalizedRound.settings.unitAmount, holeMultiplier);
+    if (hasNonZeroBalance(pairwiseDeltas)) {
+      mergeBalances(moneyBalances, pairwiseDeltas);
+      rows.push(createBreakdownRow({
+        game: 'ojang',
+        id: `hole-${hole.holeNumber}-pairwise`,
+        holeNumber: hole.holeNumber,
+        label: '오장 타수차',
+        detail: `${hole.holeNumber}번 홀 타수차 × ${formatMoney(normalizedRound.settings.unitAmount)} × ${holeMultiplier}배 전원 1:1 정산`,
+        money: positiveTotal(pairwiseDeltas),
+        balanceDeltas: pairwiseDeltas,
+      }));
+    }
+
+    for (const bonusRow of underParBonusRows(normalizedRound, hole, scores)) {
+      mergeBalances(moneyBalances, bonusRow.balanceDeltas);
+      rows.push(bonusRow);
+    }
+
+    const nearRow = parThreeNearRow(normalizedRound, hole, scores);
+    if (nearRow) {
+      mergeBalances(moneyBalances, nearRow.balanceDeltas);
+      rows.push(nearRow);
+    }
+
+    carryDoublePlate = false;
+  }
+
+  const rawTotals = rawStrokeTotals(normalizedRound, completed);
+  const adjustedTotals = Object.fromEntries(normalizedRound.players.map((player) => [
+    player.id,
+    roundToTwo((rawTotals[player.id] ?? 0) - normalizeNumber(player.handicap)),
+  ])) as BalanceMap;
+  const handicapDelta = finalHandicapDelta(normalizedRound.players, rawTotals, adjustedTotals, normalizedRound.settings.unitAmount);
+  if (hasNonZeroBalance(handicapDelta)) {
+    mergeBalances(moneyBalances, handicapDelta);
+    rows.push(createBreakdownRow({
+      game: 'ojang',
+      id: 'final-handicap-delta',
+      label: '핸디 보정',
+      detail: '홀별 핸디 배분 없이 총타 기준 원정산과 (총타-핸디) 기준 정산의 차액만 마지막에 반영합니다.',
+      money: positiveTotal(handicapDelta),
+      balanceDeltas: handicapDelta,
+    }));
+  }
+
+  const roundedBalances = roundBalances(moneyBalances);
+  const playerBalances = Object.fromEntries(normalizedRound.players.map((player) => [
+    player.id,
+    { money: roundedBalances[player.id] ?? 0 },
+  ]));
+  const netTransfers = calculateNetTransfers(roundedBalances);
   const settlementRows = netTransfers.map((transfer, index) => createSettlementRow(transfer, index));
 
   return {
@@ -186,48 +250,11 @@ export function normalizeBettingRound(round: BettingRound): BettingRound {
   return {
     ...round,
     players,
-    settings: { holeCount },
-    enabledGames: normalizeEnabledGames(round.enabledGames),
-    gameUnits: normalizeGameUnits(round.gameUnits),
+    settings: {
+      holeCount,
+      unitAmount: positiveInteger(round.settings.unitAmount, defaultOjangUnitAmount),
+    },
     holes,
-  };
-}
-
-export function applyHandicap(round: BettingRound): AppliedHandicap {
-  const normalizedRound = normalizeBettingRound(round);
-  const completedHoles = normalizedRound.holes.filter((hole) => isCompletedHole(hole, normalizedRound.players));
-  const completedHoleNumbers = completedHoles.map((hole) => hole.holeNumber);
-  const rawTotals = createMutableBalances(normalizedRound.players);
-  const allocatedStrokes: Record<number, Record<PlayerId, number>> = {};
-  const netHoleScores: Record<number, Record<PlayerId, number>> = {};
-
-  for (const holeNumber of Array.from({ length: normalizedRound.settings.holeCount }, (_, index) => index + 1)) {
-    allocatedStrokes[holeNumber] = createMutableBalances(normalizedRound.players);
-  }
-
-  for (const hole of completedHoles) {
-    const netScores = createMutableBalances(normalizedRound.players);
-
-    for (const player of normalizedRound.players) {
-      const rawScore = hole.strokes[player.id] ?? 0;
-      rawTotals[player.id] = roundToTwo(rawTotals[player.id] + rawScore);
-      netScores[player.id] = rawScore;
-    }
-
-    netHoleScores[hole.holeNumber] = netScores;
-  }
-
-  const adjustedTotals = createMutableBalances(normalizedRound.players);
-  for (const player of normalizedRound.players) {
-    adjustedTotals[player.id] = roundToTwo(rawTotals[player.id] - normalizeNumber(player.handicap));
-  }
-
-  return {
-    rawTotals,
-    adjustedTotals,
-    allocatedStrokes,
-    netHoleScores,
-    completedHoleNumbers,
   };
 }
 
@@ -249,8 +276,10 @@ export function calculateNetTransfers(balances: BalanceMap): readonly NetTransfe
     const payee = payees[payeeIndex];
     const amount = roundToTwo(Math.min(payer.remaining, payee.remaining));
 
-    if (amount > 0.005) {
+    if (amount > 0) {
       transfers.push({ payerId: payer.playerId, payeeId: payee.playerId, amount, unit: 'money' });
+      payer.remaining = roundToTwo(payer.remaining - amount);
+      payee.remaining = roundToTwo(payee.remaining - amount);
     }
 
     if (payer.remaining <= 0.005) {
@@ -311,41 +340,6 @@ function calculatePairwiseTotalDeltas(
       deltas[left.id] = roundToTwo((deltas[left.id] ?? 0) + deltaForLeft);
       deltas[right.id] = roundToTwo((deltas[right.id] ?? 0) - deltaForLeft);
     }
-
-    for (let leftIndex = 0; leftIndex < scores.length; leftIndex += 1) {
-      for (let rightIndex = leftIndex + 1; rightIndex < scores.length; rightIndex += 1) {
-        const left = scores[leftIndex];
-        const right = scores[rightIndex];
-
-        if (left.settlementScore === right.settlementScore) {
-          continue;
-        }
-
-        const winner = left.settlementScore < right.settlementScore ? left : right;
-        const loser = left.settlementScore < right.settlementScore ? right : left;
-        const strokeDelta = Math.abs(left.settlementScore - right.settlementScore);
-        const birdieBonus = winner.rawScore < hole.par ? 1 : 0;
-        const points = roundToTwo((strokeDelta + birdieBonus) * board.multiplier * unit.pointValue);
-        const deltas = createMutableBalances(round.players);
-        deltas[winner.player.id] = points;
-        deltas[loser.player.id] = -points;
-        mergeBalances(pointBalances, deltas);
-
-        rows.push(createBreakdownRow({
-          game: 'ojang',
-          id: `ojang-${hole.holeNumber}-${winner.player.id}-${loser.player.id}`,
-          holeNumber: hole.holeNumber,
-          playerId: winner.player.id,
-          label: `오장 ${board.label}`,
-          detail: ojangRowDetail({ hole, winner, loser, strokeDelta, birdieBonus, board, points }),
-          points,
-          money: roundToTwo(points * unit.moneyPerPoint),
-          balanceDeltas: deltas,
-        }));
-      }
-    }
-
-    nextBoardReasons = followingBoardReasons;
   }
 
   return roundBalances(deltas);
@@ -369,51 +363,68 @@ function doublePlateTriggerReasons(hole: HoleResult, scores: readonly ScoreEntry
   return reasons;
 }
 
-function ojangRowDetail(input: {
-  readonly hole: HoleResult;
-  readonly winner: OjangScoreEntry;
-  readonly loser: OjangScoreEntry;
-  readonly strokeDelta: number;
-  readonly birdieBonus: number;
-  readonly board: OjangBoardState;
-  readonly points: number;
-}): string {
-  const additionText = input.birdieBonus > 0 ? ', 버디 보너스 +1' : '';
-  const boardReason = input.board.reasons.length > 0 ? ` (${input.board.reasons.join(', ')})` : '';
-
-  return `${input.hole.holeNumber}번 홀 ${input.winner.player.name} ${formatNumber(input.winner.settlementScore)}타 vs ${input.loser.player.name} ${formatNumber(input.loser.settlementScore)}타: 타수차 ${formatNumber(input.strokeDelta)}${additionText} × ${input.board.label}${boardReason} = ${formatNumber(input.points)}점`;
+function scoreCounts(scores: readonly ScoreEntry[]): Map<number, number> {
+  const counts = new Map<number, number>();
+  for (const entry of scores) {
+    counts.set(entry.score.strokes, (counts.get(entry.score.strokes) ?? 0) + 1);
+  }
+  return counts;
 }
 
-function buildGameLedger(
-  game: BettingGameId,
-  label: string,
-  pointBalances: BalanceMap,
-  rows: readonly LedgerBreakdownRow[],
-  round: BettingRound,
-  unit: GameUnit,
-  unclaimedPoints = 0,
-  unavailableReason?: string,
-): GameLedger {
-  const roundedPointBalances = roundBalances(pointBalances);
+function underParBonusRows(round: BettingRound, hole: HoleResult, scores: readonly ScoreEntry[]): readonly LedgerBreakdownRow[] {
+  return scores.flatMap((entry) => {
+    const bonusUnits = underParBonusUnits(hole, entry.score);
+    if (bonusUnits === 0) {
+      return [];
+    }
 
-  return {
-    game,
-    label,
-    pointBalances: roundedPointBalances,
-    moneyBalances: toMoneyBalances(roundedPointBalances, unit),
-    rows,
-    unclaimedPoints: roundToTwo(unclaimedPoints),
-    unavailableReason,
-  };
+    const deltas = createMutableBalances(round.players);
+    for (const player of round.players) {
+      if (player.id === entry.player.id) {
+        continue;
+      }
+      deltas[entry.player.id] = roundToTwo((deltas[entry.player.id] ?? 0) + bonusUnits * round.settings.unitAmount);
+      deltas[player.id] = roundToTwo((deltas[player.id] ?? 0) - bonusUnits * round.settings.unitAmount);
+    }
+
+    const label = entry.score.holeInOne || entry.score.entryMode === 'hio'
+      ? '홀인원 값'
+      : bonusUnits >= 2
+        ? '이글 값'
+        : '버디 값';
+
+    return [createBreakdownRow({
+      game: 'ojang',
+      id: `hole-${hole.holeNumber}-bonus-${entry.player.id}`,
+      holeNumber: hole.holeNumber,
+      playerId: entry.player.id,
+      label,
+      detail: `${hole.holeNumber}번 홀 ${displayName(entry.player)} ${entry.score.strokes}타(${relativeScoreText(entry.score.strokes, hole.par)}) · ${bonusUnits}타값을 나머지 플레이어와 정산합니다.`,
+      money: positiveTotal(deltas),
+      balanceDeltas: deltas,
+    })];
+  });
 }
 
-function aggregateGameLedgers(round: BettingRound, gameLedgers: readonly GameLedger[]): Readonly<Record<PlayerId, PlayerBalance>> {
-  const pointTotals = createMutableBalances(round.players);
-  const moneyTotals = createMutableBalances(round.players);
+function underParBonusUnits(hole: HoleResult, score: HoleScore): number {
+  if (score.holeInOne || score.entryMode === 'hio') {
+    return 3;
+  }
 
-  for (const ledger of gameLedgers) {
-    mergeBalances(pointTotals, ledger.pointBalances);
-    mergeBalances(moneyTotals, ledger.moneyBalances);
+  const relativeScore = score.strokes - hole.par;
+  if (relativeScore <= -2) {
+    return 2;
+  }
+  if (relativeScore === -1) {
+    return 1;
+  }
+
+  return 0;
+}
+
+function parThreeNearRow(round: BettingRound, hole: HoleResult, scores: readonly ScoreEntry[]): LedgerBreakdownRow | null {
+  if (hole.par !== 3 || !hole.nearPlayerId) {
+    return null;
   }
 
   const nearEntry = scores.find((entry) => entry.player.id === hole.nearPlayerId);
@@ -494,48 +505,10 @@ function createSettlementRow(transfer: NetTransfer, index: number): LedgerBreakd
     id: `settlement-${index + 1}`,
     game: 'settlement',
     label: '순정산',
-    detail: `${transfer.payerId} → ${transfer.payeeId} ${formatNumber(transfer.amount)}원`,
-    points: 0,
+    detail: `${transfer.payerId} → ${transfer.payeeId} ${formatMoney(transfer.amount)}`,
     money: transfer.amount,
     balanceDeltas: {},
   });
-}
-
-function completedHoles(round: BettingRound): readonly HoleResult[] {
-  return round.holes.filter((hole) => isCompletedHole(hole, round.players));
-}
-
-function isCompletedHole(hole: HoleResult, players: readonly Player[]): boolean {
-  return players.every((player) => (hole.strokes[player.id] ?? 0) > 0);
-}
-
-function scoreEntriesForHole(round: BettingRound, _handicap: AppliedHandicap, hole: HoleResult): readonly OjangScoreEntry[] {
-  return round.players.map((player) => ({
-    player,
-    rawScore: hole.strokes[player.id] ?? 0,
-    settlementScore: hole.strokes[player.id] ?? 0,
-  }));
-}
-
-function toMoneyBalances(pointBalances: BalanceMap, unit: GameUnit): BalanceMap {
-  return Object.fromEntries(Object.entries(pointBalances).map(([playerId, points]) => [
-    playerId,
-    roundToTwo(points * unit.moneyPerPoint),
-  ]));
-}
-
-function normalizeEnabledGames(enabledGames: EnabledGames): EnabledGames {
-  return Object.fromEntries(bettingGameIds.map((game) => [game, enabledGames[game] ?? defaultEnabledGames[game]])) as EnabledGames;
-}
-
-function normalizeGameUnits(gameUnits: GameUnitMap): GameUnitMap {
-  return Object.fromEntries(bettingGameIds.map((game) => {
-    const unit = gameUnits[game] ?? defaultGameUnits[game];
-    return [game, {
-      pointValue: positiveNumber(unit.pointValue, defaultGameUnits[game].pointValue),
-      moneyPerPoint: Math.max(0, normalizeNumber(unit.moneyPerPoint, defaultGameUnits[game].moneyPerPoint)),
-    }];
-  })) as GameUnitMap;
 }
 
 function normalizeHole(hole: HoleResult, playerIds: readonly PlayerId[], holeCount: number): HoleResult | null {
@@ -548,10 +521,12 @@ function normalizeHole(hole: HoleResult, playerIds: readonly PlayerId[], holeCou
   return {
     holeNumber,
     par: clampInteger(hole.par, 3, 5),
-    strokes: Object.fromEntries(playerIds.map((playerId) => [
-      playerId,
-      Math.max(0, Math.round(normalizeNumber(hole.strokes[playerId], 0))),
-    ])),
+    backdoorOpen: hole.backdoorOpen === true,
+    nearPlayerId,
+    scores: playerIds.flatMap((playerId) => {
+      const score = hole.scores.find((candidate) => candidate.playerId === playerId);
+      return score ? [normalizeScore(score, playerId)] : [];
+    }),
   };
 }
 
