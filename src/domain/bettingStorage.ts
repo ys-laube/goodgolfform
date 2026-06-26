@@ -1,6 +1,7 @@
-export const bettingLedgerStorageVersion = 2;
+export const bettingLedgerStorageVersion = 3;
 export const bettingLedgerStoragePrefix = 'golf-bet-ledger';
 export const bettingActiveRoundStorageKey = `${bettingLedgerStoragePrefix}:active-round:v${bettingLedgerStorageVersion}`;
+export const legacyBettingActiveRoundStorageKeyV2 = `${bettingLedgerStoragePrefix}:active-round:v2`;
 export const legacyBettingActiveRoundStorageKeyV1 = `${bettingLedgerStoragePrefix}:active-round:v1`;
 export const legacyShotAdvicePresetStorageKey = 'korean-caddie:preset-distances:v1';
 export const knownLegacyShotAdviceStorageKeys = [legacyShotAdvicePresetStorageKey] as const;
@@ -11,9 +12,8 @@ export type StorageLike = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>;
 
 export type BettingScoringMode = 'points' | 'money';
 export type BettingHandicapMode = 'final-total' | 'hole-allocation';
-export type BettingGameKey = 'stroke' | 'skins' | 'vegas' | 'events' | 'missions';
-export type BettingEventKey = 'near-pin' | 'longest-drive' | 'birdie' | 'ob-penalty';
-export type BettingMissionOutcome = 'pending' | 'success' | 'fail';
+export type BettingGameKey = 'ojang';
+export type BettingEventKey = 'near-pin';
 
 export type BettingPlayer = {
   readonly id: string;
@@ -48,22 +48,12 @@ export type BettingHoleEvent = {
   readonly points: number;
 };
 
-export type BettingHoleMission = {
-  readonly id: string;
-  readonly playerId: string;
-  readonly missionId: string;
-  readonly title: string;
-  readonly points: number;
-  readonly outcome: BettingMissionOutcome;
-};
-
 export type BettingHoleResult = {
   readonly holeNumber: number;
   readonly par: number;
   readonly backdoorOpen: boolean;
   readonly scores: readonly BettingHoleScore[];
   readonly events: readonly BettingHoleEvent[];
-  readonly missions: readonly BettingHoleMission[];
 };
 
 export type BettingRound = {
@@ -78,24 +68,16 @@ export type BettingRound = {
 };
 
 type StoredBettingRoundPayload = {
-  readonly version: 1 | typeof bettingLedgerStorageVersion;
-  readonly round: BettingRound;
+  readonly version: 1 | 2 | typeof bettingLedgerStorageVersion;
+  readonly round: unknown;
 };
 
 const defaultGameFlags: BettingGameFlags = {
-  stroke: true,
-  skins: true,
-  vegas: true,
-  events: true,
-  missions: true,
+  ojang: true,
 };
 
 const defaultGameUnits: BettingGameUnits = {
-  stroke: { points: 1, money: 1000 },
-  skins: { points: 2, money: 1000 },
-  vegas: { points: 1, money: 500 },
-  events: { points: 3, money: 1000 },
-  missions: { points: 5, money: 1000 },
+  ojang: { points: 1, money: 5000 },
 };
 
 const defaultPlayers: readonly BettingPlayer[] = [
@@ -105,9 +87,8 @@ const defaultPlayers: readonly BettingPlayer[] = [
   { id: 'player-4', name: '', handicap: 0 },
 ];
 
-const bettingGameKeys: readonly BettingGameKey[] = ['stroke', 'skins', 'vegas', 'events', 'missions'];
-const bettingEventKeys: readonly BettingEventKey[] = ['near-pin', 'longest-drive', 'birdie', 'ob-penalty'];
-const missionOutcomes: readonly BettingMissionOutcome[] = ['pending', 'success', 'fail'];
+const bettingGameKeys: readonly BettingGameKey[] = ['ojang'];
+const bettingEventKeys: readonly BettingEventKey[] = ['near-pin'];
 const scoringModes: readonly BettingScoringMode[] = ['points', 'money'];
 const handicapModes: readonly BettingHandicapMode[] = ['final-total', 'hole-allocation'];
 
@@ -142,7 +123,16 @@ export function deserializeBettingRound(raw: string | null): BettingRound | null
 
   try {
     const parsed = JSON.parse(raw) as Partial<StoredBettingRoundPayload>;
-    return isSupportedStorageVersion(parsed.version) && isBettingRound(parsed.round) ? cloneBettingRound(parsed.round) : null;
+
+    if (parsed.version === bettingLedgerStorageVersion && isBettingRound(parsed.round)) {
+      return cloneBettingRound(parsed.round);
+    }
+
+    if ((parsed.version === 1 || parsed.version === 2) && parsed.round) {
+      return migrateLegacyBettingRound(parsed.round);
+    }
+
+    return null;
   } catch {
     return null;
   }
@@ -160,13 +150,16 @@ export function loadBettingRound(storage: StorageLike | undefined): BettingRound
       return activeRound;
     }
 
-    const legacyRound = deserializeBettingRound(storage.getItem(legacyBettingActiveRoundStorageKeyV1));
+    for (const legacyKey of [legacyBettingActiveRoundStorageKeyV2, legacyBettingActiveRoundStorageKeyV1]) {
+      const legacyRound = deserializeBettingRound(storage.getItem(legacyKey));
 
-    if (legacyRound) {
-      saveBettingRound(storage, legacyRound);
+      if (legacyRound) {
+        saveBettingRound(storage, legacyRound);
+        return legacyRound;
+      }
     }
 
-    return legacyRound;
+    return null;
   } catch {
     return null;
   }
@@ -192,6 +185,7 @@ export function clearBettingRound(storage: StorageLike | undefined): boolean {
 
   try {
     storage.removeItem(bettingActiveRoundStorageKey);
+    storage.removeItem(legacyBettingActiveRoundStorageKeyV2);
     storage.removeItem(legacyBettingActiveRoundStorageKeyV1);
     return true;
   } catch {
@@ -241,8 +235,98 @@ function cloneHoleResult(hole: BettingHoleResult): BettingHoleResult {
     backdoorOpen: hole.backdoorOpen === true,
     scores: hole.scores.map((score) => ({ ...score })),
     events: hole.events.map((event) => ({ ...event })),
-    missions: hole.missions.map((mission) => ({ ...mission })),
   };
+}
+
+function migrateLegacyBettingRound(value: unknown): BettingRound | null {
+  if (!isRecord(value) || !Array.isArray(value.players) || !Array.isArray(value.holes) || !isRecord(value.settings)) {
+    return null;
+  }
+
+  const players = value.players.map(readLegacyPlayer);
+  if (!players.every((player): player is BettingPlayer => player !== null) || players.length < 2 || players.length > 4 || !hasUniquePlayerIds(players)) {
+    return null;
+  }
+
+  const settings = readLegacySettings(value.settings);
+  if (!settings) {
+    return null;
+  }
+
+  const holes = value.holes.map((hole) => readLegacyHole(hole, players));
+  if (!holes.every((hole): hole is BettingHoleResult => hole !== null)) {
+    return null;
+  }
+
+  const migrated: BettingRound = {
+    id: typeof value.id === 'string' && value.id.trim() ? value.id : 'round-local-active',
+    createdAt: typeof value.createdAt === 'string' && isIsoString(value.createdAt) ? value.createdAt : new Date(0).toISOString(),
+    updatedAt: typeof value.updatedAt === 'string' && isIsoString(value.updatedAt) ? value.updatedAt : new Date(0).toISOString(),
+    players,
+    settings,
+    enabledGames: { ...defaultGameFlags },
+    gameUnits: { ...defaultGameUnits },
+    holes,
+  };
+
+  return isBettingRound(migrated) ? cloneBettingRound(migrated) : null;
+}
+
+function readLegacyPlayer(value: unknown): BettingPlayer | null {
+  if (!isRecord(value) || !isNonEmptyString(value.id) || typeof value.name !== 'string' || !isIntegerInRange(value.handicap, -10, 54)) {
+    return null;
+  }
+
+  return { id: value.id, name: value.name, handicap: value.handicap };
+}
+
+function readLegacySettings(value: Record<string, unknown>): BettingRoundSettings | null {
+  if (!isIntegerInRange(value.holeCount, 1, 18) || !includesValue(scoringModes, value.scoringMode) || !includesValue(handicapModes, value.handicapMode)) {
+    return null;
+  }
+
+  return { holeCount: value.holeCount, scoringMode: value.scoringMode, handicapMode: value.handicapMode };
+}
+
+function readLegacyHole(value: unknown, players: readonly BettingPlayer[]): BettingHoleResult | null {
+  if (!isRecord(value) || !isIntegerInRange(value.holeNumber, 1, 18)) {
+    return null;
+  }
+
+  const scores = Array.isArray(value.scores)
+    ? value.scores.map((score) => readLegacyHoleScore(score, players))
+    : [];
+  const events = Array.isArray(value.events)
+    ? value.events.map((event) => readLegacyHoleEvent(event, players)).filter((event): event is BettingHoleEvent => event !== null)
+    : [];
+
+  if (!scores.every((score): score is BettingHoleScore => score !== null)) {
+    return null;
+  }
+
+  return {
+    holeNumber: value.holeNumber,
+    par: isIntegerInRange(value.par, 3, 5) ? value.par : 4,
+    backdoorOpen: value.backdoorOpen === true,
+    scores,
+    events,
+  };
+}
+
+function readLegacyHoleScore(value: unknown, players: readonly BettingPlayer[]): BettingHoleScore | null {
+  if (!isRecord(value) || !isPlayerId(value.playerId, players) || !isIntegerInRange(value.strokes, 1, maximumHoleScoreStrokes)) {
+    return null;
+  }
+
+  return { playerId: value.playerId, strokes: value.strokes };
+}
+
+function readLegacyHoleEvent(value: unknown, players: readonly BettingPlayer[]): BettingHoleEvent | null {
+  if (!isRecord(value) || !isNonEmptyString(value.id) || !isPlayerId(value.playerId, players) || value.event !== 'near-pin' || !isIntegerInRange(value.points, -100, 100)) {
+    return null;
+  }
+
+  return { id: value.id, playerId: value.playerId, event: 'near-pin', points: value.points };
 }
 
 function isBettingRound(value: unknown): value is BettingRound {
@@ -293,11 +377,11 @@ function isBettingRoundSettings(value: unknown): value is BettingRoundSettings {
 }
 
 function isBettingGameFlags(value: unknown): value is BettingGameFlags {
-  return isRecord(value) && bettingGameKeys.every((game) => typeof value[game] === 'boolean');
+  return isRecord(value) && value.ojang === true;
 }
 
 function isBettingGameUnits(value: unknown): value is BettingGameUnits {
-  return isRecord(value) && bettingGameKeys.every((game) => isBettingGameUnit(value[game]));
+  return isRecord(value) && isBettingGameUnit(value.ojang);
 }
 
 function isBettingGameUnit(value: unknown): value is BettingGameUnit {
@@ -315,9 +399,7 @@ function isBettingHoleResult(value: unknown, players: readonly BettingPlayer[]):
     Array.isArray(value.scores) &&
     value.scores.every((score) => isBettingHoleScore(score, players)) &&
     Array.isArray(value.events) &&
-    value.events.every((event) => isBettingHoleEvent(event, players)) &&
-    Array.isArray(value.missions) &&
-    value.missions.every((mission) => isBettingHoleMission(mission, players))
+    value.events.every((event) => isBettingHoleEvent(event, players))
   );
 }
 
@@ -332,18 +414,6 @@ function isBettingHoleEvent(value: unknown, players: readonly BettingPlayer[]): 
     isPlayerId(value.playerId, players) &&
     includesValue(bettingEventKeys, value.event) &&
     isIntegerInRange(value.points, -100, 100)
-  );
-}
-
-function isBettingHoleMission(value: unknown, players: readonly BettingPlayer[]): value is BettingHoleMission {
-  return (
-    isRecord(value) &&
-    isNonEmptyString(value.id) &&
-    isPlayerId(value.playerId, players) &&
-    isNonEmptyString(value.missionId) &&
-    isNonEmptyString(value.title) &&
-    isIntegerInRange(value.points, -100, 100) &&
-    includesValue(missionOutcomes, value.outcome)
   );
 }
 
@@ -369,10 +439,6 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function includesValue<T extends string>(values: readonly T[], value: unknown): value is T {
   return typeof value === 'string' && values.includes(value as T);
-}
-
-function isSupportedStorageVersion(value: unknown): value is 1 | typeof bettingLedgerStorageVersion {
-  return value === 1 || value === bettingLedgerStorageVersion;
 }
 
 function normalizePlayerCount(playerCount: number): 2 | 3 | 4 {
