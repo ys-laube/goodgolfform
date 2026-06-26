@@ -179,17 +179,24 @@ export function App() {
   const [roundName, setRoundName] = useState('금요 새벽 라운드');
   const [courseName, setCourseName] = useState('남서울 · OUT');
   const [currentHoleDraft, setCurrentHoleDraft] = useState('1');
-  const [parDraft, setParDraft] = useState('4');
-  const [holeCountDraft, setHoleCountDraft] = useState<string | null>(null);
-  const [playerHandicapDrafts, setPlayerHandicapDrafts] = useState<Record<string, string>>({});
-  const [gameUnitDrafts, setGameUnitDrafts] = useState<Record<string, string>>({});
+  const [parDraftsByHole, setParDraftsByHole] = useState<Record<number, string>>({});
+  const [backdoorOpenByHole, setBackdoorOpenByHole] = useState<Record<number, boolean>>({});
   const [scoreDrafts, setScoreDrafts] = useState<Record<string, string>>({});
   const [missionPlayerId, setMissionPlayerId] = useState(round.players[0]?.id ?? '');
   const [missionCleared, setMissionCleared] = useState(true);
   const [shareReady, setShareReady] = useState(false);
 
   const holeNumber = Math.min(round.settings.holeCount, Math.max(1, parseIntegerDraft(currentHoleDraft, 1)));
-  const holePar = Math.max(3, Math.min(5, parseIntegerDraft(parDraft, 4)));
+  const holeParDraft = parDraftsByHole[holeNumber] ?? '4';
+  const holePar = clampInteger(parseIntegerDraft(holeParDraft, 4), 3, 5);
+  const scoreChoices = useMemo(() => scoreChoicesForPar(holePar), [holePar]);
+  const backdoorOpen = backdoorOpenByHole[holeNumber] ?? false;
+  const activeNine = holeNumber > 9 ? 'back' : 'front';
+  const firstHoleInActiveNine = activeNine === 'front' ? 1 : 10;
+  const visibleHoleNumbers = Array.from(
+    { length: Math.max(0, Math.min(9, round.settings.holeCount - firstHoleInActiveNine + 1)) },
+    (_, index) => firstHoleInActiveNine + index,
+  );
   const missionCard = drawMissionCard(holeNumber);
   const ledger = useMemo(() => calculateRoundLedger(toLedgerRound(round)), [round]);
   const settlementUnit = round.settings.scoringMode;
@@ -216,54 +223,28 @@ export function App() {
     return scoreDrafts[draftKey] ?? scoreForPlayer(round, holeNumber, playerId)?.toString() ?? '';
   }
 
-  function gameUnitDraftKey(game: BettingGameKey, field: GameUnitField): string {
-    return `${game}:${field}`;
-  }
-
-  function gameUnitInputValue(game: BettingGameKey, field: GameUnitField): string {
-    return gameUnitDrafts[gameUnitDraftKey(game, field)] ?? round.gameUnits[game][field].toString();
-  }
-
-  function playerHandicapInputValue(playerId: string, handicap: number): string {
-    return playerHandicapDrafts[playerId] ?? handicap.toString();
-  }
-
-  function commitIntegerDraft(value: string, commit: (parsedValue: number) => void) {
-    const parsedValue = parseEditableIntegerDraft(value);
-
-    if (parsedValue !== null) {
-      commit(parsedValue);
-    }
-  }
-
-  function updatePlayerHandicap(playerId: string, value: string) {
-    setPlayerHandicapDrafts((current) => ({ ...current, [playerId]: value }));
-    setShareReady(false);
-    commitIntegerDraft(value, (handicap) => session.updatePlayer(playerId, { handicap }));
-  }
-
-  function updateGameUnitDraft(game: BettingGameKey, field: GameUnitField, value: string) {
-    setGameUnitDrafts((current) => ({ ...current, [gameUnitDraftKey(game, field)]: value }));
-    setShareReady(false);
-    commitIntegerDraft(value, (unitValue) => {
-      session.updateGameUnit(game, field === 'points' ? { points: unitValue } : { money: unitValue });
-    });
-  }
-
-  function updateHoleCountDraft(value: string) {
-    setHoleCountDraft(value);
-    setShareReady(false);
-    commitIntegerDraft(value, (holeCount) => session.updateRoundSetup({ holeCount }));
-  }
-
-  function updateScore(playerId: string, value: string) {
+  function updateScoreDraft(playerId: string, value: string) {
     const draftKey = `${holeNumber}:${playerId}`;
-    setScoreDrafts((current) => ({ ...current, [draftKey]: value }));
     setShareReady(false);
+
+    if (value === '') {
+      setScoreDrafts((current) => ({ ...current, [draftKey]: value }));
+      return;
+    }
 
     if (/^\d{1,2}$/.test(value)) {
-      session.updateHoleScore(holeNumber, playerId, parseIntegerDraft(value, holePar + 1));
+      const normalizedScore = clampInteger(parseIntegerDraft(value, holePar + 1), 1, maximumHoleScoreStrokes);
+      setScoreDrafts((current) => ({ ...current, [draftKey]: normalizedScore.toString() }));
+      session.updateHoleScore(holeNumber, playerId, normalizedScore);
     }
+  }
+
+  function updateScoreButton(playerId: string, strokes: number) {
+    const normalizedScore = clampInteger(strokes, 1, maximumHoleScoreStrokes);
+    const draftKey = `${holeNumber}:${playerId}`;
+    setScoreDrafts((current) => ({ ...current, [draftKey]: normalizedScore.toString() }));
+    setShareReady(false);
+    session.updateHoleScore(holeNumber, playerId, normalizedScore);
   }
 
   function updateMission(playerId: string, cleared: boolean) {
@@ -282,6 +263,16 @@ export function App() {
 
   function updateHoleDraft(value: string) {
     setCurrentHoleDraft(value);
+    setShareReady(false);
+  }
+
+  function updateParDraft(value: string) {
+    setParDraftsByHole((current) => ({ ...current, [holeNumber]: value }));
+    setShareReady(false);
+  }
+
+  function toggleBackdoorOpen() {
+    setBackdoorOpenByHole((current) => ({ ...current, [holeNumber]: !backdoorOpen }));
     setShareReady(false);
   }
 
