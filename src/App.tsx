@@ -100,11 +100,19 @@ function relativeScoreLabel(relativeScore: number): string {
 }
 
 function scoreChoiceLabel(strokes: number, holePar: number): string {
-  if (strokes === holePar * 2) {
-    return '더블파';
+  return relativeScoreLabel(strokes - holePar);
+}
+
+function scoreChoiceHint(strokes: number, holePar: number): string {
+  if (strokes === 1) {
+    return '홀인원 · 1타';
   }
 
-  return relativeScoreLabel(strokes - holePar);
+  if (strokes === holePar * 2) {
+    return `더블파 · ${strokes}타`;
+  }
+
+  return `${strokes}타`;
 }
 
 function scoreSummary(strokes: number, holePar: number): string {
@@ -112,7 +120,17 @@ function scoreSummary(strokes: number, holePar: number): string {
     return '미입력';
   }
 
-  return `${strokes}타 · ${scoreChoiceLabel(strokes, holePar)}`;
+  const relativeLabel = relativeScoreLabel(strokes - holePar);
+
+  if (strokes === holePar * 2) {
+    return `${strokes}타 · ${relativeLabel} 더블파`;
+  }
+
+  if (strokes > holePar * 2) {
+    return `${strokes}타 · 뒷문 ${relativeLabel}`;
+  }
+
+  return `${strokes}타 · ${relativeLabel}`;
 }
 
 function scoreChoicesForPar(holePar: number): readonly number[] {
@@ -544,7 +562,7 @@ export function App() {
                       onClick={() => updateScoreButton(player.id, strokes)}
                     >
                       <strong>{scoreChoiceLabel(strokes, holePar)}</strong>
-                      <span>{strokes}타</span>
+                      <span>{scoreChoiceHint(strokes, holePar)}</span>
                     </button>
                   ))}
                 </div>
