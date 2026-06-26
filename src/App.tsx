@@ -4,7 +4,6 @@ import { availableLocalStorage } from './browserEnvironment';
 import { ScorecardGrid } from './ScorecardGrid';
 import {
   calculateRoundLedger,
-  drawMissionCard,
   eventBasePoints,
   type BettingEventType,
   type BettingRound as LedgerBettingRound,
@@ -30,25 +29,17 @@ import {
 } from './useScorecardController';
 import { useBettingRoundSession, type BettingEventKey, type BettingGameKey } from './useBettingRoundSession';
 
-const gameKeys: readonly BettingGameKey[] = ['stroke', 'skins', 'vegas', 'events', 'missions'];
-const eventKeys: readonly BettingEventKey[] = ['near-pin', 'longest-drive', 'birdie', 'ob-penalty'];
+const gameKeys: readonly BettingGameKey[] = ['ojang'];
+const eventKeys: readonly BettingEventKey[] = ['near-pin'];
 const playerTones = ['#4f8cff', '#ff8aab', '#6ee7b7', '#fbbf24'] as const;
 const currencyFormatter = new Intl.NumberFormat('ko-KR');
 
 const gameLabels: Record<BettingGameKey, string> = {
-  stroke: '스트로크',
-  skins: '스킨스',
-  vegas: '팀 베가스',
-  events: '이벤트',
-  missions: '미션 카드',
+  ojang: '전통 오장',
 };
 
 const gameDescriptions: Record<BettingGameKey, string> = {
-  stroke: '보정 타수 차이로 1:1 정산',
-  skins: '홀 단독 최저타가 스킨 획득',
-  vegas: '1·2번 vs 3·4번 팀 숫자 대결',
-  events: '니어핀, 롱기스트, 버디, OB',
-  missions: '고정 미션 성공/실패 보너스',
+  ojang: '홀마다 1:1 타수 차를 오장 단위로 정산하고, 버디·트리플·3명 동타·전원 동타 다음 홀은 배판',
 };
 
 let shareHashRestoreAttempted = false;
@@ -99,10 +90,7 @@ function shareRestoreReasonLabel(reason: Exclude<BettingShareRestoreResult, { re
 }
 
 const eventLabels: Record<BettingEventKey, string> = {
-  'near-pin': '니어핀',
-  'longest-drive': '롱기스트',
-  birdie: '버디',
-  'ob-penalty': 'OB/벌타',
+  'near-pin': '파3 니어',
 };
 
 type GameUnitField = 'points' | 'money';
@@ -158,18 +146,10 @@ function toLedgerRound(round: StoredBettingRound): LedgerBettingRound {
       handicapMode: round.settings.handicapMode,
     },
     enabledGames: {
-      stroke: round.enabledGames.stroke,
-      skins: round.enabledGames.skins,
-      vegas: round.enabledGames.vegas,
-      events: round.enabledGames.events,
-      missions: round.enabledGames.missions,
+      ojang: round.enabledGames.ojang,
     },
     gameUnits: {
-      stroke: { pointValue: round.gameUnits.stroke.points, moneyPerPoint: round.gameUnits.stroke.money },
-      skins: { pointValue: round.gameUnits.skins.points, moneyPerPoint: round.gameUnits.skins.money },
-      vegas: { pointValue: round.gameUnits.vegas.points, moneyPerPoint: round.gameUnits.vegas.money },
-      events: { pointValue: round.gameUnits.events.points, moneyPerPoint: round.gameUnits.events.money },
-      missions: { pointValue: round.gameUnits.missions.points, moneyPerPoint: round.gameUnits.missions.money },
+      ojang: { pointValue: round.gameUnits.ojang.points, moneyPerPoint: round.gameUnits.ojang.money },
     },
     holes: round.holes.map((hole) => ({
       holeNumber: hole.holeNumber,
@@ -177,19 +157,13 @@ function toLedgerRound(round: StoredBettingRound): LedgerBettingRound {
         player.id,
         hole.scores.find((score) => score.playerId === player.id)?.strokes ?? 0,
       ])) as Record<PlayerId, number>,
+      par: hole.par,
       events: hole.events.map((event) => ({
         type: event.event as BettingEventType,
         playerId: event.playerId,
         points: event.points,
         label: eventLabels[event.event],
       })),
-      missions: hole.missions
-        .filter((mission) => mission.outcome !== 'pending')
-        .map((mission) => ({
-          cardId: mission.missionId,
-          playerId: mission.playerId,
-          result: mission.outcome === 'success' ? 'success' : 'fail',
-        })),
     })),
   };
 }
@@ -198,12 +172,6 @@ function eventIsActive(round: StoredBettingRound, holeNumber: number, event: Bet
   return round.holes
     .find((hole) => hole.holeNumber === holeNumber)
     ?.events.some((item) => item.event === event && item.playerId === playerId) ?? false;
-}
-
-function missionOutcomeForPlayer(round: StoredBettingRound, holeNumber: number, missionId: string, playerId: string): string | undefined {
-  return round.holes
-    .find((hole) => hole.holeNumber === holeNumber)
-    ?.missions.find((mission) => mission.missionId === missionId && mission.playerId === playerId)?.outcome;
 }
 
 function currentLocationHash(): string {
@@ -303,7 +271,6 @@ export function App() {
     updateHoleScore: session.updateHoleScore,
     markDirty: markShareDirty,
   });
-  const missionCard = drawMissionCard(holeNumber);
   const ledger = useMemo(() => calculateRoundLedger(toLedgerRound(round)), [round]);
   const settlementUnit = round.settings.scoringMode;
   const balanceRows = round.players
@@ -459,18 +426,6 @@ export function App() {
     commitIntegerDraft(value, (holeCount) => session.updateRoundSetup({ holeCount }));
   }
 
-  function updateMission(playerId: string, cleared: boolean) {
-    markShareDirty();
-    session.setHoleMission(holeNumber, {
-      id: `hole-${holeNumber}:mission:${missionCard.id}:${playerId}`,
-      playerId,
-      missionId: missionCard.id,
-      title: missionCard.title,
-      points: cleared ? missionCard.successPoints : -missionCard.failPenaltyPoints,
-      outcome: cleared ? 'success' : 'fail',
-    });
-  }
-
   function resetEditableRound() {
     session.resetRound();
     setRoundName('');
@@ -487,16 +442,9 @@ export function App() {
     <main className="app-shell" aria-labelledby="app-title" data-mobile-layout="safe-area-inset">
       <section className="hero-card" aria-labelledby="app-title">
         <div className="hero-copy">
-          <p className="eyebrow">오장 정산 장부</p>
-          <h1 id="app-title">오늘 폼 정말 좋으시네요 ^0^</h1>
-          <details className="ojang-rule-details">
-            <summary>오장 룰 자세히 보기</summary>
-            <ul>
-              <li>홀마다 플레이어끼리 타수 차이를 비교해 정산합니다.</li>
-              <li>기본 공식은 타수차 × 타당 금액 × 홀 배수입니다.</li>
-              <li>배판은 장부 안에서만 계산하고 실제 금전 이동 버튼은 제공하지 않습니다.</li>
-            </ul>
-          </details>
+          <p className="eyebrow">펀골프 정산 장부</p>
+          <h1 id="app-title">한국형 골프 내기 정산</h1>
+          <p>2~4명 라운드 세팅부터 홀 입력, 전통 오장 민판·배판 계산, 순정산, 공유 카드까지 한 화면에서 처리하는 모바일 우선 장부입니다.</p>
         </div>
         <div className="hero-metric" aria-label="현재 1위">
           <span>{completedHoleCount}개 홀 반영</span>
@@ -508,7 +456,7 @@ export function App() {
       <section className="control-panel" aria-labelledby="setup-title">
         <div className="section-heading">
           <p className="eyebrow">라운드 세팅</p>
-          <h2 id="setup-title">플레이어와 내기 룰</h2>
+          <h2 id="setup-title">플레이어와 오장 룰</h2>
           <p>{session.storageMessage}</p>
         </div>
 
@@ -567,7 +515,7 @@ export function App() {
           ))}
         </div>
 
-        <div className="game-stack" aria-label="내기 게임 구성">
+        <div className="game-stack" aria-label="오장 룰 구성">
           {gameKeys.map((game) => {
             const availability = session.gameAvailability[game];
             const isEnabled = round.enabledGames[game] && availability.available;
@@ -575,12 +523,12 @@ export function App() {
             return (
               <article key={game} className={isEnabled ? 'game-card active' : 'game-card'}>
                 <button type="button" disabled={!availability.available} onClick={() => toggleGameEnabled(game)}>
-                  <span>{availability.available ? (isEnabled ? '켜짐' : '꺼짐') : '사용 불가'}</span>
+                  <span>{availability.available ? '고정 룰' : '사용 불가'}</span>
                   <strong>{gameLabels[game]}</strong>
                 </button>
                 <p>{availability.reason ?? gameDescriptions[game]}</p>
                 <label>
-                  점수 단위
+                  오장 점수 단위
                   <input
                     inputMode="numeric"
                     value={gameUnitInputValue(game, 'points')}
@@ -588,7 +536,7 @@ export function App() {
                   />
                 </label>
                 <label>
-                  1점 금액
+                  1점 금액(기본 5천원)
                   <input
                     inputMode="numeric"
                     value={gameUnitInputValue(game, 'money')}
@@ -661,8 +609,6 @@ export function App() {
           {round.players.map((player, index) => {
             const rawScore = scoreForPlayer(round, holeNumber, player.id) ?? 0;
             const netScore = ledger.handicap.netHoleScores[holeNumber]?.[player.id] ?? rawScore;
-            const missionOutcome = missionOutcomeForPlayer(round, holeNumber, missionCard.id, player.id);
-
             return (
               <article className="score-row" key={player.id}>
                 <div className="score-row-header">
@@ -698,9 +644,10 @@ export function App() {
                     />
                   </label>
                 ) : null}
-                <div className="score-row-context" aria-label={`${displayPlayerName(player.name)} ${holeNumber}번 홀 이벤트와 미션 카드`}>
+                <div className="score-row-context" aria-label={`${displayPlayerName(player.name)} ${holeNumber}번 홀 오장 옵션`}>
                   <div className="context-action-group">
-                    <strong>이벤트 보너스</strong>
+                    <strong>파3 니어</strong>
+                    <p>파3 홀에서 니어를 잡은 플레이어를 표시하면 오장 계산 근거에 보너스/실패 페널티가 함께 남습니다.</p>
                     <div className="score-event-grid">
                       {eventKeys.map((event) => (
                         <button
@@ -716,26 +663,6 @@ export function App() {
                           <strong>{eventBasePoints[event as BettingEventType] > 0 ? '+' : ''}{eventBasePoints[event as BettingEventType]}점</strong>
                         </button>
                       ))}
-                    </div>
-                  </div>
-                  <div className="context-action-group mission-context">
-                    <strong>미션 카드 · {missionCard.title}</strong>
-                    <p>{missionCard.description}</p>
-                    <div className="mission-button-row">
-                      <button
-                        className={missionOutcome === 'success' ? 'toggle-action active' : 'toggle-action'}
-                        type="button"
-                        onClick={() => updateMission(player.id, true)}
-                      >
-                        성공 {missionCard.successPoints > 0 ? '+' : ''}{missionCard.successPoints}점
-                      </button>
-                      <button
-                        className={missionOutcome === 'fail' ? 'toggle-action active danger' : 'toggle-action danger'}
-                        type="button"
-                        onClick={() => updateMission(player.id, false)}
-                      >
-                        실패 -{missionCard.failPenaltyPoints}점
-                      </button>
                     </div>
                   </div>
                 </div>
@@ -785,7 +712,7 @@ export function App() {
       <section className="calculation-card" aria-labelledby="calculation-title">
         <div className="section-heading compact-heading">
           <p className="eyebrow">계산 내역</p>
-          <h2 id="calculation-title">공식별 근거</h2>
+          <h2 id="calculation-title">오장 계산 근거</h2>
         </div>
         <div className="calculation-list">
           {ledger.breakdownRows.slice(0, 12).map((line) => (

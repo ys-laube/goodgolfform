@@ -338,11 +338,92 @@ function doublePlateTriggerReasons(
   return reasons;
 }
 
-function calculatePairwiseScoreDeltas(
-  players: readonly Player[],
-  entries: readonly { readonly player: Player; readonly score: HoleScore }[],
-  unitAmount: number,
-  multiplier: number,
+function ojangNearBonus(hole: HoleResult, entry: OjangScoreEntry, position: 'winner' | 'loser'): number {
+  if (hole.par !== 3) {
+    return 0;
+  }
+
+  const nearEvent = hole.events?.find((event) => event.type === 'near-pin' && event.playerId === entry.player.id);
+  if (!nearEvent) {
+    return 0;
+  }
+
+  const bonusUnits = Math.max(0, normalizeNumber(nearEvent.points ?? eventBasePoints['near-pin'], eventBasePoints['near-pin']));
+
+  if (position === 'winner' && entry.rawScore <= hole.par) {
+    return bonusUnits;
+  }
+
+  if (position === 'loser' && entry.rawScore > hole.par) {
+    return bonusUnits;
+  }
+
+  return 0;
+}
+
+function ojangRowDetail(input: {
+  readonly hole: HoleResult;
+  readonly winner: OjangScoreEntry;
+  readonly loser: OjangScoreEntry;
+  readonly strokeDelta: number;
+  readonly birdieBonus: number;
+  readonly nearBonus: number;
+  readonly nearPenalty: number;
+  readonly board: OjangBoardState;
+  readonly points: number;
+}): string {
+  const additions = [
+    input.birdieBonus > 0 ? '버디 보너스 +1' : null,
+    input.nearBonus > 0 ? `니어 보너스 +${formatNumber(input.nearBonus)}` : null,
+    input.nearPenalty > 0 ? `니어 실패 페널티 +${formatNumber(input.nearPenalty)}` : null,
+  ].filter(Boolean);
+  const boardReason = input.board.reasons.length > 0 ? ` (${input.board.reasons.join(', ')})` : '';
+  const additionText = additions.length > 0 ? `, ${additions.join(', ')}` : '';
+
+  return `${input.hole.holeNumber}번 홀 ${input.winner.player.name} ${formatNumber(input.winner.settlementScore)}타 vs ${input.loser.player.name} ${formatNumber(input.loser.settlementScore)}타: 타수차 ${formatNumber(input.strokeDelta)}${additionText} × ${input.board.label}${boardReason} = ${formatNumber(input.points)}점`;
+}
+
+function buildGameLedger(
+  game: BettingGameId,
+  label: string,
+  pointBalances: BalanceMap,
+  rows: readonly LedgerBreakdownRow[],
+  round: BettingRound,
+  unit: GameUnit,
+  unclaimedPoints = 0,
+  unavailableReason?: string,
+): GameLedger {
+  const roundedPointBalances = roundBalances(pointBalances);
+
+  return {
+    game,
+    label,
+    pointBalances: roundedPointBalances,
+    moneyBalances: toMoneyBalances(roundedPointBalances, round.settings.scoringMode, unit),
+    rows,
+    unclaimedPoints: roundToTwo(unclaimedPoints),
+    unavailableReason,
+  };
+}
+
+function aggregateGameLedgers(round: BettingRound, gameLedgers: readonly GameLedger[]): Readonly<Record<PlayerId, PlayerBalance>> {
+  const pointTotals = createMutableBalances(round.players);
+  const moneyTotals = createMutableBalances(round.players);
+
+  for (const ledger of gameLedgers) {
+    mergeBalances(pointTotals, ledger.pointBalances);
+    mergeBalances(moneyTotals, ledger.moneyBalances);
+  }
+
+  return Object.fromEntries(round.players.map((player) => [
+    player.id,
+    { points: roundToTwo(pointTotals[player.id]), money: roundToTwo(moneyTotals[player.id]) },
+  ]));
+}
+
+function mapPlayerBalances(
+  balances: Readonly<Record<PlayerId, PlayerBalance>>,
+  field: keyof PlayerBalance,
 ): BalanceMap {
   const deltas = createMutableBalances(players);
 

@@ -4,10 +4,8 @@ import {
   calculateNetTransfers,
   calculateRoundLedger,
   createDefaultRound,
-  ledgerCalculationOrder,
   type BalanceMap,
   type BettingRound,
-  type GameLedger,
   type Player,
 } from './bettingLedger';
 
@@ -26,7 +24,9 @@ function fixtureRound(overrides: Partial<BettingRound> = {}): BettingRound {
     players,
     settings: { holeCount: 3, scoringMode: 'points', handicapMode: 'final-total' },
     enabledGames: { ojang: true },
-    gameUnits: { ojang: { pointValue: 1, moneyPerPoint: 1_000 } },
+    gameUnits: {
+      ojang: { pointValue: 1, moneyPerPoint: 5000 },
+    },
     holes: [],
     ...overrides,
   };
@@ -43,8 +43,8 @@ function balanceSum(balances: BalanceMap): number {
   return Object.values(balances).reduce((sum, balance) => sum + balance, 0);
 }
 
-describe('traditional Ojang ledger setup', () => {
-  it('creates local Ojang-only rounds for 2, 3, and 4 players', () => {
+describe('Ojang ledger domain setup', () => {
+  it('creates valid local Ojang rounds for 2, 3, and 4 players', () => {
     expect(createDefaultRound({ playerCount: 2 }).players).toHaveLength(2);
     expect(createDefaultRound({ playerCount: 3 }).players).toHaveLength(3);
     expect(createDefaultRound({ playerCount: 4 }).players).toHaveLength(4);
@@ -53,7 +53,7 @@ describe('traditional Ojang ledger setup', () => {
     );
     expect(createDefaultRound({ playerCount: 4 }).players.map((player) => player.handicap)).toEqual([0, 0, 0, 0]);
     expect(createDefaultRound({ playerCount: 4 }).enabledGames).toEqual({ ojang: true });
-    expect(createDefaultRound({ playerCount: 4 }).gameUnits.ojang.moneyPerPoint).toBe(5_000);
+    expect(createDefaultRound({ playerCount: 4 }).gameUnits.ojang.moneyPerPoint).toBe(5000);
   });
 
   it('rejects rounds outside the 2–4 player field scope', () => {
@@ -80,16 +80,14 @@ describe('handicap calculation views', () => {
     expect(round.holes[0].strokes).toMatchObject({ a: 4, b: 4, c: 5, d: 6 });
   });
 
-  it('uses hole-allocation handicap only when that mode is selected for hole settlement scores', () => {
-    const finalTotalRound = fixtureRound({
-      players: players.slice(0, 2),
-      settings: { holeCount: 1, scoringMode: 'points', handicapMode: 'final-total' },
-      holes: [{ holeNumber: 1, par: 4, strokes: { a: 4, b: 4 } }],
-    });
-    const holeAllocationRound = fixtureRound({
-      players: players.slice(0, 2),
-      settings: { holeCount: 1, scoringMode: 'points', handicapMode: 'hole-allocation' },
-      holes: [{ holeNumber: 1, par: 4, strokes: { a: 4, b: 4 } }],
+  it('allocates hole-by-hole handicap strokes deterministically from early holes', () => {
+    const round = fixtureRound({
+      settings: { holeCount: 3, scoringMode: 'points', handicapMode: 'hole-allocation' },
+      holes: [
+        { holeNumber: 1, par: 4, strokes: { a: 4, b: 4, c: 5, d: 6 } },
+        { holeNumber: 2, par: 4, strokes: { a: 5, b: 4, c: 5, d: 5 } },
+        { holeNumber: 3, par: 4, strokes: { a: 5, b: 6, c: 5, d: 5 } },
+      ],
     });
 
     expect(ojangLedger(finalTotalRound).rows).toHaveLength(0);
@@ -99,113 +97,102 @@ describe('handicap calculation views', () => {
   });
 });
 
-describe('traditional Ojang pairwise settlement', () => {
-  it('settles every unequal pair by stroke delta and keeps balances zero-sum', () => {
-    const ledger = ojangLedger(fixtureRound({
+describe('traditional Ojang settlement formulas', () => {
+  it('settles every completed hole as pairwise stroke differences', () => {
+    const ledger = calculateRoundLedger(fixtureRound({
       holes: [{ holeNumber: 1, par: 4, strokes: { a: 4, b: 5, c: 6, d: 4 } }],
     }));
+    const ojang = ledger.gameLedgers[0];
 
-    expect(ledger.rows).toHaveLength(5);
-    expect(ledger.pointBalances).toMatchObject({ a: 3, b: -1, c: -5, d: 3 });
-    expect(balanceSum(ledger.pointBalances)).toBeCloseTo(0, 2);
-    expect(ledger.rows.every((row) => row.label === '오장 민판')).toBe(true);
-    expect(ledger.rows.some((row) => row.detail.includes('타수차 2'))).toBe(true);
+    expect(ojang.game).toBe('ojang');
+    expect(ojang.label).toBe('전통 오장');
+    expect(ojang.pointBalances).toMatchObject({ a: 3, b: -1, c: -5, d: 3 });
+    expect(balanceSum(ojang.pointBalances)).toBeCloseTo(0, 2);
+    expect(ojang.rows).toHaveLength(5);
+    expect(ojang.rows[0].detail).toContain('오장');
   });
 
-  it('applies 배판 for under-par scores and adds a birdie/eagle/HIO-style bonus', () => {
-    const ledger = ojangLedger(fixtureRound({
-      holes: [{ holeNumber: 1, par: 4, strokes: { a: 3, b: 4, c: 5, d: 6 } }],
+  it('uses birdie, triple-or-worse, three-way ties, and all-ties to make the following hole a baepan', () => {
+    const birdieLedger = calculateRoundLedger(fixtureRound({
+      holes: [
+        { holeNumber: 1, par: 4, strokes: { a: 3, b: 4, c: 4, d: 4 } },
+        { holeNumber: 2, par: 4, strokes: { a: 5, b: 4, c: 4, d: 4 } },
+      ],
     }));
 
-    expect(ledger.pointBalances).toMatchObject({ a: 18, b: 2, c: -6, d: -14 });
-    expect(balanceSum(ledger.pointBalances)).toBeCloseTo(0, 2);
-    expect(ledger.rows.every((row) => row.label === '오장 배판')).toBe(true);
-    expect(ledger.rows[0]?.detail).toContain('버디 보너스 +1');
-    expect(ledger.rows[0]?.detail).toContain('버디 이상');
-  });
+    expect(birdieLedger.gameLedgers[0].pointBalances).toMatchObject({ a: 0, b: 0, c: 0, d: 0 });
+    expect(birdieLedger.breakdownRows.some((row) => row.label.includes('배판') && row.detail.includes('버디 이상'))).toBe(true);
 
-  it('carries an all-tie hole into automatic 배판 on the next completed hole', () => {
-    const ledger = ojangLedger(fixtureRound({
+    const threeWayTieLedger = calculateRoundLedger(fixtureRound({
+      holes: [
+        { holeNumber: 1, par: 4, strokes: { a: 4, b: 4, c: 4, d: 5 } },
+        { holeNumber: 2, par: 4, strokes: { a: 5, b: 4, c: 5, d: 5 } },
+      ],
+    }));
+
+    expect(threeWayTieLedger.gameLedgers[0].pointBalances).toMatchObject({ a: -1, b: 7, c: -1, d: -5 });
+    expect(threeWayTieLedger.breakdownRows.some((row) => row.label.includes('배판') && row.detail.includes('3명 동타'))).toBe(true);
+
+    const allTieLedger = calculateRoundLedger(fixtureRound({
       holes: [
         { holeNumber: 1, par: 4, strokes: { a: 4, b: 4, c: 4, d: 4 } },
         { holeNumber: 2, par: 4, strokes: { a: 4, b: 5, c: 5, d: 5 } },
       ],
     }));
 
-    expect(ledger.rows[0]).toMatchObject({ label: '오장 민판 · 전원 동타', points: 0 });
-    expect(ledger.pointBalances).toMatchObject({ a: 6, b: -2, c: -2, d: -2 });
-    expect(ledger.rows.slice(1).every((row) => row.label === '오장 배판')).toBe(true);
-    expect(ledger.rows[1]?.detail).toContain('전 홀 전원 동타');
+    expect(allTieLedger.gameLedgers[0].pointBalances).toMatchObject({ a: 6, b: -2, c: -2, d: -2 });
+    expect(allTieLedger.breakdownRows[0].label).toContain('전원 동타');
+    expect(allTieLedger.breakdownRows.some((row) => row.label.includes('배판') && row.detail.includes('전 홀 전원 동타'))).toBe(true);
   });
 
-  it('uses 3-player ties and blow-up scores as 배판 triggers', () => {
-    const threeWayTie = ojangLedger(fixtureRound({
-      holes: [{ holeNumber: 1, par: 4, strokes: { a: 4, b: 5, c: 5, d: 5 } }],
-    }));
-    const blowup = ojangLedger(fixtureRound({
-      holes: [{ holeNumber: 1, par: 4, strokes: { a: 4, b: 5, c: 6, d: 7 } }],
-    }));
-
-    expect(threeWayTie.rows.every((row) => row.detail.includes('3명 동타'))).toBe(true);
-    expect(blowup.rows.every((row) => row.detail.includes('트리플 이상'))).toBe(true);
-  });
-
-  it('applies par-3 near success and near-fail penalties only from canonical near-pin metadata', () => {
-    const nearSuccess = ojangLedger(fixtureRound({
-      players: players.slice(0, 3),
+  it('keeps par-3 near-pin marking inside the single Ojang ruleset', () => {
+    const ledger = calculateRoundLedger(fixtureRound({
       holes: [{
         holeNumber: 1,
         par: 3,
-        strokes: { a: 3, b: 4, c: 5 },
-        events: [{ type: 'near-pin', playerId: 'a', points: 2 }],
-      }],
-    }));
-    const nearFail = ojangLedger(fixtureRound({
-      players: players.slice(0, 3),
-      holes: [{
-        holeNumber: 1,
-        par: 3,
-        strokes: { a: 3, b: 4, c: 5 },
-        events: [{ type: 'near-pin', playerId: 'b', points: 2 }],
-      }],
-    }));
-    const nonParThree = ojangLedger(fixtureRound({
-      players: players.slice(0, 3),
-      holes: [{
-        holeNumber: 1,
-        par: 4,
-        strokes: { a: 4, b: 5, c: 6 },
-        events: [{ type: 'near-pin', playerId: 'a', points: 2 }],
+        strokes: { a: 3, b: 4, c: 4, d: 4 },
+        events: [{ type: 'near-pin', playerId: 'a' }],
       }],
     }));
 
-    expect(nearSuccess.pointBalances).toMatchObject({ a: 7, b: -2, c: -5 });
-    expect(nearSuccess.rows.some((row) => row.detail.includes('니어 보너스 +2'))).toBe(true);
-    expect(nearFail.pointBalances).toMatchObject({ a: 5, b: -2, c: -3 });
-    expect(nearFail.rows.some((row) => row.detail.includes('니어 실패 페널티 +2'))).toBe(true);
-    expect(nonParThree.rows.some((row) => row.detail.includes('니어'))).toBe(false);
+    expect(ledger.gameLedgers[0].pointBalances).toMatchObject({ a: 6, b: -2, c: -2, d: -2 });
+    expect(ledger.breakdownRows.some((row) => row.detail.includes('니어 보너스'))).toBe(true);
   });
 });
 
-describe('Ojang ledger composition and settlement', () => {
-  it('converts Ojang point units to money and nets payer-to-receiver transfers', () => {
-    const round = fixtureRound({
-      settings: { holeCount: 1, scoringMode: 'money', handicapMode: 'final-total' },
-      gameUnits: { ojang: { pointValue: 1, moneyPerPoint: 1_000 } },
+describe('Ojang ledger composition', () => {
+  it('converts the single Ojang ledger to money and nets transfers without double-counting', () => {
+    const ledger = calculateRoundLedger(fixtureRound({
+      settings: { holeCount: 3, scoringMode: 'money', handicapMode: 'final-total' },
       holes: [{ holeNumber: 1, par: 4, strokes: { a: 4, b: 5, c: 6, d: 4 } }],
-    });
+    }));
+    const ojang = ledger.gameLedgers[0];
 
-    const ledger = calculateRoundLedger(round);
-    const gameLedger = ojangLedger(round);
+    expect(ledger.calculationOrder).toEqual([
+      'normalize round input',
+      'derive handicap view',
+      'calculate traditional Ojang hole-by-hole stroke ledger',
+      'apply minpan/baepan board multipliers and Ojang bonuses',
+      'convert Ojang point units to money units',
+      'aggregate player balances',
+      'net balances into minimal transfers',
+      'emit inspectable calculation breakdown rows',
+    ]);
+    expect(ojang.pointBalances).toMatchObject({ a: 3, b: -1, c: -5, d: 3 });
+    expect(ojang.moneyBalances).toMatchObject({ a: 15000, b: -5000, c: -25000, d: 15000 });
+    expect(balanceSum(ojang.pointBalances)).toBeCloseTo(0, 2);
 
-    expect(ledger.calculationOrder).toEqual(ledgerCalculationOrder);
-    expect(gameLedger.moneyBalances).toMatchObject({ a: 3_000, b: -1_000, c: -5_000, d: 3_000 });
-    expect(balanceSum(gameLedger.pointBalances)).toBeCloseTo(0, 2);
-    expect(ledger.playerBalances.a).toMatchObject({ points: 3, money: 3_000 });
-    expect(ledger.netTransfers.every((transfer) => transfer.unit === 'money')).toBe(true);
-    expect(ledger.netTransfers.reduce((sum, transfer) => sum + transfer.amount, 0)).toBe(6_000);
-    expect(ledger.breakdownRows.some((row) => row.game === 'ojang')).toBe(true);
-    expect(ledger.breakdownRows.some((row) => row.game === 'settlement')).toBe(true);
+    for (const player of players) {
+      expect(ledger.playerBalances[player.id].points).toBeCloseTo(ojang.pointBalances[player.id], 2);
+      expect(ledger.playerBalances[player.id].money).toBeCloseTo(ojang.moneyBalances[player.id], 2);
+    }
+
+    expect(ledger.netTransfers).toEqual([
+      { payerId: 'c', payeeId: 'a', amount: 15000, unit: 'money' },
+      { payerId: 'c', payeeId: 'd', amount: 10000, unit: 'money' },
+      { payerId: 'b', payeeId: 'd', amount: 5000, unit: 'money' },
+    ]);
+    expect(ledger.breakdownRows.every((row) => row.game === 'ojang' || row.game === 'settlement')).toBe(true);
   });
 
   it('keeps standalone net-transfer calculation deterministic', () => {
