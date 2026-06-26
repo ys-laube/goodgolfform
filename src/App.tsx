@@ -467,7 +467,7 @@ export function App() {
             </select>
           </label>
           <button className="secondary-action" type="button" onClick={() => session.saveRound()}>로컬 저장</button>
-          <button className="secondary-action" type="button" onClick={() => session.resetRound()}>새 라운드</button>
+          <button className="secondary-action" type="button" onClick={() => resetEditableRound()}>새 라운드</button>
         </div>
 
         <div className="player-strip" aria-label="플레이어와 핸디캡">
