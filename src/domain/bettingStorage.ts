@@ -96,10 +96,10 @@ const defaultGameUnits: BettingGameUnits = {
 };
 
 const defaultPlayers: readonly BettingPlayer[] = [
-  { id: 'player-1', name: '민준', handicap: 8 },
-  { id: 'player-2', name: '서연', handicap: 14 },
-  { id: 'player-3', name: '도윤', handicap: 10 },
-  { id: 'player-4', name: '지우', handicap: 18 },
+  { id: 'player-1', name: '', handicap: 0 },
+  { id: 'player-2', name: '', handicap: 0 },
+  { id: 'player-3', name: '', handicap: 0 },
+  { id: 'player-4', name: '', handicap: 0 },
 ];
 
 const bettingGameKeys: readonly BettingGameKey[] = ['stroke', 'skins', 'vegas', 'events', 'missions'];

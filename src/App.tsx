@@ -176,11 +176,13 @@ function eventIsActive(round: StoredBettingRound, holeNumber: number, event: Bet
 export function App() {
   const session = useBettingRoundSession();
   const { round } = session;
-  const [roundName, setRoundName] = useState('금요 새벽 라운드');
-  const [courseName, setCourseName] = useState('남서울 · OUT');
-  const [currentHoleDraft, setCurrentHoleDraft] = useState('1');
-  const [parDraftsByHole, setParDraftsByHole] = useState<Record<number, string>>({});
-  const [backdoorOpenByHole, setBackdoorOpenByHole] = useState<Record<number, boolean>>({});
+  const [roundName, setRoundName] = useState('');
+  const [courseName, setCourseName] = useState('');
+  const [currentHoleDraft, setCurrentHoleDraft] = useState('');
+  const [parDraft, setParDraft] = useState('');
+  const [holeCountDraft, setHoleCountDraft] = useState<string | null>(null);
+  const [playerHandicapDrafts, setPlayerHandicapDrafts] = useState<Record<string, string>>({});
+  const [gameUnitDrafts, setGameUnitDrafts] = useState<Record<string, string>>({});
   const [scoreDrafts, setScoreDrafts] = useState<Record<string, string>>({});
   const [missionPlayerId, setMissionPlayerId] = useState(round.players[0]?.id ?? '');
   const [missionCleared, setMissionCleared] = useState(true);
@@ -266,13 +268,18 @@ export function App() {
     setShareReady(false);
   }
 
-  function updateParDraft(value: string) {
-    setParDraftsByHole((current) => ({ ...current, [holeNumber]: value }));
-    setShareReady(false);
-  }
-
-  function toggleBackdoorOpen() {
-    setBackdoorOpenByHole((current) => ({ ...current, [holeNumber]: !backdoorOpen }));
+  function resetEditableRound() {
+    session.resetRound();
+    setRoundName('');
+    setCourseName('');
+    setCurrentHoleDraft('');
+    setParDraft('');
+    setHoleCountDraft('');
+    setPlayerHandicapDrafts({ 'player-1': '', 'player-2': '', 'player-3': '', 'player-4': '' });
+    setGameUnitDrafts({});
+    setScoreDrafts({});
+    setMissionPlayerId('player-1');
+    setMissionCleared(true);
     setShareReady(false);
   }
 
@@ -550,6 +557,8 @@ export function App() {
         </div>
         <div className="share-actions">
           <button className="primary-action" type="button" onClick={() => setShareReady(true)}>공유 문구 고정</button>
+          <button className="secondary-action" type="button" onClick={() => session.saveRound()}>로컬 저장</button>
+          <button className="secondary-action" type="button" onClick={() => resetEditableRound()}>새 라운드</button>
         </div>
         <p className="share-status" aria-live="polite">
           {shareReady ? '스코어카드 이미지나 결과 링크로 공유할 현재 정산 요약이 준비되었습니다.' : '공유 카드는 화면 맨 아래에서 스코어카드 내보내기와 결과 링크 공유만 제공합니다.'}

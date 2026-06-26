@@ -76,6 +76,8 @@ describe('betting ledger local storage boundary', () => {
     expect(createDefaultBettingRound({ playerCount: 3 }).players).toHaveLength(3);
     expect(createDefaultBettingRound({ playerCount: 4 }).players).toHaveLength(4);
     expect(createDefaultBettingRound({ playerCount: 99 }).players).toHaveLength(4);
+    expect(createDefaultBettingRound().players.map((player) => player.name)).toEqual(['', '', '', '']);
+    expect(createDefaultBettingRound().players.map((player) => player.handicap)).toEqual([0, 0, 0, 0]);
   });
 
   it('round-trips intentionally blank player names for in-progress setup editing', () => {

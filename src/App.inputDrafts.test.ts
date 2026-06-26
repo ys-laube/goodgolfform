@@ -23,4 +23,18 @@ describe('editable input draft helpers', () => {
     expect(appSource).not.toContain('parseIntegerDraft(event.currentTarget.value, round.gameUnits[game].points)');
     expect(appSource).not.toContain('parseIntegerDraft(event.currentTarget.value, round.settings.holeCount)');
   });
+
+  it('resets local editable round drafts to blank values instead of sample labels', () => {
+    expect(appSource).toContain("const [roundName, setRoundName] = useState('')");
+    expect(appSource).toContain("const [courseName, setCourseName] = useState('')");
+    expect(appSource).toContain("const [currentHoleDraft, setCurrentHoleDraft] = useState('')");
+    expect(appSource).toContain("const [parDraft, setParDraft] = useState('')");
+    expect(appSource).toContain('function resetEditableRound()');
+    expect(appSource).toContain("setCurrentHoleDraft('')");
+    expect(appSource).toContain("setParDraft('')");
+    expect(appSource).toContain("setHoleCountDraft('')");
+    expect(appSource).toContain('onClick={() => resetEditableRound()}');
+    expect(appSource).not.toContain("useState('금요 새벽 라운드')");
+    expect(appSource).not.toContain("useState('남서울 · OUT')");
+  });
 });
