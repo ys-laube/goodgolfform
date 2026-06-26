@@ -476,6 +476,53 @@ button:focus-visible {
   text-align: center;
 }
 
+.score-row-context,
+.context-action-group {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.context-action-group {
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.07);
+  padding: 0.65rem;
+}
+
+.context-action-group > strong {
+  color: #fff;
+  font-size: 0.82rem;
+}
+
+.context-action-group p {
+  margin: 0;
+  color: #cbd5e1;
+  font-size: 0.76rem;
+  line-height: 1.4;
+}
+
+.score-event-grid,
+.mission-button-row {
+  display: grid;
+  gap: 0.42rem;
+}
+
+.score-event-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.mission-button-row {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.mission-button-row .toggle-action {
+  border-radius: 1rem;
+  font-size: 0.82rem;
+}
+
+.mission-button-row .toggle-action.danger.active {
+  background: #7f1d1d;
+}
+
 .score-row-header b,
 .balance-row b,
 .calculation-list b,
