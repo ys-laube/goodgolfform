@@ -8,8 +8,7 @@ import {
   type BettingRound as LedgerBettingRound,
   type PlayerId,
 } from './domain/bettingLedger';
-import { type BettingRound as StoredBettingRound } from './domain/bettingStorage';
-import { parseEditableIntegerDraft } from './inputDrafts';
+import { maximumHoleScoreStrokes, type BettingRound as StoredBettingRound } from './domain/bettingStorage';
 import { useBettingRoundSession, type BettingEventKey, type BettingGameKey } from './useBettingRoundSession';
 
 const gameKeys: readonly BettingGameKey[] = ['stroke', 'skins', 'vegas', 'events', 'missions'];
@@ -46,6 +45,11 @@ function parseIntegerDraft(value: string, fallback: number): number {
   return parseEditableIntegerDraft(value) ?? fallback;
 }
 
+function clampInteger(value: number, min: number, max: number): number {
+  const integer = Number.isFinite(value) ? Math.round(value) : min;
+  return Math.min(max, Math.max(min, integer));
+}
+
 function roundToTwo(value: number): number {
   return Math.round((value + Number.EPSILON) * 100) / 100;
 }
@@ -75,6 +79,34 @@ function playerTeam(index: number): '청팀' | '백팀' {
 
 function playerStyle(index: number): CSSProperties {
   return { '--player-tone': playerTones[index % playerTones.length] } as CSSProperties;
+}
+
+function relativeScoreLabel(relativeScore: number): string {
+  if (relativeScore === 0) {
+    return '파';
+  }
+
+  return relativeScore > 0 ? `+${relativeScore}` : `${relativeScore}`;
+}
+
+function scoreChoiceLabel(strokes: number, holePar: number): string {
+  if (strokes === holePar * 2) {
+    return '더블파';
+  }
+
+  return relativeScoreLabel(strokes - holePar);
+}
+
+function scoreSummary(strokes: number, holePar: number): string {
+  if (strokes <= 0) {
+    return '미입력';
+  }
+
+  return `${strokes}타 · ${scoreChoiceLabel(strokes, holePar)}`;
+}
+
+function scoreChoicesForPar(holePar: number): readonly number[] {
+  return Array.from({ length: holePar * 2 }, (_, index) => index + 1);
 }
 
 function toLedgerRound(round: StoredBettingRound): LedgerBettingRound {
