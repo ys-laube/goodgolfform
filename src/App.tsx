@@ -251,8 +251,48 @@ function eventIsActive(round: StoredBettingRound, holeNumber: number, event: Bet
     ?.events.some((item) => item.event === event && item.playerId === playerId) ?? false;
 }
 
+function currentLocationHash(): string {
+  try {
+    return globalThis.location?.hash ?? '';
+  } catch {
+    return '';
+  }
+}
+
+function replaceCurrentLocationHash(hash: string): boolean {
+  try {
+    globalThis.location.hash = hash;
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function localResultLink(hash: string): string {
+  try {
+    const location = globalThis.location;
+    const baseUrl = location?.origin && location.pathname ? `${location.origin}${location.pathname}${location.search}` : '';
+    return `${baseUrl}${hash}`;
+  } catch {
+    return hash;
+  }
+}
+
+function localQrCells(value: string): readonly boolean[] {
+  const source = value || 'fungolf-local-share';
+
+  return Array.from({ length: 25 }, (_, index) => {
+    const row = Math.floor(index / 5);
+    const column = index % 5;
+    const finderPattern = (row < 2 && column < 2) || (row < 2 && column > 2) || (row > 2 && column < 2);
+    const charCode = source.charCodeAt(index % source.length);
+
+    return finderPattern || ((charCode + (index + 1) * 17) % 5) < 3;
+  });
+}
+
 export function App() {
-  const session = useBettingRoundSession();
+  const session = useBettingRoundSession(shareHashRestoringLocalStorage);
   const { round } = session;
   const [roundName, setRoundName] = useState('');
   const [courseName, setCourseName] = useState('');
@@ -266,6 +306,7 @@ export function App() {
   const [missionPlayerId, setMissionPlayerId] = useState(round.players[0]?.id ?? '');
   const [missionCleared, setMissionCleared] = useState(true);
   const [shareReady, setShareReady] = useState(false);
+  const [shareStatusMessage, setShareStatusMessage] = useState<string | null>(() => initialShareHashStatus());
 
   const holeNumber = Math.min(round.settings.holeCount, Math.max(1, parseIntegerDraft(currentHoleDraft, 1)));
   const holeParDraft = parDraftsByHole[holeNumber] ?? '4';
@@ -295,9 +336,39 @@ export function App() {
   const shareCopy = `${roundName} ${completedHoleCount || holeNumber}H 정산 · ${balanceRows
     .map((entry) => `${entry.player.name} ${signedAmountLabel(entry.amount, settlementUnit)}`)
     .join(' / ')}`;
+  const shareHashResult = useMemo(() => createBettingRoundShareHash(round), [round]);
+  const shareHash = shareHashResult.ok ? shareHashResult.hash : '';
+  const resultLink = shareHashResult.ok ? localResultLink(shareHashResult.hash) : '';
+  const qrCells = useMemo(() => localQrCells(shareHash || shareCopy), [shareHash, shareCopy]);
   const activeMissionPlayerId = round.players.some((player) => player.id === missionPlayerId)
     ? missionPlayerId
     : (round.players[0]?.id ?? '');
+
+  function markShareDirty() {
+    setShareReady(false);
+    setShareStatusMessage('입력값이 바뀌었습니다. 최신 스코어카드나 결과 링크를 다시 준비하세요.');
+  }
+
+  function prepareScorecardExport() {
+    setShareReady(true);
+    setShareStatusMessage('스코어카드 캡처/내보내기용 현재 정산 카드가 준비되었습니다.');
+  }
+
+  function prepareResultLinkShare() {
+    if (!shareHashResult.ok) {
+      setShareReady(false);
+      setShareStatusMessage(`결과 링크가 ${shareHashResult.payloadLength}자로 ${shareHashResult.maxLength}자 제한을 넘어 QR/해시 공유를 중단했습니다.`);
+      return;
+    }
+
+    const hashUpdated = replaceCurrentLocationHash(shareHashResult.hash);
+    setShareReady(hashUpdated);
+    setShareStatusMessage(
+      hashUpdated
+        ? `로컬 결과 링크가 준비되었습니다 (${shareHashResult.payloadLength}자${shareHashResult.withinTarget ? '' : ', 긴 링크'}). 서버 없이 이 주소의 해시만 공유합니다.`
+        : '브라우저 주소 해시를 갱신할 수 없어 결과 링크를 만들지 못했습니다.',
+    );
+  }
 
   function scoreInputValue(playerId: string): string {
     const draftKey = `${holeNumber}:${playerId}`;
