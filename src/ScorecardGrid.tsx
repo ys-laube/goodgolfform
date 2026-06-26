@@ -56,18 +56,6 @@ export function ScorecardGrid({
             후반 10-18
           </button>
         </div>
-        <div className="scorecard-hole-grid">
-          {visibleHoleNumbers.map((scorecardHoleNumber) => (
-            <button
-              className={scorecardHoleNumber === selectedHoleNumber ? 'scorecard-hole active' : 'scorecard-hole'}
-              key={scorecardHoleNumber}
-              type="button"
-              onClick={() => onSelectHole(scorecardHoleNumber)}
-            >
-              {scorecardHoleNumber}H
-            </button>
-          ))}
-        </div>
       </div>
 
       <div className="scorecard-matrix" aria-label="전후반 스코어카드 전체표">

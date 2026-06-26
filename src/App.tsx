@@ -487,9 +487,16 @@ export function App() {
     <main className="app-shell" aria-labelledby="app-title" data-mobile-layout="safe-area-inset">
       <section className="hero-card" aria-labelledby="app-title">
         <div className="hero-copy">
-          <p className="eyebrow">펀골프 정산 장부</p>
-          <h1 id="app-title">한국형 골프 내기 정산</h1>
-          <p>2~4명 라운드 세팅부터 홀 입력, 이벤트, 미션, 순정산, 공유 카드까지 한 화면에서 처리하는 모바일 우선 장부입니다.</p>
+          <p className="eyebrow">오장 정산 장부</p>
+          <h1 id="app-title">오늘 폼 정말 좋으시네요 ^0^</h1>
+          <details className="ojang-rule-details">
+            <summary>오장 룰 자세히 보기</summary>
+            <ul>
+              <li>홀마다 플레이어끼리 타수 차이를 비교해 정산합니다.</li>
+              <li>기본 공식은 타수차 × 타당 금액 × 홀 배수입니다.</li>
+              <li>배판은 장부 안에서만 계산하고 실제 금전 이동 버튼은 제공하지 않습니다.</li>
+            </ul>
+          </details>
         </div>
         <div className="hero-metric" aria-label="현재 1위">
           <span>{completedHoleCount}개 홀 반영</span>

@@ -169,6 +169,33 @@ h2 {
   color: #8ef8cf;
 }
 
+.ojang-rule-details {
+  display: grid;
+  gap: 0.65rem;
+  max-width: 38rem;
+  border: 1px solid rgba(16, 24, 40, 0.1);
+  border-radius: 1.35rem;
+  background: rgba(255, 255, 255, 0.72);
+  padding: 0.85rem 1rem;
+}
+
+.ojang-rule-details summary {
+  color: #0f172a;
+  cursor: pointer;
+  font-weight: 950;
+  letter-spacing: -0.02em;
+}
+
+.ojang-rule-details ul {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0.65rem 0 0;
+  padding-left: 1.15rem;
+  color: #344054;
+  font-size: 0.92rem;
+  line-height: 1.55;
+}
+
 .control-panel,
 .mission-card,
 .calculation-card,
@@ -308,16 +335,17 @@ button:focus-visible {
 
 .backdoor-toggle,
 .score-choice {
-  border: 1px solid rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.36);
   border-radius: 1rem;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.18);
   color: #fff;
   font-weight: 900;
 }
 
 .backdoor-toggle.active,
 .score-choice.active {
-  background: #fff;
+  border-color: #8ef8cf;
+  background: #ecfdf3;
   color: #101828;
 }
 
@@ -376,9 +404,9 @@ button:focus-visible {
 }
 
 .scorecard-meta-grid p {
-  border: 1px solid rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.34);
   border-radius: 1rem;
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.16);
 }
 
 .backdoor-toggle {
@@ -458,7 +486,7 @@ button:focus-visible {
 }
 
 .score-choice span {
-  color: #cbd5e1;
+  color: #e2e8f0;
   font-size: 0.72rem;
 }
 

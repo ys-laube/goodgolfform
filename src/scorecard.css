@@ -26,9 +26,9 @@
 .scorecard-row-label,
 .scorecard-cell {
   min-height: 2.9rem;
-  border: 1px solid rgba(255, 255, 255, 0.13);
+  border: 1px solid rgba(255, 255, 255, 0.24);
   border-radius: 0.82rem;
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.12);
   color: #fff;
 }
 
@@ -56,26 +56,31 @@
 .scorecard-cell.active,
 .scorecard-par-row .scorecard-cell.active,
 .scorecard-backdoor-row .scorecard-cell.active {
-  border-color: rgba(255, 255, 255, 0.84);
-  background: #fff;
+  border-color: #8ef8cf;
+  background: #ecfdf3;
   color: #101828;
 }
 
 .scorecard-header-row .scorecard-row-label,
 .scorecard-header-row .scorecard-cell {
   min-height: 2.55rem;
-  background: rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.2);
 }
 
 .scorecard-par-row input {
   min-height: 2.05rem;
-  border: 0;
+  border: 1px solid rgba(16, 24, 40, 0.16);
   border-radius: 0.55rem;
-  background: rgba(255, 255, 255, 0.92);
+  background: #fff;
   color: #101828;
   padding: 0 0.25rem;
   text-align: center;
   font-weight: 950;
+}
+
+.scorecard-par-row .scorecard-cell.active input {
+  border-color: rgba(2, 122, 72, 0.42);
+  background: #ffffff;
 }
 
 .checkbox-cell {
@@ -108,8 +113,7 @@
   color: #475467;
 }
 
-.scorecard-tabs,
-.scorecard-hole-grid {
+.scorecard-tabs {
   display: grid;
   gap: 0.5rem;
 }
@@ -118,12 +122,7 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-.scorecard-hole-grid {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-
-.scorecard-tab,
-.scorecard-hole {
+.scorecard-tab {
   border: 1px solid rgba(255, 255, 255, 0.16);
   border-radius: 1rem;
   background: rgba(255, 255, 255, 0.1);
@@ -131,14 +130,13 @@
   font-weight: 900;
 }
 
-.scorecard-tab,
-.scorecard-hole {
+.scorecard-tab {
   min-height: 2.75rem;
 }
 
-.scorecard-tab.active,
-.scorecard-hole.active {
-  background: #fff;
+.scorecard-tab.active {
+  border-color: #8ef8cf;
+  background: #ecfdf3;
   color: #101828;
 }
 
