@@ -36,14 +36,17 @@ describe('scorecard session initialization', () => {
       onGreenShots: 2,
       putts: 2,
     });
+    const labeledRound = { ...savedRound, roundName: '저장 라운드', courseName: '동코스' };
     const storage = new MemoryStorage();
-    expect(saveScorecardRound(storage, savedRound)).toBe(true);
+    expect(saveScorecardRound(storage, labeledRound)).toBe(true);
     storage.calls.length = 0;
 
     const state = createInitialScorecardRoundSessionState(storage, '2026-06-27T01:00:00.000Z');
 
     expect(state.storageStatus).toBe('loaded');
     expect(state.round.id).toBe('saved-round');
+    expect(state.round.roundName).toBe('저장 라운드');
+    expect(state.round.courseName).toBe('동코스');
     expect(state.round.players).toHaveLength(1);
     expect(storage.calls).toEqual([`get:${scorecardActiveRoundStorageKey}`]);
   });

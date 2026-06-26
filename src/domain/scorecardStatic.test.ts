@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import React from 'react';
 import { describe, expect, it } from 'vitest';
@@ -10,6 +10,20 @@ const forbiddenRuntimeConcepts = ['오장', '정산', '타당 금액', '배판',
 
 function readRepoFile(path: string): string {
   return readFileSync(join(process.cwd(), path), 'utf8');
+}
+
+function runtimeSourceFiles(directory: string): readonly string[] {
+  return readdirSync(join(process.cwd(), directory)).flatMap((entry) => {
+    const path = `${directory}/${entry}`;
+    const absolutePath = join(process.cwd(), path);
+    if (statSync(absolutePath).isDirectory()) {
+      return runtimeSourceFiles(path);
+    }
+    if (!/\.(ts|tsx|css)$/.test(path) || /\.test\.tsx?$/.test(path) || path.endsWith('vitest-node.d.ts')) {
+      return [];
+    }
+    return [path];
+  });
 }
 
 describe('simple scorecard static guardrails', () => {
@@ -34,17 +48,7 @@ describe('simple scorecard static guardrails', () => {
   });
 
   it('runtime source and public docs keep retired concepts out', () => {
-    const sources = [
-      'README.md',
-      'DESIGN.md',
-      'src/App.tsx',
-      'src/ScorecardGrid.tsx',
-      'src/useScorecardController.ts',
-      'src/useScorecardSession.ts',
-      'src/domain/scorecard.ts',
-      'src/domain/scorecardStorage.ts',
-      'src/scorecardExport.ts',
-    ].map(readRepoFile).join('\n');
+    const sources = ['README.md', 'DESIGN.md', 'index.html', ...runtimeSourceFiles('src')].map(readRepoFile).join('\n');
 
     for (const forbidden of forbiddenRuntimeConcepts) {
       expect(sources).not.toContain(forbidden);

@@ -14,8 +14,6 @@ const puttChoices = [0, 1, 2, 3, 4, 5] as const;
 export function App() {
   const session = useScorecardSession();
   const { round } = session;
-  const [roundName, setRoundName] = useState('');
-  const [courseName, setCourseName] = useState('');
   const [holeCountDraft, setHoleCountDraft] = useState(() => round.settings.holeCount.toString());
   const [manualScoreDrafts, setManualScoreDrafts] = useState<Record<string, string>>({});
   const [exportStatus, setExportStatus] = useState<string | null>(null);
@@ -27,20 +25,30 @@ export function App() {
   }
 
   function updateHoleCountDraft(value: string) {
-    setHoleCountDraft(value);
     const parsedValue = parseEditableIntegerDraft(value);
     if (parsedValue !== null) {
-      session.updateRoundSetup({ holeCount: parsedValue });
+      const normalizedHoleCount = clampInteger(parsedValue, 1, 18);
+      setHoleCountDraft(normalizedHoleCount.toString());
+      session.updateRoundSetup({ holeCount: normalizedHoleCount });
+      return;
     }
+    setHoleCountDraft(value);
   }
 
   function updatePlayerCount(playerCount: number) {
     session.setPlayerCount(playerCount);
   }
 
+  function normalizeHoleCountDraft() {
+    const parsedValue = parseEditableIntegerDraft(holeCountDraft);
+    const normalizedHoleCount = parsedValue === null ? round.settings.holeCount : clampInteger(parsedValue, 1, 18);
+    setHoleCountDraft(normalizedHoleCount.toString());
+    if (normalizedHoleCount !== round.settings.holeCount) {
+      session.updateRoundSetup({ holeCount: normalizedHoleCount });
+    }
+  }
+
   function resetRound() {
-    setRoundName('');
-    setCourseName('');
     setHoleCountDraft('18');
     setManualScoreDrafts({});
     setExportStatus(null);
@@ -49,8 +57,6 @@ export function App() {
   }
 
   function clearSavedRound() {
-    setRoundName('');
-    setCourseName('');
     setHoleCountDraft('18');
     setManualScoreDrafts({});
     setExportStatus(null);
@@ -69,8 +75,8 @@ export function App() {
 
   function handleExportSvg() {
     const now = new Date().toISOString();
-    const exportSvg = createScorecardExportSvg({ roundName, courseName, generatedAt: now, view: controller.roundView });
-    const ok = downloadScorecardExportSvg(scorecardExportFileName(courseName || roundName, now), exportSvg);
+    const exportSvg = createScorecardExportSvg({ roundName: round.roundName, courseName: round.courseName, generatedAt: now, view: controller.roundView });
+    const ok = downloadScorecardExportSvg(scorecardExportFileName(round.courseName || round.roundName, now), exportSvg);
     setExportStatus(ok ? '스코어카드 SVG 이미지를 저장했습니다.' : '브라우저 밖에서는 이미지 저장을 실행할 수 없습니다.');
   }
 
@@ -107,15 +113,15 @@ export function App() {
         <div className="form-grid">
           <label className="field-card">
             <span>라운드 이름</span>
-            <input value={roundName} onChange={(event) => setRoundName(event.currentTarget.value)} placeholder="예: 토요일 오전" />
+            <input value={round.roundName} onChange={(event) => session.updateRoundLabels({ roundName: event.currentTarget.value })} placeholder="예: 토요일 오전" />
           </label>
           <label className="field-card">
             <span>코스 이름</span>
-            <input value={courseName} onChange={(event) => setCourseName(event.currentTarget.value)} placeholder="예: 남코스 OUT" />
+            <input value={round.courseName} onChange={(event) => session.updateRoundLabels({ courseName: event.currentTarget.value })} placeholder="예: 남코스 OUT" />
           </label>
           <label className="field-card compact-field">
             <span>홀 수</span>
-            <input inputMode="numeric" value={holeCountDraft} onChange={(event) => updateHoleCountDraft(event.currentTarget.value)} />
+            <input inputMode="numeric" value={holeCountDraft} onBlur={normalizeHoleCountDraft} onChange={(event) => updateHoleCountDraft(event.currentTarget.value)} />
           </label>
           <div className="field-card">
             <span>플레이어 수</span>
@@ -160,6 +166,7 @@ export function App() {
         parInputValue={controller.parInputValue}
         onSelectHole={controller.selectHole}
         onChangePar={controller.updateParDraftForHole}
+        onNormalizePar={controller.normalizeParDraftForHole}
       />
 
       <section className="hole-panel" aria-labelledby="hole-input-title">
@@ -305,4 +312,9 @@ export function App() {
       </section>
     </main>
   );
+}
+
+function clampInteger(value: number, min: number, max: number): number {
+  const integer = Number.isFinite(value) ? Math.round(value) : min;
+  return Math.min(max, Math.max(min, integer));
 }

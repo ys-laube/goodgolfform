@@ -7,10 +7,12 @@ import {
   applyHoleSetupMutation,
   applyPlayerCountMutation,
   applyPlayerMutation,
+  applyRoundLabelMutation,
   applyRoundSetupMutation,
   createDefaultScorecardRound,
   type ScorecardHoleScoreInput,
   type ScorecardPlayer,
+  type ScorecardRoundLabels,
   type ScorecardRound,
   type ScorecardRoundSettings,
 } from './domain/scorecard';
@@ -32,6 +34,7 @@ export type ScorecardRoundSessionState = {
 };
 
 export type ScorecardRoundSession = ScorecardRoundSessionState & {
+  readonly updateRoundLabels: (patch: Partial<ScorecardRoundLabels>) => void;
   readonly updateRoundSetup: (patch: Partial<Pick<ScorecardRoundSettings, 'holeCount'>>) => void;
   readonly setPlayerCount: (playerCount: number) => void;
   readonly updatePlayer: (playerId: string, patch: Partial<Pick<ScorecardPlayer, 'name'>>) => void;
@@ -80,6 +83,10 @@ export function useScorecardSession(inputStorage?: StorageLike): ScorecardRoundS
 
   function updateRoundSetup(patch: Partial<Pick<ScorecardRoundSettings, 'holeCount'>>) {
     commitRound(applyRoundSetupMutation(state.round, patch));
+  }
+
+  function updateRoundLabels(patch: Partial<ScorecardRoundLabels>) {
+    commitRound(applyRoundLabelMutation(state.round, patch));
   }
 
   function setPlayerCount(playerCount: number) {
@@ -138,6 +145,7 @@ export function useScorecardSession(inputStorage?: StorageLike): ScorecardRoundS
 
   return {
     ...state,
+    updateRoundLabels,
     updateRoundSetup,
     setPlayerCount,
     updatePlayer,

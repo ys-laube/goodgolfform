@@ -15,6 +15,7 @@ type ScorecardGridProps = {
   readonly parInputValue: (holeNumber: number) => string;
   readonly onSelectHole: (holeNumber: number) => void;
   readonly onChangePar: (holeNumber: number, value: string) => void;
+  readonly onNormalizePar: (holeNumber: number) => void;
 };
 
 export function ScorecardGrid({
@@ -29,6 +30,7 @@ export function ScorecardGrid({
   parInputValue,
   onSelectHole,
   onChangePar,
+  onNormalizePar,
 }: ScorecardGridProps) {
   function holeView(holeNumber: number) {
     return roundView.holes.find((hole) => hole.holeNumber === holeNumber);
@@ -83,6 +85,7 @@ export function ScorecardGrid({
                   inputMode="numeric"
                   value={parInputValue(scorecardHoleNumber)}
                   onFocus={() => onSelectHole(scorecardHoleNumber)}
+                  onBlur={() => onNormalizePar(scorecardHoleNumber)}
                   onChange={(event) => onChangePar(scorecardHoleNumber, event.currentTarget.value)}
                   aria-label={`${scorecardHoleNumber}번 홀 파`}
                 />

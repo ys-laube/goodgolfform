@@ -46,11 +46,15 @@ describe('scorecard local storage', () => {
 
   it('saves and loads only the scorecard payload', () => {
     const storage = new MemoryStorage();
-    const round = createDefaultScorecardRound({ id: 'round-storage', now: '2026-06-27T00:00:00.000Z' });
+    const round = {
+      ...createDefaultScorecardRound({ id: 'round-storage', now: '2026-06-27T00:00:00.000Z' }),
+      roundName: '토요일 오전',
+      courseName: '남코스 OUT',
+    };
 
     expect(saveScorecardRound(storage, round)).toBe(true);
     expect(storage.peek(scorecardActiveRoundStorageKey)).toContain('round-storage');
-    expect(loadScorecardRound(storage)?.id).toBe('round-storage');
+    expect(loadScorecardRound(storage)).toMatchObject({ id: 'round-storage', roundName: '토요일 오전', courseName: '남코스 OUT' });
   });
 
   it('does not restore old betting ledger keys as scorecard data', () => {

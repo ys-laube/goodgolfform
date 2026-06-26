@@ -15,6 +15,8 @@ describe('simple scorecard domain', () => {
     const round = createDefaultScorecardRound({ now: '2026-06-27T00:00:00.000Z' });
 
     expect(round.players).toEqual([{ id: 'player-1', name: '' }]);
+    expect(round.roundName).toBe('');
+    expect(round.courseName).toBe('');
     expect(round.settings.holeCount).toBe(18);
     expect(round.holes).toHaveLength(18);
     expect(round.holes[0]).toMatchObject({ holeNumber: 1, par: 4, memo: '', scores: [] });
@@ -50,7 +52,9 @@ describe('simple scorecard domain', () => {
     });
 
     const view = buildScorecardView(round);
-    expect(view.holes[0]?.cells[0]).toMatchObject({ main: '0', sub: '온 2 · 펏 2', strokes: 4, relative: 0 });
+    expect(view.holes[0]?.cells[0]).toMatchObject({ main: '0', sub: '온 2 · 펏 2' });
+    expect(view.holes[0]?.cells[0]).not.toHaveProperty('strokes');
+    expect(view.holes[0]?.cells[0]).not.toHaveProperty('relative');
     expect(view.reviews[0]).toMatchObject({ completedHoles: 1, totalStrokes: 4, totalRelative: 0, averageOnGreenShots: 2, averagePutts: 2 });
   });
 
@@ -62,7 +66,9 @@ describe('simple scorecard domain', () => {
 
     const view = buildScorecardView(round);
 
-    expect(view.holes[0]?.cells[0]).toMatchObject({ main: '+3', sub: '', strokes: 7, relative: 3 });
+    expect(view.holes[0]?.cells[0]).toMatchObject({ main: '+3', sub: '' });
+    expect(view.holes[0]?.cells[0]).not.toHaveProperty('strokes');
+    expect(view.holes[0]?.cells[0]).not.toHaveProperty('relative');
   });
 
   it('calculates simple review counts, front/back totals, 3-putt count, and memo highlights', () => {

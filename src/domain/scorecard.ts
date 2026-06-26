@@ -11,6 +11,11 @@ export type ScorecardRoundSettings = {
   readonly holeCount: number;
 };
 
+export type ScorecardRoundLabels = {
+  readonly roundName: string;
+  readonly courseName: string;
+};
+
 export type ScoreEntryMode = 'on-putt' | 'hio' | 'manual';
 
 export type ScorecardHoleScore = {
@@ -33,6 +38,8 @@ export type ScorecardRound = {
   readonly id: string;
   readonly createdAt: string;
   readonly updatedAt: string;
+  readonly roundName: string;
+  readonly courseName: string;
   readonly players: readonly ScorecardPlayer[];
   readonly settings: ScorecardRoundSettings;
   readonly holes: readonly ScorecardHole[];
@@ -43,8 +50,6 @@ export type ScorecardCellView = {
   readonly holeNumber: number;
   readonly main: string;
   readonly sub: string;
-  readonly strokes?: number;
-  readonly relative?: number;
 };
 
 export type ScoreTypeCounts = {
@@ -115,6 +120,8 @@ export function createDefaultScorecardRound(input: {
     id: input.id?.trim() || 'scorecard-local-active',
     createdAt: now,
     updatedAt: now,
+    roundName: '',
+    courseName: '',
     players: createDefaultScorecardPlayers(input.playerCount ?? 1),
     settings: { holeCount },
     holes: createDefaultHoles(holeCount),
@@ -143,6 +150,8 @@ export function normalizeScorecardRoundPayload(value: unknown): ScorecardRound |
   const id = typeof value.id === 'string' && value.id.trim() ? value.id.trim() : 'scorecard-local-active';
   const createdAt = isIsoString(value.createdAt) ? value.createdAt : new Date(0).toISOString();
   const updatedAt = isIsoString(value.updatedAt) ? value.updatedAt : createdAt;
+  const roundName = typeof value.roundName === 'string' ? value.roundName : '';
+  const courseName = typeof value.courseName === 'string' ? value.courseName : '';
   const holeCount = normalizeHoleCount(isRecord(value.settings) ? value.settings.holeCount : defaultScorecardHoleCount);
   const holes = normalizeHoles(Array.isArray(value.holes) ? value.holes : [], players, holeCount);
 
@@ -150,7 +159,7 @@ export function normalizeScorecardRoundPayload(value: unknown): ScorecardRound |
     return null;
   }
 
-  return { id, createdAt, updatedAt, players, settings: { holeCount }, holes };
+  return { id, createdAt, updatedAt, roundName, courseName, players, settings: { holeCount }, holes };
 }
 
 export function applyRoundSetupMutation(
@@ -162,6 +171,17 @@ export function applyRoundSetupMutation(
   const holes = ensureHoles(round.holes, holeCount, round.players);
 
   return stampRound({ ...round, settings: { holeCount }, holes }, now);
+}
+
+export function applyRoundLabelMutation(round: ScorecardRound, patch: Partial<ScorecardRoundLabels>, now = new Date().toISOString()): ScorecardRound {
+  return stampRound(
+    {
+      ...round,
+      roundName: patch.roundName ?? round.roundName,
+      courseName: patch.courseName ?? round.courseName,
+    },
+    now,
+  );
 }
 
 export function applyPlayerCountMutation(round: ScorecardRound, playerCount: number, now = new Date().toISOString()): ScorecardRound {
@@ -386,8 +406,6 @@ function cellViewForScore(playerId: string, holeNumber: number, par: number, sco
     holeNumber,
     main: relativeScoreLabel(relative),
     sub: score.entryMode === 'manual' ? '' : `온 ${score.onGreenShots ?? 0} · 펏 ${score.putts ?? 0}`,
-    strokes: score.strokes,
-    relative,
   };
 }
 

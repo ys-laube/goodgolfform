@@ -6,6 +6,7 @@ import {
   maximumScorecardStrokes,
   relativeScoreLabel,
   scoreForPlayer,
+  type ScorecardHoleScoreInput,
   type ScorecardHoleScore,
   type ScorecardRound,
 } from './domain/scorecard';
@@ -22,14 +23,8 @@ export function useScorecardController({ round, session }: ScorecardControllerOp
   const [parDraftsByHole, setParDraftsByHole] = useState<Record<number, string>>({});
   const [memoDraftsByHole, setMemoDraftsByHole] = useState<Record<number, string>>({});
 
-  const parsedHoleNumber = parseIntegerDraft(currentHoleDraft, 1);
-  const holeNumber = Math.min(round.settings.holeCount, Math.max(1, parsedHoleNumber));
-  const activeNine: 'front' | 'back' = holeNumber > 9 ? 'back' : 'front';
-  const firstHoleInActiveNine = activeNine === 'front' ? 1 : 10;
-  const visibleHoleNumbers = Array.from(
-    { length: Math.max(0, Math.min(9, round.settings.holeCount - firstHoleInActiveNine + 1)) },
-    (_, index) => firstHoleInActiveNine + index,
-  );
+  const navigation = scorecardNavigationState(currentHoleDraft, round.settings.holeCount);
+  const { activeNine, holeNumber, visibleHoleNumbers } = navigation;
   const roundView = buildScorecardView(round);
 
   function selectHole(targetHoleNumber: number) {
@@ -45,9 +40,18 @@ export function useScorecardController({ round, session }: ScorecardControllerOp
   }
 
   function updateParDraftForHole(targetHoleNumber: number, value: string) {
-    setParDraftsByHole((current) => ({ ...current, [targetHoleNumber]: value }));
     selectHole(targetHoleNumber);
-    commitIntegerDraft(value, (par) => session.updateHoleSetup(targetHoleNumber, { par }));
+    const normalizedPar = normalizeParDraft(value);
+    if (normalizedPar === null) {
+      setParDraftsByHole((current) => ({ ...current, [targetHoleNumber]: value }));
+      return;
+    }
+    setParDraftsByHole((current) => ({ ...current, [targetHoleNumber]: normalizedPar.toString() }));
+    session.updateHoleSetup(targetHoleNumber, { par: normalizedPar });
+  }
+
+  function normalizeParDraftForHole(targetHoleNumber: number) {
+    setParDraftsByHole((current) => ({ ...current, [targetHoleNumber]: holeForNumber(round, targetHoleNumber).par.toString() }));
   }
 
   function memoInputValue(targetHoleNumber = holeNumber): string {
@@ -74,7 +78,7 @@ export function useScorecardController({ round, session }: ScorecardControllerOp
   }
 
   function updateHoleInOne(playerId: string) {
-    session.updateHoleScore(holeNumber, playerId, { strokes: 1, entryMode: 'hio', onGreenShots: 1, putts: 0, holeInOne: true });
+    session.updateHoleScore(holeNumber, playerId, holeInOneScoreInput());
   }
 
   function clearPlayerScore(playerId: string) {
@@ -82,9 +86,9 @@ export function useScorecardController({ round, session }: ScorecardControllerOp
   }
 
   function commitManualScore(playerId: string, value: string) {
-    const parsedValue = parseEditableIntegerDraft(value);
-    if (parsedValue !== null) {
-      session.updateHoleScore(holeNumber, playerId, { strokes: clampInteger(parsedValue, 1, maximumScorecardStrokes), entryMode: 'manual' });
+    const score = manualScoreInputFromDraft(value);
+    if (score !== null) {
+      session.updateHoleScore(holeNumber, playerId, score);
     }
   }
 
@@ -105,8 +109,7 @@ export function useScorecardController({ round, session }: ScorecardControllerOp
   }
 
   function commitOnPuttScore(playerId: string, onGreenShots: number, putts: number) {
-    const strokes = clampInteger(onGreenShots + putts, 1, maximumScorecardStrokes);
-    session.updateHoleScore(holeNumber, playerId, { strokes, entryMode: 'on-putt', onGreenShots, putts });
+    session.updateHoleScore(holeNumber, playerId, onPuttScoreInput(onGreenShots, putts));
   }
 
   function resetScorecardDrafts() {
@@ -135,22 +138,56 @@ export function useScorecardController({ round, session }: ScorecardControllerOp
     updateMemoDraft,
     updateOnGreenShots,
     updateParDraftForHole,
+    normalizeParDraftForHole,
     updatePutts,
     clearPlayerScore,
     visibleHoleNumbers,
   };
 }
 
+export type ScorecardNavigationState = {
+  readonly activeNine: 'front' | 'back';
+  readonly holeNumber: number;
+  readonly visibleHoleNumbers: readonly number[];
+};
+
+export function scorecardNavigationState(currentHoleDraft: string, holeCount: number): ScorecardNavigationState {
+  const normalizedHoleCount = clampInteger(holeCount, 1, 18);
+  const parsedHoleNumber = parseIntegerDraft(currentHoleDraft, 1);
+  const holeNumber = clampInteger(parsedHoleNumber, 1, normalizedHoleCount);
+  const activeNine: 'front' | 'back' = holeNumber > 9 ? 'back' : 'front';
+  const firstHoleInActiveNine = activeNine === 'front' ? 1 : 10;
+  const visibleHoleNumbers = Array.from(
+    { length: Math.max(0, Math.min(9, normalizedHoleCount - firstHoleInActiveNine + 1)) },
+    (_, index) => firstHoleInActiveNine + index,
+  );
+
+  return { activeNine, holeNumber, visibleHoleNumbers };
+}
+
 export function parseIntegerDraft(value: string, defaultValue: number): number {
   return parseEditableIntegerDraft(value) ?? defaultValue;
 }
 
-function commitIntegerDraft(value: string, commit: (parsedValue: number) => void) {
+export function normalizeParDraft(value: string): number | null {
   const parsedValue = parseEditableIntegerDraft(value);
+  return parsedValue === null ? null : clampInteger(parsedValue, 3, 5);
+}
 
-  if (parsedValue !== null) {
-    commit(parsedValue);
-  }
+export function onPuttScoreInput(onGreenShots: number, putts: number): ScorecardHoleScoreInput {
+  const normalizedOnGreenShots = clampInteger(onGreenShots, 1, 9);
+  const normalizedPutts = clampInteger(putts, 0, 9);
+  const strokes = clampInteger(normalizedOnGreenShots + normalizedPutts, 1, maximumScorecardStrokes);
+  return { strokes, entryMode: 'on-putt', onGreenShots: normalizedOnGreenShots, putts: normalizedPutts };
+}
+
+export function holeInOneScoreInput(): ScorecardHoleScoreInput {
+  return { strokes: 1, entryMode: 'hio', onGreenShots: 1, putts: 0, holeInOne: true };
+}
+
+export function manualScoreInputFromDraft(value: string): ScorecardHoleScoreInput | null {
+  const parsedValue = parseEditableIntegerDraft(value);
+  return parsedValue === null ? null : { strokes: clampInteger(parsedValue, 1, maximumScorecardStrokes), entryMode: 'manual' };
 }
 
 function clampInteger(value: number, min: number, max: number): number {
