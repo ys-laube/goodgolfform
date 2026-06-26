@@ -14,6 +14,7 @@ import {
   applyHoleEventToggleMutation,
   applyHoleMissionMutation,
   applyHoleScoreMutation,
+  applyHoleSetupMutation,
   applyMissionOutcomeMutation,
   applyPlayerMutation,
   applyPlayerCountMutation,
@@ -113,6 +114,8 @@ describe('useBettingRoundSession local state helpers', () => {
       holes: [
         {
           holeNumber: 1,
+          par: 4,
+          backdoorOpen: false,
           scores: [
             { playerId: 'player-1', strokes: 4 },
             { playerId: 'player-2', strokes: 5 },
@@ -141,7 +144,8 @@ describe('useBettingRoundSession local state helpers', () => {
 
   it('supports hole score, event, and mission session mutations', () => {
     const round = createDefaultBettingRound({ now: '2026-06-25T00:00:00.000Z' });
-    const scoredRound = applyHoleScoreMutation(round, 1, 'player-1', 4, '2026-06-25T01:00:00.000Z');
+    const setupRound = applyHoleSetupMutation(round, 1, { par: 5, backdoorOpen: true }, '2026-06-25T00:59:00.000Z');
+    const scoredRound = applyHoleScoreMutation(setupRound, 1, 'player-1', 4, '2026-06-25T01:00:00.000Z');
     const eventRound = applyHoleEventToggleMutation(scoredRound, 1, 'near-pin', 'player-2', 5, '2026-06-25T01:01:00.000Z');
     const mission: BettingHoleMission = {
       id: '',
@@ -162,6 +166,7 @@ describe('useBettingRoundSession local state helpers', () => {
     );
 
     expect(outcomeRound.holes).toHaveLength(1);
+    expect(outcomeRound.holes[0]).toMatchObject({ holeNumber: 1, par: 5, backdoorOpen: true });
     expect(outcomeRound.holes[0]?.scores).toEqual([{ playerId: 'player-1', strokes: 4 }]);
     expect(outcomeRound.holes[0]?.events).toEqual([{ id: 'hole-1:near-pin:player-2', playerId: 'player-2', event: 'near-pin', points: 5 }]);
     expect(outcomeRound.holes[0]?.missions).toEqual([

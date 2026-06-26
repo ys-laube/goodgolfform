@@ -12,6 +12,7 @@ import {
   bettingShareHashTargetLength,
   createBettingRoundShareHash,
   parseBettingRoundShareHash,
+  parseBettingRoundShareHashPayload,
   restoreBettingRoundShareHashToStorage,
 } from './bettingShareSnapshot';
 
@@ -43,6 +44,8 @@ describe('betting URL hash share snapshots', () => {
       holes: [
         {
           holeNumber: 1,
+          par: 5,
+          backdoorOpen: true,
           scores: [
             { playerId: 'player-1', strokes: 4 },
             { playerId: 'player-2', strokes: 5 },
@@ -64,24 +67,33 @@ describe('betting URL hash share snapshots', () => {
       ],
     };
 
-    const result = createBettingRoundShareHash(round);
+    const result = createBettingRoundShareHash(round, { roundName: '금요 새벽 라운드', courseName: '남서울 OUT' });
 
     expect(result.ok).toBe(true);
     expect(result.ok && result.hash.startsWith(`#${bettingShareHashPrefix}`)).toBe(true);
     expect(result.payloadLength).toBeLessThanOrEqual(bettingShareHashTargetLength);
     expect(result.payloadLength).toBeLessThanOrEqual(bettingShareHashMaxLength);
     expect(result.ok && parseBettingRoundShareHash(result.hash)).toEqual(round);
+    expect(result.ok && parseBettingRoundShareHashPayload(result.hash)?.labels).toEqual({
+      roundName: '금요 새벽 라운드',
+      courseName: '남서울 OUT',
+    });
   });
 
   it('restores a valid hash into the existing local storage boundary', () => {
     const round = createDefaultBettingRound({ id: 'round-restored', now: '2026-06-26T01:00:00.000Z', playerCount: 3 });
-    const hashResult = createBettingRoundShareHash(round);
+    const hashResult = createBettingRoundShareHash(round, { roundName: '복원 라운드', courseName: '제주 동코스' });
     const storage = new MemoryStorage();
 
     expect(hashResult.ok).toBe(true);
     const restoreResult = restoreBettingRoundShareHashToStorage(hashResult.ok ? hashResult.hash : '', storage);
 
-    expect(restoreResult).toMatchObject({ restored: true, payloadLength: hashResult.payloadLength, saved: true });
+    expect(restoreResult).toMatchObject({
+      restored: true,
+      labels: { roundName: '복원 라운드', courseName: '제주 동코스' },
+      payloadLength: hashResult.payloadLength,
+      saved: true,
+    });
     expect(storage.peek(bettingActiveRoundStorageKey)).toContain('round-restored');
     expect(loadBettingRound(storage)).toEqual(round);
   });

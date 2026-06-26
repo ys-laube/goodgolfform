@@ -12,6 +12,15 @@
   box-sizing: border-box;
 }
 
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
 html {
   scroll-behavior: smooth;
 }
@@ -292,28 +301,11 @@ button:focus-visible {
   color: #fff;
 }
 
-.scorecard-nav {
-  display: grid;
-  gap: 0.65rem;
-}
-
-.scorecard-tabs,
-.scorecard-hole-grid,
 .scorecard-meta-grid {
   display: grid;
   gap: 0.5rem;
 }
 
-.scorecard-tabs {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.scorecard-hole-grid {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-
-.scorecard-tab,
-.scorecard-hole,
 .backdoor-toggle,
 .score-choice {
   border: 1px solid rgba(255, 255, 255, 0.16);
@@ -323,22 +315,10 @@ button:focus-visible {
   font-weight: 900;
 }
 
-.scorecard-tab,
-.scorecard-hole {
-  min-height: 2.75rem;
-}
-
-.scorecard-tab.active,
-.scorecard-hole.active,
 .backdoor-toggle.active,
 .score-choice.active {
   background: #fff;
   color: #101828;
-}
-
-.scorecard-tab:disabled {
-  cursor: not-allowed;
-  opacity: 0.42;
 }
 
 .game-card button:disabled {
@@ -399,6 +379,21 @@ button:focus-visible {
   border: 1px solid rgba(255, 255, 255, 0.16);
   border-radius: 1rem;
   background: rgba(255, 255, 255, 0.08);
+}
+
+.backdoor-toggle {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+}
+
+.backdoor-toggle input {
+  width: 1.05rem;
+  min-height: 1.05rem;
+  accent-color: #3461ff;
+}
+
+.backdoor-toggle span {
+  grid-column: 2;
 }
 
 .scorecard-meta-grid span,

@@ -8,16 +8,16 @@ This prototype focuses on private score and settlement bookkeeping:
 
 - 2–4 player round setup with player names, optional handicaps, point-only or money-display mode, and per-game units.
 - Fixed first-version game set: stroke/per-point, skins with carryover, 4-player Vegas/team mode, event bonus/penalty rows, and a pre-authored Korean mission card deck.
-- Fast hole input for raw strokes, event markers, mission outcomes, and running settlement updates.
+- Front/back scorecard input with 1–18 hole grid, par row, 뒷문오픈 row, player rows, relative-to-par score buttons, event markers, mission outcomes, and running settlement updates.
 - Deterministic calculation breakdowns showing raw scores, per-game ledgers, aggregate balances, and final payer → receiver settlement suggestions.
-- Share-ready Korean result card/text for group chat, screenshot sharing, and local QR/result-link snapshots.
+- Bottom share card with only local SVG scorecard export and QR/result-link URL-hash snapshots.
 - Browser `localStorage` persistence on the current device plus optional URL-hash snapshots carried only in the shared `#fg=` fragment.
 
 ## Replacement and stale data policy
 
 This app is a full product-surface replacement. Old caddie recommendation flows, club-distance presets, shot-coaching visuals, map/weather/provider experiments, and prior storage keys are obsolete.
 
-- New storage uses a `golf-bet-ledger:*:v1` namespace.
+- New active storage uses `golf-bet-ledger:active-round:v2`; v1 betting-round payloads are migrated, while old caddie keys remain ignored.
 - Old keys such as `korean-caddie:preset-distances:v1` are ignored or safely purged when explicitly handled.
 - Caddie distance presets are never migrated into player names, game settings, hole results, or settlement data.
 
@@ -55,4 +55,4 @@ git diff --check
 
 ## Static guard coverage
 
-`npm run test` includes SSR/static guards for retired recommendation surfaces, forbidden backend/network/provider SDKs, payment-execution boundaries, local-only storage naming, local URL-hash snapshot sharing, and the required Korean betting-ledger screen concepts. Local result-link payloads target `<=1800` characters and must hard-stop at `<=2200` characters. Keep those guards green before release.
+`npm run test` includes SSR/static guards for retired recommendation surfaces, forbidden backend/network/provider SDKs, payment-execution boundaries, local-only storage naming, v2 local URL-hash snapshot sharing, scorecard/export behavior, no runtime sample names, and the required Korean betting-ledger screen concepts. Local result-link payloads target `<=1800` characters and must hard-stop at `<=2200` characters. Keep those guards green before release.

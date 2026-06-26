@@ -201,10 +201,10 @@ export const KOREAN_MISSION_DECK: readonly MissionCard[] = [
 ] as const;
 
 const fallbackPlayers: readonly Player[] = [
-  { id: 'p1', name: '민준', handicap: 0 },
-  { id: 'p2', name: '서준', handicap: 1 },
-  { id: 'p3', name: '지아', handicap: 2 },
-  { id: 'p4', name: '하준', handicap: 0 },
+  { id: 'p1', name: '', handicap: 0 },
+  { id: 'p2', name: '', handicap: 0 },
+  { id: 'p3', name: '', handicap: 0 },
+  { id: 'p4', name: '', handicap: 0 },
 ] as const;
 
 export function createDefaultRound(options: {

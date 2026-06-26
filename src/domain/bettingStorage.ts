@@ -1,6 +1,7 @@
-export const bettingLedgerStorageVersion = 1;
+export const bettingLedgerStorageVersion = 2;
 export const bettingLedgerStoragePrefix = 'golf-bet-ledger';
 export const bettingActiveRoundStorageKey = `${bettingLedgerStoragePrefix}:active-round:v${bettingLedgerStorageVersion}`;
+export const legacyBettingActiveRoundStorageKeyV1 = `${bettingLedgerStoragePrefix}:active-round:v1`;
 export const legacyShotAdvicePresetStorageKey = 'korean-caddie:preset-distances:v1';
 export const knownLegacyShotAdviceStorageKeys = [legacyShotAdvicePresetStorageKey] as const;
 export const bettingPlayerCountOptions = [2, 3, 4] as const;
@@ -58,6 +59,8 @@ export type BettingHoleMission = {
 
 export type BettingHoleResult = {
   readonly holeNumber: number;
+  readonly par: number;
+  readonly backdoorOpen: boolean;
   readonly scores: readonly BettingHoleScore[];
   readonly events: readonly BettingHoleEvent[];
   readonly missions: readonly BettingHoleMission[];
@@ -75,7 +78,7 @@ export type BettingRound = {
 };
 
 type StoredBettingRoundPayload = {
-  readonly version: typeof bettingLedgerStorageVersion;
+  readonly version: 1 | typeof bettingLedgerStorageVersion;
   readonly round: BettingRound;
 };
 
@@ -139,7 +142,7 @@ export function deserializeBettingRound(raw: string | null): BettingRound | null
 
   try {
     const parsed = JSON.parse(raw) as Partial<StoredBettingRoundPayload>;
-    return parsed.version === bettingLedgerStorageVersion && isBettingRound(parsed.round) ? cloneBettingRound(parsed.round) : null;
+    return isSupportedStorageVersion(parsed.version) && isBettingRound(parsed.round) ? cloneBettingRound(parsed.round) : null;
   } catch {
     return null;
   }
@@ -151,7 +154,19 @@ export function loadBettingRound(storage: StorageLike | undefined): BettingRound
   }
 
   try {
-    return deserializeBettingRound(storage.getItem(bettingActiveRoundStorageKey));
+    const activeRound = deserializeBettingRound(storage.getItem(bettingActiveRoundStorageKey));
+
+    if (activeRound) {
+      return activeRound;
+    }
+
+    const legacyRound = deserializeBettingRound(storage.getItem(legacyBettingActiveRoundStorageKeyV1));
+
+    if (legacyRound) {
+      saveBettingRound(storage, legacyRound);
+    }
+
+    return legacyRound;
   } catch {
     return null;
   }
@@ -177,6 +192,7 @@ export function clearBettingRound(storage: StorageLike | undefined): boolean {
 
   try {
     storage.removeItem(bettingActiveRoundStorageKey);
+    storage.removeItem(legacyBettingActiveRoundStorageKeyV1);
     return true;
   } catch {
     return false;
@@ -221,6 +237,8 @@ function cloneGameUnits(units: BettingGameUnits): BettingGameUnits {
 function cloneHoleResult(hole: BettingHoleResult): BettingHoleResult {
   return {
     holeNumber: hole.holeNumber,
+    par: normalizeHolePar(hole.par),
+    backdoorOpen: hole.backdoorOpen === true,
     scores: hole.scores.map((score) => ({ ...score })),
     events: hole.events.map((event) => ({ ...event })),
     missions: hole.missions.map((mission) => ({ ...mission })),
@@ -292,6 +310,8 @@ function isBettingHoleResult(value: unknown, players: readonly BettingPlayer[]):
   }
 
   return (
+    (value.par === undefined || isIntegerInRange(value.par, 3, 5)) &&
+    (value.backdoorOpen === undefined || typeof value.backdoorOpen === 'boolean') &&
     Array.isArray(value.scores) &&
     value.scores.every((score) => isBettingHoleScore(score, players)) &&
     Array.isArray(value.events) &&
@@ -351,7 +371,16 @@ function includesValue<T extends string>(values: readonly T[], value: unknown): 
   return typeof value === 'string' && values.includes(value as T);
 }
 
+function isSupportedStorageVersion(value: unknown): value is 1 | typeof bettingLedgerStorageVersion {
+  return value === 1 || value === bettingLedgerStorageVersion;
+}
+
 function normalizePlayerCount(playerCount: number): 2 | 3 | 4 {
   const rounded = Number.isFinite(playerCount) ? Math.round(playerCount) : 4;
   return Math.min(4, Math.max(2, rounded)) as 2 | 3 | 4;
+}
+
+function normalizeHolePar(value: number): number {
+  const rounded = Number.isFinite(value) ? Math.round(value) : 4;
+  return Math.min(5, Math.max(3, rounded));
 }

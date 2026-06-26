@@ -21,7 +21,7 @@ export const bettingShareHashPrefix = 'fg=';
 export const bettingShareHashTargetLength = 1_800;
 export const bettingShareHashMaxLength = 2_200;
 
-const bettingShareSnapshotVersion = 1;
+const bettingShareSnapshotVersion = 2;
 const gameKeys = ['stroke', 'skins', 'vegas', 'events', 'missions'] as const satisfies readonly BettingGameKey[];
 const eventKeys = ['near-pin', 'longest-drive', 'birdie', 'ob-penalty'] as const satisfies readonly BettingEventKey[];
 const scoringModes = ['points', 'money'] as const satisfies readonly BettingScoringMode[];
@@ -29,6 +29,16 @@ const handicapModes = ['final-total', 'hole-allocation'] as const satisfies read
 const missionOutcomes = ['pending', 'success', 'fail'] as const satisfies readonly BettingMissionOutcome[];
 
 type ShareHashFailureReason = 'encoding-unavailable' | 'payload-too-large';
+
+export type BettingShareLabels = {
+  readonly roundName: string;
+  readonly courseName: string;
+};
+
+export type BettingShareSnapshot = {
+  readonly round: BettingRound;
+  readonly labels: BettingShareLabels;
+};
 
 export type BettingShareHashResult =
   | {
@@ -48,7 +58,7 @@ export type BettingShareHashResult =
     };
 
 export type BettingShareRestoreResult =
-  | { readonly restored: true; readonly round: BettingRound; readonly payloadLength: number; readonly saved: boolean }
+  | { readonly restored: true; readonly round: BettingRound; readonly labels: BettingShareLabels; readonly payloadLength: number; readonly saved: boolean }
   | { readonly restored: false; readonly reason: 'empty' | 'unsupported' | 'payload-too-large' | 'invalid' | 'storage-unavailable'; readonly payloadLength: number };
 
 type CompactPlayer = readonly [string, string, number];
@@ -57,7 +67,8 @@ type CompactGameUnit = readonly [number, number];
 type CompactHoleScore = readonly [number, number];
 type CompactHoleEvent = readonly [string, number, number, number];
 type CompactHoleMission = readonly [string, number, string, string, number, number];
-type CompactHole = readonly [number, readonly CompactHoleScore[], readonly CompactHoleEvent[], readonly CompactHoleMission[]];
+type CompactHole = readonly [number, number, number, readonly CompactHoleScore[], readonly CompactHoleEvent[], readonly CompactHoleMission[]];
+type CompactLabels = readonly [string, string];
 type CompactRound = readonly [
   string,
   string,
@@ -68,10 +79,12 @@ type CompactRound = readonly [
   readonly CompactGameUnit[],
   readonly CompactHole[],
 ];
-type CompactPayload = readonly [typeof bettingShareSnapshotVersion, CompactRound];
+type CompactPayload = readonly [1, CompactRound] | readonly [typeof bettingShareSnapshotVersion, CompactRound, CompactLabels];
 
-export function createBettingRoundShareHash(round: BettingRound): BettingShareHashResult {
-  const encodedPayload = encodeBase64Url(JSON.stringify(compactPayload(round)));
+const emptyShareLabels: BettingShareLabels = { roundName: '', courseName: '' };
+
+export function createBettingRoundShareHash(round: BettingRound, labels: Partial<BettingShareLabels> = emptyShareLabels): BettingShareHashResult {
+  const encodedPayload = encodeBase64Url(JSON.stringify(compactPayload(round, labels)));
 
   if (!encodedPayload) {
     return {
@@ -106,6 +119,10 @@ export function createBettingRoundShareHash(round: BettingRound): BettingShareHa
 }
 
 export function parseBettingRoundShareHash(rawHash: string): BettingRound | null {
+  return parseBettingRoundShareHashPayload(rawHash)?.round ?? null;
+}
+
+export function parseBettingRoundShareHashPayload(rawHash: string): BettingShareSnapshot | null {
   const encodedPayload = extractEncodedPayload(rawHash);
 
   if (!encodedPayload || encodedPayload.length + bettingShareHashPrefix.length + 1 > bettingShareHashMaxLength) {
@@ -141,9 +158,9 @@ export function restoreBettingRoundShareHashToStorage(rawHash: string, storage: 
     return { restored: false, reason: 'payload-too-large', payloadLength };
   }
 
-  const round = parseBettingRoundShareHash(rawHash);
+  const snapshot = parseBettingRoundShareHashPayload(rawHash);
 
-  if (!round) {
+  if (!snapshot) {
     return { restored: false, reason: 'invalid', payloadLength };
   }
 
@@ -151,11 +168,13 @@ export function restoreBettingRoundShareHashToStorage(rawHash: string, storage: 
     return { restored: false, reason: 'storage-unavailable', payloadLength };
   }
 
-  const saved = saveBettingRound(storage, round);
-  return saved ? { restored: true, round, payloadLength, saved } : { restored: false, reason: 'storage-unavailable', payloadLength };
+  const saved = saveBettingRound(storage, snapshot.round);
+  return saved
+    ? { restored: true, round: snapshot.round, labels: snapshot.labels, payloadLength, saved }
+    : { restored: false, reason: 'storage-unavailable', payloadLength };
 }
 
-function compactPayload(round: BettingRound): CompactPayload {
+function compactPayload(round: BettingRound, labels: Partial<BettingShareLabels>): CompactPayload {
   const playerIndex = new Map(round.players.map((player, index) => [player.id, index]));
 
   return [
@@ -170,7 +189,16 @@ function compactPayload(round: BettingRound): CompactPayload {
       gameKeys.map((game) => [round.gameUnits[game].points, round.gameUnits[game].money]),
       round.holes.map((hole) => compactHole(hole, playerIndex)),
     ],
+    compactLabels(labels),
   ];
+}
+
+function compactLabels(labels: Partial<BettingShareLabels>): CompactLabels {
+  return [sanitizeShareLabel(labels.roundName), sanitizeShareLabel(labels.courseName)];
+}
+
+function sanitizeShareLabel(value: string | undefined): string {
+  return (value ?? '').trim().slice(0, 80);
 }
 
 function compactPlayer(player: BettingPlayer): CompactPlayer {
@@ -180,6 +208,8 @@ function compactPlayer(player: BettingPlayer): CompactPlayer {
 function compactHole(hole: BettingHoleResult, playerIndex: ReadonlyMap<string, number>): CompactHole {
   return [
     hole.holeNumber,
+    hole.par,
+    hole.backdoorOpen ? 1 : 0,
     hole.scores.flatMap((score) => {
       const index = playerIndex.get(score.playerId);
       return index === undefined ? [] : ([[index, score.strokes]] satisfies CompactHoleScore[]);
@@ -207,13 +237,32 @@ function enabledGameMask(round: BettingRound): number {
   return gameKeys.reduce((mask, game, index) => (round.enabledGames[game] ? mask | (1 << index) : mask), 0);
 }
 
-function expandCompactPayload(value: unknown): BettingRound | null {
-  if (!Array.isArray(value) || value.length !== 2 || value[0] !== bettingShareSnapshotVersion) {
+function expandCompactPayload(value: unknown): BettingShareSnapshot | null {
+  if (!Array.isArray(value) || (value.length !== 2 && value.length !== 3) || (value[0] !== 1 && value[0] !== bettingShareSnapshotVersion)) {
+    return null;
+  }
+
+  if (value[0] === 1 && value.length !== 2) {
+    return null;
+  }
+
+  if (value[0] === bettingShareSnapshotVersion && value.length !== 3) {
     return null;
   }
 
   const round = expandCompactRound(value[1]);
-  return round ? deserializeBettingRound(JSON.stringify({ version: bettingLedgerStorageVersion, round })) : null;
+  const parsedRound = round ? deserializeBettingRound(JSON.stringify({ version: bettingLedgerStorageVersion, round })) : null;
+  const labels = value[0] === bettingShareSnapshotVersion ? expandLabels(value[2]) : emptyShareLabels;
+
+  return parsedRound && labels ? { round: parsedRound, labels } : null;
+}
+
+function expandLabels(value: unknown): BettingShareLabels | null {
+  if (!Array.isArray(value) || value.length !== 2 || typeof value[0] !== 'string' || typeof value[1] !== 'string') {
+    return null;
+  }
+
+  return { roundName: sanitizeShareLabel(value[0]), courseName: sanitizeShareLabel(value[1]) };
 }
 
 function expandCompactRound(value: unknown): BettingRound | null {
@@ -300,15 +349,28 @@ function expandHoles(value: unknown, players: readonly BettingPlayer[] | null): 
   }
 
   const holes = value.map((hole): BettingHoleResult | null => {
-    if (!Array.isArray(hole) || hole.length !== 4 || !isInteger(hole[0])) {
+    if (!Array.isArray(hole) || (hole.length !== 4 && hole.length !== 6) || !isInteger(hole[0])) {
       return null;
     }
 
-    const scores = expandScores(hole[1], players);
-    const events = expandEvents(hole[2], players);
-    const missions = expandMissions(hole[3], players);
+    const legacyCompactHole = hole.length === 4;
+    const par = legacyCompactHole ? 4 : hole[1];
+    const backdoorOpenFlag = legacyCompactHole ? 0 : hole[2];
+    const rawScores = legacyCompactHole ? hole[1] : hole[3];
+    const rawEvents = legacyCompactHole ? hole[2] : hole[4];
+    const rawMissions = legacyCompactHole ? hole[3] : hole[5];
 
-    return scores && events && missions ? { holeNumber: hole[0], scores, events, missions } : null;
+    if (!isInteger(par) || !isInteger(backdoorOpenFlag)) {
+      return null;
+    }
+
+    const scores = expandScores(rawScores, players);
+    const events = expandEvents(rawEvents, players);
+    const missions = expandMissions(rawMissions, players);
+
+    return scores && events && missions
+      ? { holeNumber: hole[0], par, backdoorOpen: Boolean(backdoorOpenFlag), scores, events, missions }
+      : null;
   });
 
   return holes.every((hole): hole is BettingHoleResult => hole !== null) ? holes : null;

@@ -42,6 +42,7 @@ export type BettingRoundSession = BettingRoundSessionState & {
   readonly updatePlayer: (playerId: string, patch: Partial<Pick<BettingPlayer, 'name' | 'handicap'>>) => void;
   readonly setGameEnabled: (game: BettingGameKey, enabled: boolean) => void;
   readonly updateGameUnit: (game: BettingGameKey, patch: Partial<BettingGameUnit>) => void;
+  readonly updateHoleSetup: (holeNumber: number, patch: Partial<Pick<BettingHoleResult, 'par' | 'backdoorOpen'>>) => void;
   readonly updateHoleScore: (holeNumber: number, playerId: string, strokes: number) => void;
   readonly toggleHoleEvent: (holeNumber: number, event: BettingEventKey, playerId: string, points?: number) => void;
   readonly setHoleMission: (holeNumber: number, mission: BettingHoleMission) => void;
@@ -173,6 +174,24 @@ export function applyGameUnitMutation(
         },
       },
     },
+    now,
+  );
+}
+
+export function applyHoleSetupMutation(
+  round: BettingRound,
+  holeNumber: number,
+  patch: Partial<Pick<BettingHoleResult, 'par' | 'backdoorOpen'>>,
+  now = new Date().toISOString(),
+): BettingRound {
+  return mutateHole(
+    round,
+    holeNumber,
+    (hole) => ({
+      ...hole,
+      par: patch.par === undefined ? hole.par : clampInteger(patch.par, 3, 5),
+      backdoorOpen: patch.backdoorOpen ?? hole.backdoorOpen,
+    }),
     now,
   );
 }
@@ -312,6 +331,7 @@ export function useBettingRoundSession(storageProvider: () => StorageLike | unde
     updatePlayer: (playerId, patch) => mutateRound((round) => applyPlayerMutation(round, playerId, patch), '플레이어 설정을 이 기기에 저장했습니다.'),
     setGameEnabled: (game, enabled) => mutateRound((round) => applyGameEnabledMutation(round, game, enabled), '게임 구성을 이 기기에 저장했습니다.'),
     updateGameUnit: (game, patch) => mutateRound((round) => applyGameUnitMutation(round, game, patch), '게임 단위를 이 기기에 저장했습니다.'),
+    updateHoleSetup: (holeNumber, patch) => mutateRound((round) => applyHoleSetupMutation(round, holeNumber, patch), '홀 파와 뒷문오픈 설정을 이 기기에 저장했습니다.'),
     updateHoleScore: (holeNumber, playerId, strokes) =>
       mutateRound((round) => applyHoleScoreMutation(round, holeNumber, playerId, strokes), '홀 스코어를 이 기기에 저장했습니다.'),
     toggleHoleEvent: (holeNumber, event, playerId, points) =>
@@ -355,7 +375,7 @@ function mutateHole(
 ): BettingRound {
   const normalizedHoleNumber = clampInteger(holeNumber, 1, round.settings.holeCount);
   const existingHole = round.holes.find((hole) => hole.holeNumber === normalizedHoleNumber);
-  const baseHole = existingHole ?? { holeNumber: normalizedHoleNumber, scores: [], events: [], missions: [] };
+  const baseHole = existingHole ?? { holeNumber: normalizedHoleNumber, par: 4, backdoorOpen: false, scores: [], events: [], missions: [] };
   const nextHole = mutate(baseHole);
   const holes = existingHole
     ? round.holes.map((hole) => (hole.holeNumber === normalizedHoleNumber ? nextHole : hole))

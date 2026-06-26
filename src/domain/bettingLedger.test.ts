@@ -49,6 +49,10 @@ describe('golf betting ledger domain setup', () => {
     expect(createDefaultRound({ playerCount: 2 }).players).toHaveLength(2);
     expect(createDefaultRound({ playerCount: 3 }).players).toHaveLength(3);
     expect(createDefaultRound({ playerCount: 4 }).players).toHaveLength(4);
+    expect(createDefaultRound({ playerCount: 4 }).players.map((player) => player.name)).not.toEqual(
+      expect.arrayContaining(['민준', '서연', '도윤', '지우']),
+    );
+    expect(createDefaultRound({ playerCount: 4 }).players.map((player) => player.handicap)).toEqual([0, 0, 0, 0]);
     expect(createDefaultRound({ playerCount: 4 }).enabledGames).toMatchObject({
       stroke: true,
       skins: true,
