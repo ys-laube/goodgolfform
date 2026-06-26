@@ -1,6 +1,6 @@
 # FunGolf Simple Scorecard
 
-FunGolf is a Korean, mobile-first golf scorecard for field use. It starts as a 1-person personal record and can expand to 4 players on the same device. Enter each hole with quick 온/펏 buttons, keep short hole memos, review simple round stats, and save the full scorecard as a local SVG image.
+FunGolf is a Korean, mobile-first golf scorecard for field use. It starts as a 1-person personal record and can expand to 4 players on the same device. Enter each hole with quick 온/펏 buttons, keep short hole memos, review simple round stats, and save the full scorecard as a local PNG photo.
 
 ## Product scope
 
@@ -12,7 +12,7 @@ FunGolf is a Korean, mobile-first golf scorecard for field use. It starts as a 1
 - Selected-hole controls use large mobile-friendly 온/펏 buttons, plus 홀인원, direct stroke fallback, and clear score.
 - Each hole can keep a free-text memo.
 - Round review shows total relative score, front/back relative score, score-type counts, on/putt averages, 3-putt count, and memo highlights.
-- Export creates a deterministic local SVG scorecard containing all holes, player rows, relative score cells, on/putt annotations, and non-empty memos.
+- Export creates a local PNG photo containing all holes, player rows, relative score cells, on/putt annotations, round review, and non-empty memos.
 - Active round persistence is local-only with `fungolf-scorecard:active-round:v1`.
 
 ## Replacement and stale data policy

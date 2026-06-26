@@ -3,7 +3,7 @@ import { useState, type CSSProperties } from 'react';
 import { ScorecardGrid } from './ScorecardGrid';
 import { displayPlayerName, relativeScoreLabel, scoreTypeLabel, scorecardPlayerCountOptions } from './domain/scorecard';
 import { parseEditableIntegerDraft } from './inputDrafts';
-import { createScorecardExportSvg, downloadScorecardExportSvg, scorecardExportFileName } from './scorecardExport';
+import { createScorecardExportSvg, saveScorecardExportPng, scorecardExportFileName } from './scorecardExport';
 import { useScorecardController } from './useScorecardController';
 import { useScorecardSession } from './useScorecardSession';
 
@@ -73,11 +73,16 @@ export function App() {
     controller.updateManualScore(playerId, value);
   }
 
-  function handleExportSvg() {
+  async function handleExportPng() {
     const now = new Date().toISOString();
     const exportSvg = createScorecardExportSvg({ roundName: round.roundName, courseName: round.courseName, generatedAt: now, view: controller.roundView });
-    const ok = downloadScorecardExportSvg(scorecardExportFileName(round.courseName || round.roundName, now), exportSvg);
-    setExportStatus(ok ? '스코어카드 SVG 이미지를 저장했습니다.' : '브라우저 밖에서는 이미지 저장을 실행할 수 없습니다.');
+    setExportStatus('스코어카드 사진을 만드는 중입니다.');
+    const result = await saveScorecardExportPng(scorecardExportFileName(round.courseName || round.roundName, now), exportSvg);
+    if (result.ok) {
+      setExportStatus(result.method === 'photo-menu' ? '사진 저장 메뉴를 열었습니다. 사진 앱에 저장을 선택해 주세요.' : 'PNG 사진 파일로 저장했습니다.');
+      return;
+    }
+    setExportStatus(result.reason === 'share-cancelled' ? '사진 저장을 취소했습니다.' : '이 브라우저에서는 사진 저장을 실행할 수 없습니다.');
   }
 
   return (
@@ -302,10 +307,10 @@ export function App() {
         <div>
           <p className="eyebrow">Save image</p>
           <h2 id="export-title">스코어카드 이미지 저장</h2>
-          <p>전체 스코어카드와 입력한 홀 메모를 SVG 이미지 파일로 휴대폰에 저장합니다.</p>
+          <p>전체 스코어카드, 라운드 리뷰, 홀 메모를 PNG 사진 한 장으로 저장합니다.</p>
         </div>
         <div className="export-actions">
-          <button className="primary-button" type="button" onClick={handleExportSvg}>스코어카드 SVG 저장</button>
+          <button className="primary-button" type="button" onClick={handleExportPng}>스코어카드 PNG 저장</button>
           <button className="secondary-button" type="button" onClick={clearSavedRound}>저장 기록 지우기</button>
         </div>
         {exportStatus ? <p className="status-text">{exportStatus}</p> : null}

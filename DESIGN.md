@@ -10,7 +10,7 @@ FunGolf should feel like a premium Korean mobile utility for a golfer walking th
 2. **스코어카드** — front/back grid with hole row, par row, and one player row per active player.
 3. **홀 입력** — selected-hole 온/펏 buttons, 홀인원, direct stroke fallback, clear score, and hole memo.
 4. **라운드 리뷰** — total relative score, front/back relative score, score-type counts, on/putt averages, 3-putt count, and memo highlights.
-5. **이미지 저장** — local SVG export with full scorecard and non-empty memos.
+5. **이미지 저장** — local PNG export with full scorecard, round review, and non-empty memos.
 
 ## Interaction principles
 
@@ -26,8 +26,8 @@ FunGolf should feel like a premium Korean mobile utility for a golfer walking th
 - Mobile-first width, safe-area padding, rounded cards, quiet separators, and high-contrast text.
 - Premium palette: soft neutral base, deep slate surfaces, restrained green/blue accents.
 - Minimum touch target: roughly 44px height for primary controls.
-- Scorecard grid uses horizontal scroll on small phones while keeping row labels sticky.
-- Exported SVG should look screenshot-worthy and readable when opened from iPhone or Samsung Gallery/File apps.
+- Scorecard grid fits each front/back nine-hole half into the available phone width without hiding 5H–9H or 14H–18H.
+- Exported PNG should look screenshot-worthy and readable when saved from iPhone or Samsung browser flows.
 
 ## Copy boundaries
 
