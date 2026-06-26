@@ -41,6 +41,16 @@ const eventLabels: Record<BettingEventKey, string> = {
 
 type GameUnitField = 'points' | 'money';
 
+function parseEditableIntegerDraft(value: string): number | null {
+  const trimmed = value.trim();
+
+  if (trimmed === '' || !/^-?\d+$/.test(trimmed)) {
+    return null;
+  }
+
+  return Number.parseInt(trimmed, 10);
+}
+
 function parseIntegerDraft(value: string, fallback: number): number {
   return parseEditableIntegerDraft(value) ?? fallback;
 }
@@ -179,7 +189,8 @@ export function App() {
   const [roundName, setRoundName] = useState('');
   const [courseName, setCourseName] = useState('');
   const [currentHoleDraft, setCurrentHoleDraft] = useState('');
-  const [parDraft, setParDraft] = useState('');
+  const [parDraftsByHole, setParDraftsByHole] = useState<Record<number, string>>({});
+  const [backdoorOpenByHole, setBackdoorOpenByHole] = useState<Record<number, boolean>>({});
   const [holeCountDraft, setHoleCountDraft] = useState<string | null>(null);
   const [playerHandicapDrafts, setPlayerHandicapDrafts] = useState<Record<string, string>>({});
   const [gameUnitDrafts, setGameUnitDrafts] = useState<Record<string, string>>({});
@@ -223,6 +234,56 @@ export function App() {
   function scoreInputValue(playerId: string): string {
     const draftKey = `${holeNumber}:${playerId}`;
     return scoreDrafts[draftKey] ?? scoreForPlayer(round, holeNumber, playerId)?.toString() ?? '';
+  }
+
+  function gameUnitDraftKey(game: BettingGameKey, field: GameUnitField): string {
+    return `${game}:${field}`;
+  }
+
+  function gameUnitInputValue(game: BettingGameKey, field: GameUnitField): string {
+    return gameUnitDrafts[gameUnitDraftKey(game, field)] ?? round.gameUnits[game][field].toString();
+  }
+
+  function playerHandicapInputValue(playerId: string, handicap: number): string {
+    return playerHandicapDrafts[playerId] ?? handicap.toString();
+  }
+
+  function commitIntegerDraft(value: string, commit: (parsedValue: number) => void) {
+    const parsedValue = parseEditableIntegerDraft(value);
+
+    if (parsedValue !== null) {
+      commit(parsedValue);
+    }
+  }
+
+  function updatePlayerHandicap(playerId: string, value: string) {
+    setPlayerHandicapDrafts((current) => ({ ...current, [playerId]: value }));
+    setShareReady(false);
+    commitIntegerDraft(value, (handicap) => session.updatePlayer(playerId, { handicap }));
+  }
+
+  function updateGameUnitDraft(game: BettingGameKey, field: GameUnitField, value: string) {
+    setGameUnitDrafts((current) => ({ ...current, [gameUnitDraftKey(game, field)]: value }));
+    setShareReady(false);
+    commitIntegerDraft(value, (unitValue) => {
+      session.updateGameUnit(game, field === 'points' ? { points: unitValue } : { money: unitValue });
+    });
+  }
+
+  function updateHoleCountDraft(value: string) {
+    setHoleCountDraft(value);
+    setShareReady(false);
+    commitIntegerDraft(value, (holeCount) => session.updateRoundSetup({ holeCount }));
+  }
+
+  function updateParDraft(value: string) {
+    setParDraftsByHole((current) => ({ ...current, [holeNumber]: value }));
+    setShareReady(false);
+  }
+
+  function toggleBackdoorOpen() {
+    setBackdoorOpenByHole((current) => ({ ...current, [holeNumber]: !(current[holeNumber] ?? false) }));
+    setShareReady(false);
   }
 
   function updateScoreDraft(playerId: string, value: string) {
@@ -273,7 +334,8 @@ export function App() {
     setRoundName('');
     setCourseName('');
     setCurrentHoleDraft('');
-    setParDraft('');
+    setParDraftsByHole({});
+    setBackdoorOpenByHole({});
     setHoleCountDraft('');
     setPlayerHandicapDrafts({ 'player-1': '', 'player-2': '', 'player-3': '', 'player-4': '' });
     setGameUnitDrafts({});
