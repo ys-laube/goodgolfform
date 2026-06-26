@@ -176,6 +176,17 @@ describe('useBettingRoundSession local state helpers', () => {
     ]);
   });
 
+  it('caps raw hole scores at the backdoor-open maximum', () => {
+    const round = createDefaultBettingRound({ now: '2026-06-25T00:00:00.000Z' });
+    const highScoreRound = applyHoleScoreMutation(round, 1, 'player-1', 99, '2026-06-25T01:00:00.000Z');
+    const lowScoreRound = applyHoleScoreMutation(highScoreRound, 1, 'player-2', 0, '2026-06-25T01:01:00.000Z');
+
+    expect(lowScoreRound.holes[0]?.scores).toEqual([
+      { playerId: 'player-1', strokes: 30 },
+      { playerId: 'player-2', strokes: 1 },
+    ]);
+  });
+
   it('uses the same default event points as the ledger when points are omitted', () => {
     const round = createDefaultBettingRound({ now: '2026-06-25T00:00:00.000Z' });
     const eventRound = applyHoleEventToggleMutation(round, 1, 'near-pin', 'player-2', undefined, '2026-06-25T01:01:00.000Z');

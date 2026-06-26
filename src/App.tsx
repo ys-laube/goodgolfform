@@ -400,6 +400,34 @@ export function App() {
           <h2 id="hole-title">{holeNumber}번 홀 스코어</h2>
         </div>
 
+        <div className="scorecard-nav" aria-label="스코어카드 홀 선택">
+          <div className="scorecard-tabs" role="tablist" aria-label="전반 후반 선택">
+            <button className={activeNine === 'front' ? 'scorecard-tab active' : 'scorecard-tab'} type="button" onClick={() => updateHoleDraft('1')}>
+              전반 1-9
+            </button>
+            <button
+              className={activeNine === 'back' ? 'scorecard-tab active' : 'scorecard-tab'}
+              type="button"
+              onClick={() => updateHoleDraft(Math.min(10, round.settings.holeCount).toString())}
+              disabled={round.settings.holeCount < 10}
+            >
+              후반 10-18
+            </button>
+          </div>
+          <div className="scorecard-hole-grid">
+            {visibleHoleNumbers.map((scorecardHoleNumber) => (
+              <button
+                className={scorecardHoleNumber === holeNumber ? 'scorecard-hole active' : 'scorecard-hole'}
+                key={scorecardHoleNumber}
+                type="button"
+                onClick={() => updateHoleDraft(scorecardHoleNumber.toString())}
+              >
+                {scorecardHoleNumber}H
+              </button>
+            ))}
+          </div>
+        </div>
+
         <div className="hole-toolbar">
           <label>
             홀
@@ -407,7 +435,7 @@ export function App() {
           </label>
           <label>
             파
-            <input inputMode="numeric" value={parDraft} onChange={(event) => setParDraft(event.currentTarget.value)} />
+            <input inputMode="numeric" value={holeParDraft} onChange={(event) => updateParDraft(event.currentTarget.value)} />
           </label>
           <label>
             총 홀 수
@@ -419,26 +447,58 @@ export function App() {
           </label>
         </div>
 
+        <div className="scorecard-meta-grid" aria-label="현재 홀 입력 규칙">
+          <p>
+            <strong>파 row</strong>
+            <span>{holePar}파 기준 · 홀인원부터 더블파({holePar * 2}타)까지 버튼 입력</span>
+          </p>
+          <button className={backdoorOpen ? 'backdoor-toggle active' : 'backdoor-toggle'} type="button" onClick={toggleBackdoorOpen}>
+            <strong>뒷문오픈 row</strong>
+            <span>{backdoorOpen ? `${maximumHoleScoreStrokes}타까지 직접 입력` : '더블파까지만 버튼 입력'}</span>
+          </button>
+        </div>
+
         <div className="score-list" aria-label="홀별 타수 입력">
           {round.players.map((player, index) => {
             const rawScore = scoreForPlayer(round, holeNumber, player.id) ?? 0;
             const netScore = ledger.handicap.netHoleScores[holeNumber]?.[player.id] ?? rawScore;
 
             return (
-              <label className="score-row" key={player.id}>
-                <span>
-                  <strong>{player.name}</strong>
-                  <em>{playerTeam(index)} · 네트 {netScore || '-'}</em>
-                </span>
-                <input
-                  inputMode="numeric"
-                  value={scoreInputValue(player.id)}
-                  placeholder={`${holePar + 1}`}
-                  onChange={(event) => updateScore(player.id, event.currentTarget.value)}
-                  aria-label={`${player.name} 타수`}
-                />
-                <b>{signedAmountLabel(ledger.playerBalances[player.id]?.money ?? 0, 'money')}</b>
-              </label>
+              <article className="score-row" key={player.id}>
+                <div className="score-row-header">
+                  <span>
+                    <strong>{player.name}</strong>
+                    <em>{playerTeam(index)} · 네트 {netScore || '-'}</em>
+                  </span>
+                  <small>{scoreSummary(rawScore, holePar)}</small>
+                  <b>{signedAmountLabel(ledger.playerBalances[player.id]?.money ?? 0, 'money')}</b>
+                </div>
+                <div className="score-options" aria-label={`${player.name} 상대 스코어`}>
+                  {scoreChoices.map((strokes) => (
+                    <button
+                      className={rawScore === strokes ? 'score-choice active' : 'score-choice'}
+                      key={`${player.id}:${strokes}`}
+                      type="button"
+                      onClick={() => updateScoreButton(player.id, strokes)}
+                    >
+                      <strong>{scoreChoiceLabel(strokes, holePar)}</strong>
+                      <span>{strokes}타</span>
+                    </button>
+                  ))}
+                </div>
+                {backdoorOpen ? (
+                  <label className="extended-score-entry">
+                    뒷문오픈 직접 타수
+                    <input
+                      inputMode="numeric"
+                      value={scoreInputValue(player.id)}
+                      placeholder={`${holePar * 2 + 1}–${maximumHoleScoreStrokes}`}
+                      onChange={(event) => updateScoreDraft(player.id, event.currentTarget.value)}
+                      aria-label={`${player.name} 뒷문오픈 타수`}
+                    />
+                  </label>
+                ) : null}
+              </article>
             );
           })}
         </div>
