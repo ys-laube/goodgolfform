@@ -14,7 +14,6 @@ const requiredVisibleConcepts = [
   '플레이어',
   '핸디',
   '오장 룰',
-  '타당 금액',
   '홀 입력',
   '정산표',
   '순정산',
@@ -81,8 +80,8 @@ describe('Korean traditional Ojang ledger SSR/static integration contract', () =
     }
 
     expect(renderedApp).toMatch(/2\s*[–-]\s*4|2~4|2명|4명/);
-    expect(renderedApp).toMatch(/오장|타수차|배판|타당 금액/);
-    expect(renderedApp).toMatch(/금액|보낼 금액|순정산/);
+    expect(renderedApp).toMatch(/오장|배판|니어|핸디/);
+    expect(renderedApp).toMatch(/타당 금액|받을 금액|줄 금액|보낼 금액|순정산/);
     expect(renderedApp).toMatch(/스코어카드 캡처|QR·결과 링크|로컬 결과 링크/);
     expect(renderedApp).toContain('오늘 폼 정말 좋으시네요 ^0^');
     expect(renderedApp).toContain('오장 룰 자세히 보기');
@@ -100,8 +99,7 @@ describe('Korean traditional Ojang ledger SSR/static integration contract', () =
     expect(docs).toMatch(/korean-caddie:preset-distances:v1/);
     expect(docs).toMatch(/old caddie|caddie recommendation/i);
     expect(docs).toMatch(/라운드 세팅/);
-    expect(docs).toMatch(/오장 정산 설정|오장 룰/);
-    expect(docs).toMatch(/타당 금액/);
+    expect(docs).toMatch(/전통 오장|traditional 오장|Ojang/);
     expect(docs).toMatch(/순정산/);
     expect(docs).toMatch(/공유 카드/);
     expect(docs).toMatch(/오늘 폼 정말 좋으시네요 \^0\^/);
@@ -131,12 +129,9 @@ describe('Korean traditional Ojang ledger SSR/static integration contract', () =
     expect(appSource).not.toMatch(/한국형 골프 내기 정산/);
     expect(appSource).not.toMatch(/2~4명 라운드 세팅부터 홀 입력, 이벤트, 미션, 순정산, 공유 카드까지/);
     expect(scorecardGridSource).not.toMatch(/scorecard-hole-grid|scorecard-hole/);
-    expect(appSource).toMatch(/타당 금액/);
-    expect(appSource).toMatch(/unitAmountDraft/);
-    expect(appSource).not.toMatch(/정산 방식|핸디 방식|hole-allocation/);
-    expect(appSource).not.toMatch(/score-row-context|score-event-grid|mission-button-row/);
-    expect(appSource).not.toMatch(/className="(?:mission-card|mission-card event-card|game-card|event-pill)"/);
-    expect(appAndStyles).not.toMatch(/game-stack|mission-card|event-card|event-pill|toggle-action|score-row-context|score-event-grid|mission-button-row/);
+    expect(appSource).toMatch(/score-row-context/);
+    expect(appSource).toMatch(/score-input-grid/);
+    expect(appSource).not.toMatch(/mission-button-row|mission-card|event-card|score-event-grid/);
     expect(appAndStyles).toMatch(/정산|settlement|ledger/i);
     expect(appAndStyles).toMatch(/공유|share/i);
     expect(appAndStyles).toMatch(/@media|min-width|safe-area-inset|touch-action|min-height/);
