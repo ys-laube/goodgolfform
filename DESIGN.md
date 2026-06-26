@@ -11,7 +11,7 @@ FunGolf should feel like a premium Korean mobile utility for a foursome standing
 3. **홀 입력** — one-hand current-hole card for strokes, quick events, mission outcomes, and next-hole flow.
 4. **실시간 정산 요약** — compact running totals with points and optional money-display values.
 5. **순정산 / 계산 내역** — final payer → receiver suggestions plus expandable per-game rows.
-6. **공유 카드** — polished Korean summary card/text for group chat or screenshot sharing.
+6. **공유 카드** — polished Korean summary card/text for group chat, screenshot sharing, and local QR/result-link snapshots.
 
 ## Interaction principles
 
@@ -27,6 +27,7 @@ FunGolf should feel like a premium Korean mobile utility for a foursome standing
 - Mobile-first width, safe-area padding, large headings, rounded cards, quiet separators, and high-contrast text.
 - Premium palette: deep neutral/green base, warm money/point accents, restrained neon only for state emphasis.
 - Share card should be screenshot-worthy without requiring canvas, image services, or network calls.
+- QR/result-link sharing must render locally from a URL-hash snapshot (`#fg=`), target `<=1800` characters, hard-stop at `<=2200` characters, and add no backend/provider dependency.
 
 ## Copy boundaries
 

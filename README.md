@@ -10,8 +10,8 @@ This prototype focuses on private score and settlement bookkeeping:
 - Fixed first-version game set: stroke/per-point, skins with carryover, 4-player Vegas/team mode, event bonus/penalty rows, and a pre-authored Korean mission card deck.
 - Fast hole input for raw strokes, event markers, mission outcomes, and running settlement updates.
 - Deterministic calculation breakdowns showing raw scores, per-game ledgers, aggregate balances, and final payer → receiver settlement suggestions.
-- Share-ready Korean result card/text for group chat or screenshot sharing.
-- Browser `localStorage` persistence on the current device only.
+- Share-ready Korean result card/text for group chat, screenshot sharing, and local QR/result-link snapshots.
+- Browser `localStorage` persistence on the current device plus optional URL-hash snapshots carried only in the shared `#fg=` fragment.
 
 ## Replacement and stale data policy
 
@@ -27,7 +27,7 @@ FunGolf is a private ledger/calculator, not a gambling, payment, or social platf
 
 - No backend, account, login, auth, database, cloud sync, realtime room, public room, ranking, matching, or social graph.
 - No payment execution, wallet, escrow, deposit, withdrawal, payment API, or in-app settlement transfer.
-- No URL or QR app-state sharing in v1; share output is display/copy metadata only.
+- URL/QR sharing is limited to local URL-hash snapshots (`#fg=`) and QR-like result-link rendering in the browser; no backend, account, provider, network API, or new dependency may be added for sharing.
 - No GPS, map, weather, location permission, caddie recommendation, club-distance advice, shot coaching, or 3D visual runtime.
 - No custom rule builder in v1; use the fixed game set and fixed mission deck.
 - Apple-inspired visual polish is used only as general design inspiration. There is no Apple logo, asset, trademark affiliation, or endorsement claim.
@@ -55,4 +55,4 @@ git diff --check
 
 ## Static guard coverage
 
-`npm run test` includes SSR/static guards for retired recommendation surfaces, forbidden backend/network/provider SDKs, payment-execution boundaries, local-only storage naming, and the required Korean betting-ledger screen concepts. Keep those guards green before release.
+`npm run test` includes SSR/static guards for retired recommendation surfaces, forbidden backend/network/provider SDKs, payment-execution boundaries, local-only storage naming, local URL-hash snapshot sharing, and the required Korean betting-ledger screen concepts. Local result-link payloads target `<=1800` characters and must hard-stop at `<=2200` characters. Keep those guards green before release.

@@ -40,7 +40,7 @@ const forbiddenTransactionPattern = new RegExp(['송' + '금', '결' + '제', '�
 const appleAffiliationPattern = /Apple(?:\s+Inc\.|\s+logo|\s+official|\s+certified)|애플\s*(?:공식|인증|제휴|로고)/i;
 
 function withPoisonedBrowserGlobals<T>(assertions: () => T): T {
-  const globalNames = ['window', 'localStorage', 'sessionStorage', 'navigator', 'fetch', 'Web' + 'Socket', 'Event' + 'Source', 'XML' + 'HttpRequest'] as const;
+  const globalNames = ['window', 'location', 'history', 'localStorage', 'sessionStorage', 'navigator', 'fetch', 'Web' + 'Socket', 'Event' + 'Source', 'XML' + 'HttpRequest'] as const;
   const descriptors = Object.fromEntries(globalNames.map((name) => [name, Object.getOwnPropertyDescriptor(globalThis, name)])) as Record<
     (typeof globalNames)[number],
     PropertyDescriptor | undefined
@@ -81,8 +81,7 @@ describe('Korean betting-ledger SSR/static integration contract', () => {
     expect(renderedApp).toMatch(/2\s*[–-]\s*4|2~4|2명|4명/);
     expect(renderedApp).toMatch(/스트로크|스킨|베가스|이벤트|미션/);
     expect(renderedApp).toMatch(/포인트|금액|받을 금액|줄 금액/);
-    expect(renderedApp).toMatch(/뒷문오픈/);
-    expect(renderedApp).toMatch(/더블파/);
+    expect(renderedApp).toMatch(/스코어카드 캡처|QR·결과 링크|로컬 결과 링크/);
     expect(renderedApp).not.toMatch(retiredCaddieVisiblePattern);
     expect(renderedApp).not.toMatch(forbiddenTransactionPattern);
     expect(renderedApp).not.toMatch(appleAffiliationPattern);
@@ -101,7 +100,9 @@ describe('Korean betting-ledger SSR/static integration contract', () => {
     expect(docs).toMatch(/공유 카드/);
     expect(docs).toMatch(/Apple-inspired|Apple-inspired visual polish|Apple-inspired styling/i);
     expect(docs).toMatch(/no Apple logo|Apple logos|애플.*로고/i);
-    expect(docs).toMatch(/No backend|No payment execution|No URL or QR app-state sharing/i);
+    expect(docs).toMatch(/No backend|No payment execution/i);
+    expect(docs).toMatch(/URL-hash snapshots|#fg=|QR\/result-link/i);
+    expect(docs).toMatch(/<=1800|<=2200/);
   });
 
   it('keeps browser metadata on the betting-ledger product instead of the retired caddie app', () => {

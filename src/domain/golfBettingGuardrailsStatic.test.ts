@@ -94,4 +94,14 @@ describe('betting-ledger static guardrails', () => {
     expect(combinedRuntimeSource).not.toMatch(customRuleBuilderPattern);
     expect(combinedRuntimeSource).toMatch(/localStorage|StorageLike|golf-bet-ledger|local/i);
   });
+
+  it('allows only bounded local URL-hash share snapshots for QR/result-link sharing', () => {
+    const combinedRuntimeSource = runtimeSourceEntries.map(([modulePath, source]) => `// ${modulePath}\n${source}`).join('\n');
+
+    expect(combinedRuntimeSource).toMatch(/bettingShareHashPrefix\s*=\s*['"]fg=['"]/);
+    expect(combinedRuntimeSource).toMatch(/bettingShareHashTargetLength\s*=\s*1_800/);
+    expect(combinedRuntimeSource).toMatch(/bettingShareHashMaxLength\s*=\s*2_200/);
+    expect(combinedRuntimeSource).toMatch(/createBettingRoundShareHash|restoreBettingRoundShareHashToStorage/);
+    expect(combinedRuntimeSource).not.toMatch(/https?:\/\/|new\s+URL\(|URLSearchParams|QRCode|qr-code|qrcode/i);
+  });
 });
