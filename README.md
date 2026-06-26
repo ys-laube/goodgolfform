@@ -1,35 +1,37 @@
-# FunGolf Traditional Ojang Ledger
+# FunGolf Simple Scorecard
 
-FunGolf is a Korean, mobile-first traditional 오장 settlement ledger for friends on the course. It is a local-only calculator: set 2–4 players, enter each hole by 온/펏 or direct strokes, and see deterministic payer → receiver settlement suggestions.
+FunGolf is a Korean, mobile-first golf scorecard for field use. It starts as a 1-person personal record and can expand to 4 players on the same device. Enter each hole with quick 온/펏 buttons, keep short hole memos, review simple round stats, and save the full scorecard as a local SVG image.
 
 ## Product scope
 
-- Hero title is exactly `오늘 폼 정말 좋으시네요 ^0^` with an `오장 룰 자세히 보기` button for the built-in rule explanation.
-- 2–4 player setup with editable blank names, final-total handicaps, and configurable 타당 금액. Default 타당 금액 is 5,000원.
-- One ruleset only: traditional 오장. Previous side-mode toggles, bonus cards, team side games, scoring-mode switches, and hole-allocation handicap modes are intentionally removed.
-- Front/back scorecard input with 1–18 holes, par row, 뒷문오픈 row, player rows, 온/펏 buttons, 홀인원, 파3 니어 selection, and optional direct backdoor strokes.
-- Settlement engine calculates pairwise 타수차, 배판, 4명 동타 이월, 버디/이글/홀인원 값, 파3 니어/니뻐, and final-total handicap delta.
-- Bottom share card has only local SVG scorecard export and QR/result-link URL-hash snapshots.
-- Browser `localStorage` persistence stays on the current device. URL-hash sharing uses only the `#fg=` fragment.
+- Hero title is exactly `오늘 폼 정말 좋으시네요 ^0^`.
+- 1-player default, with selectable 1–4 player support.
+- Blank, editable player names; fields can be fully cleared with Backspace.
+- Front/back scorecard grid for 1–18 holes with par row and player rows.
+- Each score cell shows only the relative score (`0`, `-1`, `+2`, or `—`) plus a small `온 N · 펏 N` annotation.
+- Selected-hole controls use large mobile-friendly 온/펏 buttons, plus 홀인원, direct stroke fallback, and clear score.
+- Each hole can keep a free-text memo.
+- Round review shows total relative score, front/back relative score, score-type counts, on/putt averages, 3-putt count, and memo highlights.
+- Export creates a deterministic local SVG scorecard containing all holes, player rows, relative score cells, on/putt annotations, and non-empty memos.
+- Active round persistence is local-only with `fungolf-scorecard:active-round:v1`.
 
 ## Replacement and stale data policy
 
-This app is a full product-surface replacement. Old caddie recommendation flows, club-distance presets, shot-coaching visuals, map/weather/provider experiments, and prior betting-game surfaces are obsolete.
+This app is a full replacement of previous experiments. Old experiments and unrelated product surfaces are obsolete.
 
-- New active storage uses `golf-bet-ledger:active-round:v3`; safe v1/v2 restore paths normalize old payloads into the single Ojang model.
-- Old keys such as `korean-caddie:preset-distances:v1` are ignored or safely purged when explicitly handled.
-- Caddie distance presets are never migrated into player names, hole results, or settlement data.
+- New active storage uses only `fungolf-scorecard:active-round:v1`.
+- Previous local payload families are not restored into the scorecard model.
+- Previous preset payloads are not migrated into player names, hole scores, memos, or export payloads.
 
-## Non-goals and safety boundaries
+## Non-goals
 
-FunGolf is a private ledger/calculator, not a payment or social platform.
+FunGolf is a private score recorder, not a social, coaching, payment, or external-service app.
 
 - No backend, account, login, auth, database, cloud sync, realtime room, public room, ranking, matching, or social graph.
-- No payment execution, wallet, escrow, deposit, withdrawal, payment API, or in-app settlement transfer.
-- URL/QR sharing is limited to local URL-hash snapshots (`#fg=`) and QR-like result-link rendering in the browser; no backend, account, provider, network API, or new dependency may be added for sharing.
-- No GPS, map, weather, location permission, caddie recommendation, club-distance advice, shot coaching, or 3D visual runtime.
-- No custom rule builder; only 타당 금액 and final-total player handicaps are configurable.
-- Apple-inspired visual polish is used only as general design inspiration. There is no Apple logo, asset, trademark affiliation, or endorsement claim.
+- No in-app money movement or transaction workflow.
+- No public link, Web Share dependency, or server image rendering.
+- No external field-data integrations, recommendation flow, coaching flow, or 3D/canvas runtime.
+- No new runtime dependencies.
 
 ## Setup
 
@@ -47,7 +49,3 @@ npm run test
 npm run build
 git diff --check
 ```
-
-## Static guard coverage
-
-`npm run test` includes SSR/static guards for retired recommendation surfaces, forbidden backend/network/provider SDKs, payment-execution boundaries, local-only storage naming, v3 local URL-hash snapshot sharing, scorecard/export behavior, no runtime sample names, and the required Korean Ojang ledger screen concepts. Local result-link payloads target `<=1800` characters and must hard-stop at `<=2200` characters.

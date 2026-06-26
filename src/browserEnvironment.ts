@@ -1,4 +1,4 @@
-import type { StorageLike } from './domain/bettingStorage';
+import type { StorageLike } from './domain/scorecardStorage';
 
 function browserWindow(): Window | undefined {
   try {

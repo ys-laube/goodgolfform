@@ -1,207 +1,148 @@
 import { useState } from 'react';
 
-import { maximumHoleScoreStrokes, type BettingHoleResult, type BettingHoleScore, type BettingRound } from './domain/bettingStorage';
+import {
+  buildScorecardView,
+  holeForNumber,
+  maximumScorecardStrokes,
+  relativeScoreLabel,
+  scoreForPlayer,
+  type ScorecardHoleScore,
+  type ScorecardRound,
+} from './domain/scorecard';
 import { parseEditableIntegerDraft } from './inputDrafts';
-import type { BettingHoleScoreInput } from './useBettingRoundSession';
+import type { ScorecardRoundSession } from './useScorecardSession';
 
 type ScorecardControllerOptions = {
-  readonly round: BettingRound;
-  readonly updateHoleSetup: (holeNumber: number, patch: Partial<Pick<BettingHoleResult, 'par' | 'backdoorOpen'>>) => void;
-  readonly updateHoleScore: (holeNumber: number, playerId: string, score: BettingHoleScoreInput) => void;
-  readonly markDirty: () => void;
+  readonly round: ScorecardRound;
+  readonly session: Pick<ScorecardRoundSession, 'updateHoleSetup' | 'updateHoleScore' | 'updateHoleMemo'>;
 };
 
-export function useScorecardController({ round, updateHoleSetup, updateHoleScore, markDirty }: ScorecardControllerOptions) {
-  const [currentHoleDraft, setCurrentHoleDraft] = useState('');
+export function useScorecardController({ round, session }: ScorecardControllerOptions) {
+  const [currentHoleDraft, setCurrentHoleDraft] = useState('1');
   const [parDraftsByHole, setParDraftsByHole] = useState<Record<number, string>>({});
-  const [scoreDrafts, setScoreDrafts] = useState<Record<string, string>>({});
+  const [memoDraftsByHole, setMemoDraftsByHole] = useState<Record<number, string>>({});
 
-  const holeNumber = Math.min(round.settings.holeCount, Math.max(1, parseIntegerDraft(currentHoleDraft, 1)));
-  const holeParDraft = parInputValue(holeNumber);
-  const holePar = clampInteger(parseIntegerDraft(holeParDraft, 4), 3, 5);
-  const backdoorOpen = backdoorOpenForHole(holeNumber);
+  const parsedHoleNumber = parseIntegerDraft(currentHoleDraft, 1);
+  const holeNumber = Math.min(round.settings.holeCount, Math.max(1, parsedHoleNumber));
   const activeNine: 'front' | 'back' = holeNumber > 9 ? 'back' : 'front';
   const firstHoleInActiveNine = activeNine === 'front' ? 1 : 10;
   const visibleHoleNumbers = Array.from(
     { length: Math.max(0, Math.min(9, round.settings.holeCount - firstHoleInActiveNine + 1)) },
     (_, index) => firstHoleInActiveNine + index,
   );
+  const roundView = buildScorecardView(round);
 
-  function storedHole(targetHoleNumber: number) {
-    return round.holes.find((hole) => hole.holeNumber === targetHoleNumber);
+  function selectHole(targetHoleNumber: number) {
+    setCurrentHoleDraft(Math.min(round.settings.holeCount, Math.max(1, targetHoleNumber)).toString());
   }
 
   function parInputValue(targetHoleNumber: number): string {
-    return parDraftsByHole[targetHoleNumber] ?? (storedHole(targetHoleNumber)?.par ?? 4).toString();
+    return parDraftsByHole[targetHoleNumber] ?? holeForNumber(round, targetHoleNumber).par.toString();
   }
 
   function parForHole(targetHoleNumber: number): number {
     return clampInteger(parseIntegerDraft(parInputValue(targetHoleNumber), 4), 3, 5);
   }
 
-  function backdoorOpenForHole(targetHoleNumber: number): boolean {
-    return storedHole(targetHoleNumber)?.backdoorOpen ?? false;
-  }
-
-  function scoreInputValue(playerId: string): string {
-    const draftKey = `${holeNumber}:${playerId}`;
-    return scoreDrafts[draftKey] ?? scoreForPlayer(round, holeNumber, playerId)?.strokes.toString() ?? '';
-  }
-
-  function scorecardCellLabel(targetHoleNumber: number, playerId: string): string {
-    const score = scoreForPlayer(round, targetHoleNumber, playerId);
-    return score ? scoreLabel(score) : '—';
-  }
-
-  function updateHoleDraft(value: string) {
-    setCurrentHoleDraft(value);
-    markDirty();
-  }
-
-  function updateParDraft(value: string) {
-    updateParDraftForHole(holeNumber, value);
-  }
-
   function updateParDraftForHole(targetHoleNumber: number, value: string) {
     setParDraftsByHole((current) => ({ ...current, [targetHoleNumber]: value }));
-    setCurrentHoleDraft(targetHoleNumber.toString());
-    markDirty();
-    commitIntegerDraft(value, (par) => updateHoleSetup(targetHoleNumber, { par }));
+    selectHole(targetHoleNumber);
+    commitIntegerDraft(value, (par) => session.updateHoleSetup(targetHoleNumber, { par }));
   }
 
-  function toggleBackdoorOpen() {
-    toggleBackdoorOpenForHole(holeNumber);
+  function memoInputValue(targetHoleNumber = holeNumber): string {
+    return memoDraftsByHole[targetHoleNumber] ?? holeForNumber(round, targetHoleNumber).memo;
   }
 
-  function toggleBackdoorOpenForHole(targetHoleNumber: number) {
-    setCurrentHoleDraft(targetHoleNumber.toString());
-    markDirty();
-    updateHoleSetup(targetHoleNumber, { backdoorOpen: !backdoorOpenForHole(targetHoleNumber) });
-  }
-
-  function updateScoreDraft(playerId: string, value: string) {
-    const draftKey = `${holeNumber}:${playerId}`;
-    setScoreDrafts((current) => ({ ...current, [draftKey]: value }));
-    markDirty();
-
-    if (value === '') {
-      return;
-    }
-
-    if (/^\d{1,2}$/.test(value)) {
-      const normalizedScore = clampInteger(parseIntegerDraft(value, holePar + 1), 1, maximumHoleScoreStrokes);
-      setScoreDrafts((current) => ({ ...current, [draftKey]: normalizedScore.toString() }));
-      updateHoleScore(holeNumber, playerId, { strokes: normalizedScore, entryMode: 'manual' });
-    }
+  function updateMemoDraft(targetHoleNumber: number, value: string) {
+    setMemoDraftsByHole((current) => ({ ...current, [targetHoleNumber]: value }));
+    selectHole(targetHoleNumber);
+    session.updateHoleMemo(targetHoleNumber, value);
   }
 
   function updateOnGreenShots(playerId: string, onGreenShots: number) {
     const currentScore = scoreForPlayer(round, holeNumber, playerId);
-    const normalizedOn = clampInteger(onGreenShots, 1, 6);
-    const putts = currentScore?.entryMode === 'on-putt' && currentScore.putts !== undefined ? currentScore.putts : 0;
+    const normalizedOn = clampInteger(onGreenShots, 1, 9);
+    const putts = currentScore?.entryMode === 'on-putt' && currentScore.putts !== undefined ? currentScore.putts : 2;
     commitOnPuttScore(playerId, normalizedOn, putts);
   }
 
   function updatePutts(playerId: string, putts: number) {
     const currentScore = scoreForPlayer(round, holeNumber, playerId);
-    const onGreenShots = currentScore?.entryMode === 'on-putt' && currentScore.onGreenShots !== undefined ? currentScore.onGreenShots : 1;
-    commitOnPuttScore(playerId, onGreenShots, clampInteger(putts, 0, 5));
+    const onGreenShots = currentScore?.entryMode === 'on-putt' && currentScore.onGreenShots !== undefined ? currentScore.onGreenShots : 2;
+    commitOnPuttScore(playerId, onGreenShots, clampInteger(putts, 0, 9));
   }
 
   function updateHoleInOne(playerId: string) {
-    const draftKey = `${holeNumber}:${playerId}`;
-    setScoreDrafts((current) => ({ ...current, [draftKey]: '1' }));
-    markDirty();
-    updateHoleScore(holeNumber, playerId, { strokes: 1, entryMode: 'hio', onGreenShots: 1, putts: 0, holeInOne: true });
+    session.updateHoleScore(holeNumber, playerId, { strokes: 1, entryMode: 'hio', onGreenShots: 1, putts: 0, holeInOne: true });
+  }
+
+  function clearPlayerScore(playerId: string) {
+    session.updateHoleScore(holeNumber, playerId, null);
+  }
+
+  function commitManualScore(playerId: string, value: string) {
+    const parsedValue = parseEditableIntegerDraft(value);
+    if (parsedValue !== null) {
+      session.updateHoleScore(holeNumber, playerId, { strokes: clampInteger(parsedValue, 1, maximumScorecardStrokes), entryMode: 'manual' });
+    }
+  }
+
+  function scorecardCellLabel(targetHoleNumber: number, playerId: string): string {
+    return roundView.holes.find((hole) => hole.holeNumber === targetHoleNumber)?.cells.find((cell) => cell.playerId === playerId)?.main ?? '—';
+  }
+
+  function scorecardCellSubLabel(targetHoleNumber: number, playerId: string): string {
+    return roundView.holes.find((hole) => hole.holeNumber === targetHoleNumber)?.cells.find((cell) => cell.playerId === playerId)?.sub ?? '';
+  }
+
+  function relativeScoreForPlayer(targetHoleNumber: number, playerId: string): string {
+    const score = scoreForPlayer(round, targetHoleNumber, playerId);
+    if (!score) {
+      return '—';
+    }
+    return relativeScoreLabel(score.strokes - parForHole(targetHoleNumber));
   }
 
   function commitOnPuttScore(playerId: string, onGreenShots: number, putts: number) {
-    const strokes = clampInteger(onGreenShots + putts, 1, maximumHoleScoreStrokes);
-    const draftKey = `${holeNumber}:${playerId}`;
-    setScoreDrafts((current) => ({ ...current, [draftKey]: strokes.toString() }));
-    markDirty();
-    updateHoleScore(holeNumber, playerId, { strokes, entryMode: 'on-putt', onGreenShots, putts });
+    const strokes = clampInteger(onGreenShots + putts, 1, maximumScorecardStrokes);
+    session.updateHoleScore(holeNumber, playerId, { strokes, entryMode: 'on-putt', onGreenShots, putts });
   }
 
   function resetScorecardDrafts() {
-    setCurrentHoleDraft('');
+    setCurrentHoleDraft('1');
     setParDraftsByHole({});
-    setScoreDrafts({});
+    setMemoDraftsByHole({});
   }
 
   return {
     activeNine,
-    backdoorOpen,
-    backdoorOpenForHole,
     currentHoleDraft,
     holeNumber,
-    holePar,
-    holeParDraft,
+    memoInputValue,
     parForHole,
     parInputValue,
+    relativeScoreForPlayer,
     resetScorecardDrafts,
-    scoreInputValue,
+    roundView,
+    scoreForPlayer: (targetHoleNumber: number, playerId: string): ScorecardHoleScore | undefined => scoreForPlayer(round, targetHoleNumber, playerId),
     scorecardCellLabel,
-    toggleBackdoorOpen,
-    toggleBackdoorOpenForHole,
-    updateHoleDraft,
+    scorecardCellSubLabel,
+    selectHole,
+    updateHoleDraft: (value: string) => setCurrentHoleDraft(value),
     updateHoleInOne,
+    updateManualScore: commitManualScore,
+    updateMemoDraft,
     updateOnGreenShots,
-    updateParDraft,
     updateParDraftForHole,
     updatePutts,
-    updateScoreDraft,
+    clearPlayerScore,
     visibleHoleNumbers,
   };
 }
 
 export function parseIntegerDraft(value: string, fallback: number): number {
   return parseEditableIntegerDraft(value) ?? fallback;
-}
-
-export function scoreForPlayer(round: BettingRound, holeNumber: number, playerId: string): BettingHoleScore | undefined {
-  return round.holes
-    .find((hole) => hole.holeNumber === holeNumber)
-    ?.scores.find((score) => score.playerId === playerId);
-}
-
-export function scoreLabel(score: BettingHoleScore): string {
-  if (score.entryMode === 'hio' || score.holeInOne) {
-    return 'HIO · 1타';
-  }
-
-  if (
-    score.entryMode === 'on-putt' &&
-    score.onGreenShots !== undefined &&
-    score.putts !== undefined &&
-    score.onGreenShots + score.putts === score.strokes
-  ) {
-    return `${score.strokes}타 · ${score.onGreenShots}온 ${score.putts}펏`;
-  }
-
-  return `${score.strokes}타 · 직접`;
-}
-
-export function scoreSummary(strokes: number, holePar: number): string {
-  if (strokes <= 0) {
-    return '미입력';
-  }
-
-  const relativeLabel = relativeScoreLabel(strokes - holePar);
-
-  if (strokes === 1) {
-    return '홀인원';
-  }
-
-  if (strokes === holePar * 2) {
-    return `${strokes}타 · ${relativeLabel} 더블파`;
-  }
-
-  if (strokes > holePar * 2) {
-    return `${strokes}타 · 뒷문 ${relativeLabel}`;
-  }
-
-  return `${strokes}타 · ${relativeLabel}`;
 }
 
 function commitIntegerDraft(value: string, commit: (parsedValue: number) => void) {
@@ -215,12 +156,4 @@ function commitIntegerDraft(value: string, commit: (parsedValue: number) => void
 function clampInteger(value: number, min: number, max: number): number {
   const integer = Number.isFinite(value) ? Math.round(value) : min;
   return Math.min(max, Math.max(min, integer));
-}
-
-function relativeScoreLabel(relativeScore: number): string {
-  if (relativeScore === 0) {
-    return '파';
-  }
-
-  return relativeScore > 0 ? `+${relativeScore}` : `${relativeScore}`;
 }

@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react';
 
-import type { BettingPlayer } from './domain/bettingStorage';
+import type { ScorecardPlayer, ScorecardRoundView } from './domain/scorecard';
 import './scorecard.css';
 
 type ScorecardGridProps = {
@@ -8,18 +8,13 @@ type ScorecardGridProps = {
   readonly holeCount: number;
   readonly selectedHoleNumber: number;
   readonly visibleHoleNumbers: readonly number[];
-  readonly players: readonly BettingPlayer[];
-  readonly displayPlayerName: (name: string) => string;
+  readonly players: readonly ScorecardPlayer[];
+  readonly roundView: ScorecardRoundView;
+  readonly displayPlayerName: (player: ScorecardPlayer, index: number) => string;
   readonly playerStyle: (index: number) => CSSProperties;
   readonly parInputValue: (holeNumber: number) => string;
-  readonly parForHole: (holeNumber: number) => number;
-  readonly backdoorOpenForHole: (holeNumber: number) => boolean;
-  readonly scoreForPlayer: (holeNumber: number, playerId: string) => number | undefined;
-  readonly scorecardCellLabel: (holeNumber: number, playerId: string) => string;
-  readonly scoreSummary: (strokes: number, holePar: number) => string;
   readonly onSelectHole: (holeNumber: number) => void;
   readonly onChangePar: (holeNumber: number, value: string) => void;
-  readonly onToggleBackdoor: (holeNumber: number) => void;
 };
 
 export function ScorecardGrid({
@@ -28,21 +23,24 @@ export function ScorecardGrid({
   selectedHoleNumber,
   visibleHoleNumbers,
   players,
+  roundView,
   displayPlayerName,
   playerStyle,
   parInputValue,
-  parForHole,
-  backdoorOpenForHole,
-  scoreForPlayer,
-  scorecardCellLabel,
-  scoreSummary,
   onSelectHole,
   onChangePar,
-  onToggleBackdoor,
 }: ScorecardGridProps) {
+  function holeView(holeNumber: number) {
+    return roundView.holes.find((hole) => hole.holeNumber === holeNumber);
+  }
+
   return (
-    <>
-      <div className="scorecard-nav" aria-label="스코어카드 홀 선택">
+    <section className="scorecard-section" aria-labelledby="scorecard-title">
+      <div className="section-heading compact-heading">
+        <div>
+          <p className="eyebrow">Live scorecard</p>
+          <h2 id="scorecard-title">스코어카드</h2>
+        </div>
         <div className="scorecard-tabs" role="tablist" aria-label="전반 후반 선택">
           <button className={activeNine === 'front' ? 'scorecard-tab active' : 'scorecard-tab'} type="button" onClick={() => onSelectHole(1)}>
             전반 1-9
@@ -58,76 +56,64 @@ export function ScorecardGrid({
         </div>
       </div>
 
-      <div className="scorecard-matrix" aria-label="전후반 스코어카드 전체표">
-        <div className="scorecard-row scorecard-header-row">
-          <span className="scorecard-row-label">구분</span>
-          {visibleHoleNumbers.map((scorecardHoleNumber) => (
-            <button
-              className={scorecardHoleNumber === selectedHoleNumber ? 'scorecard-cell active' : 'scorecard-cell'}
-              key={`header-${scorecardHoleNumber}`}
-              type="button"
-              onClick={() => onSelectHole(scorecardHoleNumber)}
-            >
-              {scorecardHoleNumber}H
-            </button>
-          ))}
-        </div>
-        <div className="scorecard-row scorecard-par-row">
-          <span className="scorecard-row-label">파 row</span>
-          {visibleHoleNumbers.map((scorecardHoleNumber) => (
-            <label
-              className={scorecardHoleNumber === selectedHoleNumber ? 'scorecard-cell input-cell active' : 'scorecard-cell input-cell'}
-              key={`par-${scorecardHoleNumber}`}
-            >
-              <span className="sr-only">{scorecardHoleNumber}번 홀 파</span>
-              <input
-                inputMode="numeric"
-                value={parInputValue(scorecardHoleNumber)}
-                onFocus={() => onSelectHole(scorecardHoleNumber)}
-                onChange={(event) => onChangePar(scorecardHoleNumber, event.currentTarget.value)}
-              />
-            </label>
-          ))}
-        </div>
-        <div className="scorecard-row scorecard-backdoor-row">
-          <span className="scorecard-row-label">뒷문오픈</span>
-          {visibleHoleNumbers.map((scorecardHoleNumber) => (
-            <label
-              className={backdoorOpenForHole(scorecardHoleNumber) ? 'scorecard-cell checkbox-cell active' : 'scorecard-cell checkbox-cell'}
-              key={`backdoor-${scorecardHoleNumber}`}
-            >
-              <input
-                type="checkbox"
-                checked={backdoorOpenForHole(scorecardHoleNumber)}
-                onChange={() => onToggleBackdoor(scorecardHoleNumber)}
-              />
-              <span>{backdoorOpenForHole(scorecardHoleNumber) ? '오픈' : '닫힘'}</span>
-            </label>
-          ))}
-        </div>
-        {players.map((player, playerIndex) => (
-          <div className="scorecard-row player-scorecard-row" key={`scorecard-row-${player.id}`}>
-            <span className="scorecard-row-label" style={playerStyle(playerIndex)}>
-              {displayPlayerName(player.name)}
-            </span>
-            {visibleHoleNumbers.map((scorecardHoleNumber) => {
-              const strokes = scoreForPlayer(scorecardHoleNumber, player.id);
-
-              return (
-                <button
-                  className={scorecardHoleNumber === selectedHoleNumber ? 'scorecard-cell score-cell active' : 'scorecard-cell score-cell'}
-                  key={`${player.id}-${scorecardHoleNumber}`}
-                  type="button"
-                  onClick={() => onSelectHole(scorecardHoleNumber)}
-                >
-                  <strong>{scorecardCellLabel(scorecardHoleNumber, player.id)}</strong>
-                  <span>{strokes ? scoreSummary(strokes, parForHole(scorecardHoleNumber)) : '입력 전'}</span>
-                </button>
-              );
-            })}
+      <div className="scorecard-scroll" aria-label="전후반 스코어카드 전체표">
+        <div className="scorecard-matrix">
+          <div className="scorecard-row scorecard-header-row">
+            <span className="scorecard-row-label">홀</span>
+            {visibleHoleNumbers.map((scorecardHoleNumber) => (
+              <button
+                className={scorecardHoleNumber === selectedHoleNumber ? 'scorecard-cell header-cell active' : 'scorecard-cell header-cell'}
+                key={`header-${scorecardHoleNumber}`}
+                type="button"
+                onClick={() => onSelectHole(scorecardHoleNumber)}
+              >
+                {scorecardHoleNumber}H
+              </button>
+            ))}
           </div>
-        ))}
+          <div className="scorecard-row scorecard-par-row">
+            <span className="scorecard-row-label">파</span>
+            {visibleHoleNumbers.map((scorecardHoleNumber) => (
+              <label
+                className={scorecardHoleNumber === selectedHoleNumber ? 'scorecard-cell input-cell active' : 'scorecard-cell input-cell'}
+                key={`par-${scorecardHoleNumber}`}
+              >
+                <span className="sr-only">{scorecardHoleNumber}번 홀 파</span>
+                <input
+                  inputMode="numeric"
+                  value={parInputValue(scorecardHoleNumber)}
+                  onFocus={() => onSelectHole(scorecardHoleNumber)}
+                  onChange={(event) => onChangePar(scorecardHoleNumber, event.currentTarget.value)}
+                  aria-label={`${scorecardHoleNumber}번 홀 파`}
+                />
+              </label>
+            ))}
+          </div>
+          {players.map((player, playerIndex) => (
+            <div className="scorecard-row player-scorecard-row" key={`scorecard-row-${player.id}`}>
+              <span className="scorecard-row-label player-label" style={playerStyle(playerIndex)}>
+                {displayPlayerName(player, playerIndex)}
+              </span>
+              {visibleHoleNumbers.map((scorecardHoleNumber) => {
+                const cell = holeView(scorecardHoleNumber)?.cells.find((candidate) => candidate.playerId === player.id);
+
+                return (
+                  <button
+                    className={scorecardHoleNumber === selectedHoleNumber ? 'scorecard-cell score-cell active' : 'scorecard-cell score-cell'}
+                    key={`${player.id}-${scorecardHoleNumber}`}
+                    type="button"
+                    onClick={() => onSelectHole(scorecardHoleNumber)}
+                    aria-label={`${displayPlayerName(player, playerIndex)} ${scorecardHoleNumber}번 홀 ${cell?.main ?? '미입력'}`}
+                  >
+                    <strong>{cell?.main ?? '—'}</strong>
+                    <span>{cell?.sub || '온 · 펏'}</span>
+                  </button>
+                );
+              })}
+            </div>
+          ))}
+        </div>
       </div>
-    </>
+    </section>
   );
 }

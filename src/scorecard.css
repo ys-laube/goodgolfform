@@ -1,152 +1,121 @@
-.scorecard-nav {
-  display: grid;
-  gap: 0.65rem;
+.scorecard-section {
+  overflow: hidden;
+}
+
+.scorecard-scroll {
+  overflow-x: auto;
+  padding-bottom: 0.25rem;
+  -webkit-overflow-scrolling: touch;
 }
 
 .scorecard-matrix {
   display: grid;
-  gap: 0.42rem;
-  overflow-x: auto;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 1.2rem;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.04)),
-    rgba(15, 23, 42, 0.42);
-  padding: 0.65rem;
-  -webkit-overflow-scrolling: touch;
+  gap: 0.45rem;
+  min-width: max-content;
 }
 
 .scorecard-row {
   display: grid;
-  grid-template-columns: minmax(5.6rem, 0.85fr) repeat(9, minmax(4.25rem, 1fr));
-  gap: 0.38rem;
-  min-width: 45rem;
+  grid-template-columns: 7.5rem repeat(9, minmax(4.7rem, 1fr));
+  gap: 0.45rem;
+  align-items: stretch;
 }
 
 .scorecard-row-label,
 .scorecard-cell {
-  min-height: 2.9rem;
-  border: 1px solid rgba(255, 255, 255, 0.24);
-  border-radius: 0.82rem;
-  background: rgba(255, 255, 255, 0.12);
-  color: #fff;
+  min-height: 3.5rem;
+  border-radius: 1rem;
 }
 
 .scorecard-row-label {
-  --player-tone: rgba(255, 255, 255, 0.24);
-  display: grid;
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  display: flex;
   align-items: center;
-  padding: 0 0.62rem;
-  box-shadow: inset 0.22rem 0 0 var(--player-tone);
-  font-size: 0.78rem;
-  font-weight: 950;
-  white-space: nowrap;
+  padding: 0 0.85rem;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: #f8fafc;
+  color: #475569;
+  font-weight: 900;
+  box-shadow: 0.6rem 0 1rem rgba(248, 250, 252, 0.88);
+}
+
+.player-label {
+  border-left: 0.35rem solid var(--player-tone, #2563eb);
+  color: #0f172a;
 }
 
 .scorecard-cell {
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: #ffffff;
+  color: #0f172a;
+}
+
+button.scorecard-cell {
   display: grid;
-  align-items: center;
-  justify-items: center;
-  padding: 0.42rem;
-  text-align: center;
-  font-size: 0.78rem;
+  place-items: center;
+  gap: 0.15rem;
+  padding: 0.45rem;
+}
+
+.header-cell {
   font-weight: 950;
 }
 
-.scorecard-cell.active,
-.scorecard-par-row .scorecard-cell.active,
-.scorecard-backdoor-row .scorecard-cell.active {
-  border-color: #8ef8cf;
-  background: #ecfdf3;
-  color: #101828;
+.input-cell {
+  display: block;
+  padding: 0.3rem;
+}
+
+.input-cell input {
+  width: 100%;
+  height: 100%;
+  min-height: 2.85rem;
+  border: 0;
+  border-radius: 0.8rem;
+  background: #eef2f7;
+  color: #0f172a;
+  text-align: center;
+  font-weight: 950;
+}
+
+.score-cell strong {
+  font-size: 1.45rem;
+  line-height: 1;
+}
+
+.score-cell span {
+  color: #64748b;
+  font-size: 0.76rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.scorecard-cell.active {
+  border-color: rgba(37, 99, 235, 0.55);
+  background: #eff6ff;
+  box-shadow: inset 0 0 0 1px rgba(37, 99, 235, 0.25);
 }
 
 .scorecard-header-row .scorecard-row-label,
 .scorecard-header-row .scorecard-cell {
-  min-height: 2.55rem;
-  background: rgba(255, 255, 255, 0.2);
-}
-
-.scorecard-par-row input {
-  min-height: 2.05rem;
-  border: 1px solid rgba(15, 23, 42, 0.24);
-  border-radius: 0.55rem;
-  background: #ffffff;
-  color: #101828;
-  caret-color: #101828;
-  padding: 0 0.25rem;
-  text-align: center;
-  font-weight: 950;
-}
-
-.scorecard-par-row .scorecard-cell.active input {
-  background: #f8fafc;
-  color: #101828;
-}
-
-.scorecard-par-row input::selection {
-  background: #1d4ed8;
+  background: #0f172a;
   color: #ffffff;
 }
 
-.checkbox-cell {
-  gap: 0.18rem;
-  font-size: 0.7rem;
+.scorecard-header-row .scorecard-cell.active {
+  background: #2563eb;
 }
 
-.checkbox-cell input {
-  width: 1.05rem;
-  min-height: 1.05rem;
-  accent-color: #3461ff;
-}
+@media (max-width: 520px) {
+  .scorecard-row {
+    grid-template-columns: 6.4rem repeat(9, 4.45rem);
+  }
 
-.score-cell {
-  align-content: center;
-  gap: 0.05rem;
-}
-
-.score-cell strong {
-  font-size: 0.82rem;
-}
-
-.score-cell span {
-  color: #cbd5e1;
-  font-size: 0.68rem;
-  font-weight: 800;
-}
-
-.score-cell.active span {
-  color: #475467;
-}
-
-.scorecard-tabs {
-  display: grid;
-  gap: 0.5rem;
-}
-
-.scorecard-tabs {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-
-.scorecard-tab {
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  border-radius: 1rem;
-  background: rgba(255, 255, 255, 0.1);
-  color: #fff;
-  font-weight: 900;
-}
-
-.scorecard-tab {
-  min-height: 2.75rem;
-}
-
-.scorecard-tab.active {
-  background: #fff;
-  color: #101828;
-}
-
-.scorecard-tab:disabled {
-  cursor: not-allowed;
-  opacity: 0.42;
+  .scorecard-row-label,
+  .scorecard-cell {
+    min-height: 3.35rem;
+    border-radius: 0.9rem;
+  }
 }
