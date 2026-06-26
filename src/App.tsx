@@ -261,6 +261,8 @@ export function App() {
               <option value={4}>4명</option>
             </select>
           </label>
+          <button className="secondary-action" type="button" onClick={() => session.saveRound()}>로컬 저장</button>
+          <button className="secondary-action" type="button" onClick={() => session.resetRound()}>새 라운드</button>
         </div>
 
         <div className="player-strip" aria-label="플레이어와 핸디캡">
@@ -479,8 +481,7 @@ export function App() {
           <span />
         </div>
         <div className="share-actions">
-          <button className="primary-action" type="button" onClick={() => setShareReady(true)}>스코어카드 캡처/내보내기</button>
-          <button className="secondary-action" type="button" onClick={() => setShareReady(true)}>QR·결과 링크 공유</button>
+          <button className="primary-action" type="button" onClick={() => setShareReady(true)}>공유 문구 고정</button>
         </div>
         <p className="share-status" aria-live="polite">
           {shareReady ? '스코어카드 이미지나 결과 링크로 공유할 현재 정산 요약이 준비되었습니다.' : '공유 카드는 화면 맨 아래에서 스코어카드 내보내기와 결과 링크 공유만 제공합니다.'}
