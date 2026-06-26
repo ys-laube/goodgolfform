@@ -2,93 +2,70 @@
 
 ## Source of truth
 - PRD: `.omx/plans/prd-simple-golf-scorecard.md`.
+- Deep interview transcript: `.omx/interviews/simple-golf-scorecard-20260626T165648Z.md`.
 - Product docs: `README.md`, `DESIGN.md`.
-- Runtime surfaces: `src/App.tsx`, `src/ScorecardGrid.tsx`, `src/useScorecardController.ts`, `src/useBettingRoundSession.ts`.
-- Domain/storage/share/export surfaces: `src/domain/bettingLedger.ts`, `src/domain/bettingStorage.ts`, `src/domain/bettingShareSnapshot.ts`, `src/scorecardExport.ts`.
+- Runtime surfaces: `src/App.tsx`, `src/ScorecardGrid.tsx`, `src/useScorecardController.ts`, `src/useScorecardSession.ts`.
+- Domain/storage/export surfaces: `src/domain/scorecard.ts`, `src/domain/scorecardStorage.ts`, `src/scorecardExport.ts`.
 
 ## Existing coverage baseline
-- `src/domain/bettingLedger.test.ts` already covers default 2–4 player setup, out-of-range player rejection, pairwise settlement, 배판 triggers, 4명 동타 carry, 파3 니어/니뻐, score metadata normalization, handicap deltas, deterministic net transfers, and calculation order.
-- `src/domain/bettingStorage.test.ts` already covers v3 keying, round serialization/deserialization, blank player names, hole metadata, v2 migration, v1/v2 cleanup, caddie-key isolation/purge, corrupt payloads, unavailable storage, and clone-by-value behavior.
-- `src/domain/bettingShareSnapshot.test.ts` already covers compact hash creation/round-trip, label restore, valid storage restore, invalid/unsupported/oversized rejection, and the hard `>2200` guard.
-- `src/useBettingRoundSession.test.ts` already covers initial load, corrupt/unavailable storage, setup/player mutations, blank-name clearing, player-count resize/pruning, hole score/setup/near mutations, and 홀인원/raw-score capping.
-- `src/scorecardExport.test.ts` already covers deterministic SVG export, XML escaping, blank-name behavior, and safe filename generation.
-- `src/App.inputDrafts.test.ts`, `src/domain/golfBettingGuardrailsStatic.test.ts`, and `src/domain/golfBettingSsrStatic.test.ts` already cover draft helpers/source wiring, reset/share/export wiring, and local-only/static copy guardrails.
-- Known coverage gap: `src/App.tsx` and `src/ScorecardGrid.tsx` are mostly protected by SSR/source assertions, not full DOM interaction tests.
+- `src/domain/scorecard.test.ts` covers round defaults, 1–4 player support, relative labels, review stats, and view-model behavior.
+- `src/domain/scorecardStorage.test.ts` covers local storage keying, persistence, malformed payload fallback, unavailable storage, and stale-key quarantine.
+- `src/useScorecardSession.test.ts` covers session load/save/reset/update flows and editable scorecard state.
+- `src/scorecardExport.test.ts` covers deterministic SVG export, escaping, memo inclusion, and filename behavior.
+- `src/domain/scorecardStatic.test.ts` covers SSR/static product guardrails, metadata, storage key boundaries, and removal of retired concepts.
 
 ## Domain tests
-- Assert default round creation supports 2–4 players, creates blank player names, defaults to 18 holes and 5,000원 타당 금액, and rejects unsupported player counts.
-- Assert hole count normalizes to 1–18, par normalizes to 3–5, and score strokes are clamped to the maximum safe value.
-- Assert score entry modes are preserved for manual, 온/펏, and 홀인원 inputs.
-- Assert 파3 니어 can be assigned only to active players on par-3 holes and is cleared when a hole changes away from par 3.
-- Assert completed-hole detection ignores incomplete holes and includes holes only when every active player has a score.
-- Assert pairwise 오장 타수차 settlement uses 타당 금액, player score deltas, and completed holes deterministically.
-- Assert 배판 rows are emitted for 뒷문오픈, 홀인원, and 4명 동타 이월 behavior.
-- Assert under-par bonus rows distinguish 버디, 이글, and 홀인원 values.
-- Assert 파3 니어/니뻐 rows are zero-sum and do not leak money when no valid near player exists.
-- Assert final-total handicap adjustment applies only as the final total delta and does not mutate raw stroke totals.
-- Assert net transfers balance to zero, sort deterministically, and never create self-pay transfers.
-- Assert rounding-residual correction keeps balances zero-sum after integer money rounding.
-- Assert final settlement rows appear after 오장 calculation rows and preserve deterministic row ordering.
-- Assert `normalizeBettingRound` preserves `roundId` and player order while trimming/clamping malformed IDs, handicaps, hole counts, and unit amounts according to the storage/domain contract.
-- Assert ledger breakdown rows include inspectable Korean labels/details for each calculation source.
+- Assert default round creation starts with 1 blank player, 18 holes, blank labels, and valid par defaults.
+- Assert player count normalizes to 1–4 and preserves stable player ordering where possible.
+- Assert hole count normalizes to 1–18 and par normalizes to 3–5.
+- Assert editable labels and player names can be empty strings.
+- Assert applying 온/펏 values creates a completed score with total strokes `on + putt` while preserving on/putt annotations.
+- Assert hole-in-one and direct-stroke fallback normalize safely.
+- Assert score labels are `—`, `0`, `-N`, or `+N` only.
+- Assert score-type counts classify under-par, par, bogey, double-or-worse, and incomplete holes deterministically.
+- Assert review stats compute total relative score, front/back relative score, average on, average putts, 3-putt count, and memo highlights.
+- Assert `ScorecardRoundView` exposes exactly the read data needed by App/Grid/Export without leaking retired ledger/share concepts.
 
 ## Storage/session tests
-- Assert active storage key is exactly `golf-bet-ledger:active-round:v3`.
-- Assert v3 round serialization/deserialization round-trips players, settings, holes, par, 뒷문오픈, 니어, and score entry metadata.
-- Assert supported v1/v2 payloads restore safely and are re-saved through the current v3 key when loaded.
-- Assert invalid JSON, unsupported versions, malformed player lists, duplicate player IDs, malformed holes, unknown players, and out-of-range scores are rejected or normalized safely.
-- Assert legacy v1/v2/v3 malformed payload shapes either restore through the documented compatibility path or fail closed without partial active-round mutation.
-- Assert unavailable or throwing storage falls back to memory-only state without crashing the session.
-- Assert reset, save, clear, and active mutation APIs update timestamps/status messages consistently.
-- Assert `updateRoundSetup` clamps settings, `updateHoleSetup` clears `nearPlayerId` when par changes away from 3, `applyPlayerCountMutation` preserves stable unique IDs across shrink/expand, and `applyHoleScoreMutation` ignores unknown player IDs.
-- Assert known legacy shot-advice keys such as `korean-caddie:preset-distances:v1` can be purged but are never migrated into scorecard player names, scores, settlement rows, or share payloads.
+- Assert active storage key is exactly `fungolf-scorecard:active-round:v1`.
+- Assert serialization/deserialization round-trips labels, players, hole count, par, on/putt scores, direct scores, hole-in-one state, and memos.
+- Assert invalid JSON, unsupported versions, malformed player lists, malformed holes, and out-of-range values fail closed or normalize without crashing.
+- Assert unavailable or throwing storage falls back to memory-only state.
+- Assert reset creates a blank scorecard rather than sample names.
+- Assert old betting/caddie storage families are not migrated into names, scores, memos, stats, or export payloads.
+- Assert session status messages and save/clear paths remain local-only.
 
 ## Controller/UI behavior tests
-- Add behavioral UI tests for `App`/`ScorecardGrid` beyond raw-source assertions: hole/tab selection, disabled back-nine button when `holeCount < 10`, par-cell focus selecting the hole, 뒷문오픈 toggle behavior, player score cell labels, and share-card action/status copy.
-- Add `useScorecardController` hook tests for blank draft retention, numeric draft commit, 온/펏 and 홀인원 normalization, `resetScorecardDrafts()` clearing every draft, `scoreInputValue`/`parInputValue` preferring drafts over persisted values, and backdoor-open direct score clamping.
-- Assert setup controls render for 2–4 players, blank-editable names, per-player handicap, hole count, and 타당 금액.
-- Assert the hero title remains exactly `오늘 폼 정말 좋으시네요 ^0^` and `오장 룰 자세히 보기` remains available.
-- Assert the scorecard renders front/back hole structure with 구분, 파, 뒷문오픈, and player rows.
-- Assert selected-hole controls expose 온/펏 choices, manual stroke fallback, 홀인원, and 파3 니어 selection.
-- Assert direct numeric entry supports temporary draft states where applicable, then normalizes on commit/blur/save.
-- Assert blank user labels remain blank until edited and no runtime sample player/course/round names appear.
-- Assert live settlement, 순정산, 계산 내역, and 공유 카드 sections render with Korean ledger/calculator copy.
-- Assert the rules disclosure explains the fixed traditional 오장 ruleset and does not expose custom side-game/rule-builder controls.
-- Assert UI copy describes money as informational settlement guidance, not executed payment.
+- Assert player name, round label, course label, and numeric drafts can be fully cleared with Backspace-like empty strings before commit/blur.
+- Assert front/back tabs or sections select the intended hole and keep score entry focused on the selected hole.
+- Assert par edits update the selected hole and recompute relative labels.
+- Assert 온 and 펏 button flows update the selected player/hole score.
+- Assert hole-in-one, direct stroke fallback, and clear-score actions update the scorecard consistently.
+- Assert memo edits persist and appear in the selected-hole panel.
+- Assert scorecard cells show only the main relative score and small `온 N · 펏 N` annotation.
+- Assert the hero title remains exactly `오늘 폼 정말 좋으시네요 ^0^`.
+- Assert setup, scorecard, selected-hole input, round review, and image export sections render in Korean.
+- Assert no sample player names appear at runtime.
 
-## Share/export tests
-- Assert `createBettingRoundShareHash` uses only the `#fg=` fragment and creates a compact local payload with labels plus round data.
-- Assert share payloads target `<=1800` characters and hard-stop/reject above `<=2200` characters.
-- Assert valid share hashes restore round labels, player names, handicaps, settings, par, 뒷문오픈, 니어, and all score entry modes.
-- Assert unsupported, invalid, oversized, and storage-unavailable hashes fail with explicit restore reasons and no partial mutation.
-- Assert local result-link copy does not require backend, account, provider SDK, network request, or new dependency.
-- Add App-level share-flow tests for initial URL-hash restore success/failure paths, `unsupported`/`empty`/`invalid`/`payload-too-large` status messaging, `replaceCurrentLocationHash` failure handling, and empty-string `localResultLink`/`localQrCells` fallback behavior.
-- Assert legacy compact v1/v2 payload parsing remains supported where promised, labels are sanitized/truncated to 80 chars, `withinTarget === false` but still-valid hashes remain usable, and `storage-unavailable` restore failure is explicit.
-- Assert SVG export is deterministic, Korean-friendly, local-only, and contains scorecard metadata without canvas/image-service/network use.
-- Assert exported blank player names remain blank rather than falling back to sample names.
-- Assert export file names are sanitized while preserving Korean-friendly labels.
-- If SVG geometry is treated as product contract, assert row count/height behavior, blank round/course title fallback, and no accidental fallback player names or external script injection.
+## Export tests
+- Assert SVG export is deterministic for the same view model.
+- Assert exported SVG includes all configured holes, active player rows, relative scores, on/putt annotations, and non-empty memos.
+- Assert XML text is escaped and Korean labels remain readable.
+- Assert blank names remain blank or neutral without injecting sample names.
+- Assert filenames are safe and Korean-friendly.
+- Assert export uses local SVG generation only: no canvas, image service, network request, share-link, QR, or external provider SDK.
 
 ## Static guardrail tests/scans
-- Reject backend, database, realtime room, public room, login/auth/account, social graph, ranking/matching, payment execution, wallet, escrow, deposit/withdrawal, GPS, map, weather, location permission, caddie recommendation, club-distance advice, shot coaching, 3D, canvas, and external provider SDK surfaces.
-- Reject stale caddie storage migration into the scorecard model.
-- Reject side-game mode toggles, custom rule builders, scoring-mode switches, and hole-allocation handicap modes.
-- Reject Apple logos, trademark lockups, copied Apple imagery, or affiliation claims.
-- Assert dependency manifests do not add runtime packages for sharing, QR generation, backend/cloud, payments, GPS/maps/weather, 3D/canvas, or external services.
-- Assert README/DESIGN continue to document local-only storage, URL-hash sharing, SVG export, non-payment boundaries, and fixed traditional 오장 scope.
+- Reject betting/settlement language and retired side-game concepts from runtime source and public docs.
+- Reject backend, database, cloud sync, realtime rooms, public rooms, login/auth/account, social graph, ranking/matching, QR, share-link, payment execution, wallet, escrow, GPS, map, weather, caddie advice, club-distance advice, shot coaching, advanced analytics, 3D, canvas, and external provider SDK surfaces.
+- Assert dependency manifests do not add runtime packages for sharing, QR, backend/cloud, payments, GPS/maps/weather, 3D/canvas, or external services.
+- Assert README/DESIGN/index metadata document a local-only simple scorecard, SVG export, and current-round stats.
 
 ## Focused rerun guidance
-After adding or hardening tests, run a focused subset before the full gate:
+After changing scorecard behavior, run:
 ```bash
-npx vitest run src/App.inputDrafts.test.ts src/domain/bettingLedger.test.ts src/domain/bettingStorage.test.ts src/domain/bettingShareSnapshot.test.ts src/scorecardExport.test.ts src/useBettingRoundSession.test.ts src/domain/golfBettingGuardrailsStatic.test.ts src/domain/golfBettingSsrStatic.test.ts
+npx vitest run src/domain/scorecard.test.ts src/domain/scorecardStorage.test.ts src/useScorecardSession.test.ts src/scorecardExport.test.ts src/domain/scorecardStatic.test.ts
 ```
-
-## Risk-based coverage priorities
-1. **Ledger correctness:** pairwise money movement, double-plate/carry, bonuses, near rows, handicap deltas, and net transfers must stay deterministic and zero-sum.
-2. **Data safety:** malformed storage/hash payloads must not corrupt active rounds.
-3. **Local-only boundaries:** sharing/export must not introduce backend/payment/provider surfaces.
-4. **Field usability:** score entry, blank names, touch-friendly controls, and direct numeric drafts must be guarded by SSR/static tests where browser e2e is unavailable.
-5. **Regression from retired surfaces:** caddie/shot-coaching and side-mode concepts must stay absent.
 
 ## Required verification
 ```bash
@@ -100,6 +77,6 @@ git diff --check
 ```
 
 ## Completion checklist
-- New or updated tests map every PRD acceptance criterion to at least one domain, UI/static, storage/share/export, or guardrail assertion.
-- Existing test suite passes without weakening local-only, no-payment, no-backend, and no-sample-data guards.
-- Any browser/manual smoke notes explicitly state what was checked and whether no-code documentation-only changes made a manual smoke unnecessary.
+- Acceptance criteria in the PRD map to at least one domain, storage/session, controller/UI, export, or static guardrail assertion.
+- Removed product surfaces remain absent from runtime and public docs.
+- Verification passes without adding dependencies or weakening local-only scorecard boundaries.
