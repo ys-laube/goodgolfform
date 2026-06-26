@@ -242,6 +242,12 @@ function eventIsActive(round: StoredBettingRound, holeNumber: number, event: Bet
     ?.events.some((item) => item.event === event && item.playerId === playerId) ?? false;
 }
 
+function missionOutcomeForPlayer(round: StoredBettingRound, holeNumber: number, missionId: string, playerId: string): string | undefined {
+  return round.holes
+    .find((hole) => hole.holeNumber === holeNumber)
+    ?.missions.find((mission) => mission.missionId === missionId && mission.playerId === playerId)?.outcome;
+}
+
 function currentLocationHash(): string {
   try {
     return globalThis.location?.hash ?? '';
@@ -294,8 +300,6 @@ export function App() {
   const [playerHandicapDrafts, setPlayerHandicapDrafts] = useState<Record<string, string>>({});
   const [gameUnitDrafts, setGameUnitDrafts] = useState<Record<string, string>>({});
   const [scoreDrafts, setScoreDrafts] = useState<Record<string, string>>({});
-  const [missionPlayerId, setMissionPlayerId] = useState(round.players[0]?.id ?? '');
-  const [missionCleared, setMissionCleared] = useState(true);
   const [shareReady, setShareReady] = useState(false);
   const [shareStatusMessage, setShareStatusMessage] = useState<string | null>(() => initialShareHashStatus());
 
@@ -331,9 +335,6 @@ export function App() {
   const shareHash = shareHashResult.ok ? shareHashResult.hash : '';
   const resultLink = shareHashResult.ok ? localResultLink(shareHashResult.hash) : '';
   const qrCells = useMemo(() => localQrCells(shareHash || shareCopy), [shareHash, shareCopy]);
-  const activeMissionPlayerId = round.players.some((player) => player.id === missionPlayerId)
-    ? missionPlayerId
-    : (round.players[0]?.id ?? '');
 
   function markShareDirty() {
     setShareReady(false);
@@ -442,8 +443,6 @@ export function App() {
   }
 
   function updateMission(playerId: string, cleared: boolean) {
-    setMissionPlayerId(playerId);
-    setMissionCleared(cleared);
     markShareDirty();
     session.setHoleMission(holeNumber, {
       id: `hole-${holeNumber}:mission:${missionCard.id}:${playerId}`,
@@ -471,8 +470,6 @@ export function App() {
     setPlayerHandicapDrafts({ 'player-1': '', 'player-2': '', 'player-3': '', 'player-4': '' });
     setGameUnitDrafts({});
     setScoreDrafts({});
-    setMissionPlayerId('player-1');
-    setMissionCleared(true);
     setShareReady(false);
   }
 
@@ -655,6 +652,7 @@ export function App() {
           {round.players.map((player, index) => {
             const rawScore = scoreForPlayer(round, holeNumber, player.id) ?? 0;
             const netScore = ledger.handicap.netHoleScores[holeNumber]?.[player.id] ?? rawScore;
+            const missionOutcome = missionOutcomeForPlayer(round, holeNumber, missionCard.id, player.id);
 
             return (
               <article className="score-row" key={player.id}>
@@ -691,54 +689,50 @@ export function App() {
                     />
                   </label>
                 ) : null}
+                <div className="score-row-context" aria-label={`${player.name} ${holeNumber}번 홀 이벤트와 미션 카드`}>
+                  <div className="context-action-group">
+                    <strong>이벤트 보너스</strong>
+                    <div className="score-event-grid">
+                      {eventKeys.map((event) => (
+                        <button
+                          className={eventIsActive(round, holeNumber, event, player.id) ? 'event-pill active' : 'event-pill'}
+                          key={`${player.id}:${event}`}
+                          type="button"
+                          onClick={() => {
+                            markShareDirty();
+                            session.toggleHoleEvent(holeNumber, event, player.id, eventBasePoints[event as BettingEventType]);
+                          }}
+                        >
+                          <span>{eventLabels[event]}</span>
+                          <strong>{eventBasePoints[event as BettingEventType] > 0 ? '+' : ''}{eventBasePoints[event as BettingEventType]}점</strong>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="context-action-group mission-context">
+                    <strong>미션 카드 · {missionCard.title}</strong>
+                    <p>{missionCard.description}</p>
+                    <div className="mission-button-row">
+                      <button
+                        className={missionOutcome === 'success' ? 'toggle-action active' : 'toggle-action'}
+                        type="button"
+                        onClick={() => updateMission(player.id, true)}
+                      >
+                        성공 {missionCard.successPoints > 0 ? '+' : ''}{missionCard.successPoints}점
+                      </button>
+                      <button
+                        className={missionOutcome === 'fail' ? 'toggle-action active danger' : 'toggle-action danger'}
+                        type="button"
+                        onClick={() => updateMission(player.id, false)}
+                      >
+                        실패 -{missionCard.failPenaltyPoints}점
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </article>
             );
           })}
-        </div>
-      </section>
-
-      <section className="mission-card" aria-labelledby="mission-title">
-        <div>
-          <p className="eyebrow">미션 카드</p>
-          <h2 id="mission-title">{missionCard.title}</h2>
-          <p>{missionCard.description}</p>
-        </div>
-        <div className="mission-controls">
-          <label>
-            대상자
-            <select value={activeMissionPlayerId} onChange={(event) => updateMission(event.currentTarget.value, missionCleared)}>
-              {round.players.map((player) => (
-                <option key={player.id} value={player.id}>{player.name}</option>
-              ))}
-            </select>
-          </label>
-          <button className={missionCleared ? 'toggle-action active' : 'toggle-action'} type="button" onClick={() => updateMission(activeMissionPlayerId, !missionCleared)}>
-            {missionCleared ? '성공 반영' : '실패 반영'}
-          </button>
-        </div>
-      </section>
-
-      <section className="mission-card event-card" aria-labelledby="event-title">
-        <div>
-          <p className="eyebrow">이벤트 보너스</p>
-          <h2 id="event-title">한 번 터치로 반영</h2>
-          <p>니어핀, 롱기스트, 버디, OB/벌타를 현재 홀에 바로 넣고 정산표에 근거를 남깁니다.</p>
-        </div>
-        <div className="event-grid">
-          {eventKeys.flatMap((event) => round.players.map((player) => (
-            <button
-              className={eventIsActive(round, holeNumber, event, player.id) ? 'event-pill active' : 'event-pill'}
-              key={`${event}-${player.id}`}
-              type="button"
-              onClick={() => {
-                markShareDirty();
-                session.toggleHoleEvent(holeNumber, event, player.id, eventBasePoints[event as BettingEventType]);
-              }}
-            >
-              <span>{eventLabels[event]}</span>
-              <strong>{player.name}</strong>
-            </button>
-          )))}
         </div>
       </section>
 
