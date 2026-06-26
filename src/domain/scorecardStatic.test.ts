@@ -64,6 +64,18 @@ describe('simple scorecard static guardrails', () => {
     expect(scorecardCss).not.toContain('min-width: max-content');
   });
 
+
+  it('keeps compact mobile scorecard labels centered and par inputs visible', () => {
+    const scorecardCss = readRepoFile('src/scorecard.css');
+
+    expect(scorecardCss).toContain(`.scorecard-header-row .scorecard-row-label,
+.scorecard-par-row .scorecard-row-label`);
+    expect(scorecardCss).toContain('justify-content: center');
+    expect(scorecardCss).toContain('text-align: center');
+    expect(scorecardCss).toContain('min-width: 0');
+    expect(scorecardCss).toContain('padding: 0');
+  });
+
   it('uses the scorecard storage key and does not reference the old ledger key in runtime source', () => {
     const runtime = ['src/domain/scorecardStorage.ts', 'src/useScorecardSession.ts', 'src/App.tsx'].map(readRepoFile).join('\n');
     expect(runtime).toContain('fungolf-scorecard:active-round');
