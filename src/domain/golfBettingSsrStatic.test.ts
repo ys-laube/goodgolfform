@@ -81,6 +81,8 @@ describe('Korean betting-ledger SSR/static integration contract', () => {
     expect(renderedApp).toMatch(/2\s*[–-]\s*4|2~4|2명|4명/);
     expect(renderedApp).toMatch(/스트로크|스킨|베가스|이벤트|미션/);
     expect(renderedApp).toMatch(/포인트|금액|받을 금액|줄 금액/);
+    expect(renderedApp).toMatch(/뒷문오픈/);
+    expect(renderedApp).toMatch(/더블파/);
     expect(renderedApp).not.toMatch(retiredCaddieVisiblePattern);
     expect(renderedApp).not.toMatch(forbiddenTransactionPattern);
     expect(renderedApp).not.toMatch(appleAffiliationPattern);
