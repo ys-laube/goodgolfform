@@ -7,9 +7,7 @@ import {
   type BettingGameUnits,
   type BettingHandicapMode,
   type BettingHoleEvent,
-  type BettingHoleMission,
   type BettingHoleResult,
-  type BettingMissionOutcome,
   type BettingPlayer,
   type BettingRound,
   type BettingRoundSettings,
@@ -21,12 +19,11 @@ export const bettingShareHashPrefix = 'fg=';
 export const bettingShareHashTargetLength = 1_800;
 export const bettingShareHashMaxLength = 2_200;
 
-const bettingShareSnapshotVersion = 2;
-const gameKeys = ['stroke', 'skins', 'vegas', 'events', 'missions'] as const satisfies readonly BettingGameKey[];
-const eventKeys = ['near-pin', 'longest-drive', 'birdie', 'ob-penalty'] as const satisfies readonly BettingEventKey[];
+const bettingShareSnapshotVersion = 3;
+const gameKeys = ['ojang'] as const satisfies readonly BettingGameKey[];
+const eventKeys = ['near-pin'] as const satisfies readonly BettingEventKey[];
 const scoringModes = ['points', 'money'] as const satisfies readonly BettingScoringMode[];
 const handicapModes = ['final-total', 'hole-allocation'] as const satisfies readonly BettingHandicapMode[];
-const missionOutcomes = ['pending', 'success', 'fail'] as const satisfies readonly BettingMissionOutcome[];
 
 type ShareHashFailureReason = 'encoding-unavailable' | 'payload-too-large';
 
@@ -66,8 +63,7 @@ type CompactSettings = readonly [number, number, number];
 type CompactGameUnit = readonly [number, number];
 type CompactHoleScore = readonly [number, number];
 type CompactHoleEvent = readonly [string, number, number, number];
-type CompactHoleMission = readonly [string, number, string, string, number, number];
-type CompactHole = readonly [number, number, number, readonly CompactHoleScore[], readonly CompactHoleEvent[], readonly CompactHoleMission[]];
+type CompactHole = readonly [number, number, number, readonly CompactHoleScore[], readonly CompactHoleEvent[]];
 type CompactLabels = readonly [string, string];
 type CompactRound = readonly [
   string,
@@ -79,7 +75,7 @@ type CompactRound = readonly [
   readonly CompactGameUnit[],
   readonly CompactHole[],
 ];
-type CompactPayload = readonly [1, CompactRound] | readonly [typeof bettingShareSnapshotVersion, CompactRound, CompactLabels];
+type CompactPayload = readonly [typeof bettingShareSnapshotVersion, CompactRound, CompactLabels];
 
 const emptyShareLabels: BettingShareLabels = { roundName: '', courseName: '' };
 
@@ -215,7 +211,6 @@ function compactHole(hole: BettingHoleResult, playerIndex: ReadonlyMap<string, n
       return index === undefined ? [] : ([[index, score.strokes]] satisfies CompactHoleScore[]);
     }),
     hole.events.flatMap((event) => compactEvent(event, playerIndex)),
-    hole.missions.flatMap((mission) => compactMission(mission, playerIndex)),
   ];
 }
 
@@ -225,34 +220,18 @@ function compactEvent(event: BettingHoleEvent, playerIndex: ReadonlyMap<string, 
   return index === undefined || eventIndex < 0 ? [] : [[event.id, index, eventIndex, event.points]];
 }
 
-function compactMission(mission: BettingHoleMission, playerIndex: ReadonlyMap<string, number>): readonly CompactHoleMission[] {
-  const index = playerIndex.get(mission.playerId);
-  const outcomeIndex = missionOutcomes.indexOf(mission.outcome);
-  return index === undefined || outcomeIndex < 0
-    ? []
-    : [[mission.id, index, mission.missionId, mission.title, mission.points, outcomeIndex]];
-}
-
 function enabledGameMask(round: BettingRound): number {
   return gameKeys.reduce((mask, game, index) => (round.enabledGames[game] ? mask | (1 << index) : mask), 0);
 }
 
 function expandCompactPayload(value: unknown): BettingShareSnapshot | null {
-  if (!Array.isArray(value) || (value.length !== 2 && value.length !== 3) || (value[0] !== 1 && value[0] !== bettingShareSnapshotVersion)) {
-    return null;
-  }
-
-  if (value[0] === 1 && value.length !== 2) {
-    return null;
-  }
-
-  if (value[0] === bettingShareSnapshotVersion && value.length !== 3) {
+  if (!Array.isArray(value) || value.length !== 3 || value[0] !== bettingShareSnapshotVersion) {
     return null;
   }
 
   const round = expandCompactRound(value[1]);
   const parsedRound = round ? deserializeBettingRound(JSON.stringify({ version: bettingLedgerStorageVersion, round })) : null;
-  const labels = value[0] === bettingShareSnapshotVersion ? expandLabels(value[2]) : emptyShareLabels;
+  const labels = expandLabels(value[2]);
 
   return parsedRound && labels ? { round: parsedRound, labels } : null;
 }
@@ -325,7 +304,7 @@ function expandEnabledGames(value: unknown): Record<BettingGameKey, boolean> | n
     return null;
   }
 
-  return Object.fromEntries(gameKeys.map((game, index) => [game, Boolean(value & (1 << index))])) as Record<BettingGameKey, boolean>;
+  return { ojang: Boolean(value & 1) };
 }
 
 function expandGameUnits(value: unknown): BettingGameUnits | null {
@@ -333,13 +312,9 @@ function expandGameUnits(value: unknown): BettingGameUnits | null {
     return null;
   }
 
-  const entries = gameKeys.map((game, index) => {
-    const unit = value[index];
-    return Array.isArray(unit) && unit.length === 2 && isInteger(unit[0]) && isInteger(unit[1]) ? [game, { points: unit[0], money: unit[1] }] : null;
-  });
-
-  return entries.every((entry): entry is [BettingGameKey, { readonly points: number; readonly money: number }] => entry !== null)
-    ? Object.fromEntries(entries) as BettingGameUnits
+  const unit = value[0];
+  return Array.isArray(unit) && unit.length === 2 && isInteger(unit[0]) && isInteger(unit[1])
+    ? { ojang: { points: unit[0], money: unit[1] } }
     : null;
 }
 
@@ -349,27 +324,15 @@ function expandHoles(value: unknown, players: readonly BettingPlayer[] | null): 
   }
 
   const holes = value.map((hole): BettingHoleResult | null => {
-    if (!Array.isArray(hole) || (hole.length !== 4 && hole.length !== 6) || !isInteger(hole[0])) {
+    if (!Array.isArray(hole) || hole.length !== 5 || !isInteger(hole[0]) || !isInteger(hole[1]) || !isInteger(hole[2])) {
       return null;
     }
 
-    const legacyCompactHole = hole.length === 4;
-    const par = legacyCompactHole ? 4 : hole[1];
-    const backdoorOpenFlag = legacyCompactHole ? 0 : hole[2];
-    const rawScores = legacyCompactHole ? hole[1] : hole[3];
-    const rawEvents = legacyCompactHole ? hole[2] : hole[4];
-    const rawMissions = legacyCompactHole ? hole[3] : hole[5];
+    const scores = expandScores(hole[3], players);
+    const events = expandEvents(hole[4], players);
 
-    if (!isInteger(par) || !isInteger(backdoorOpenFlag)) {
-      return null;
-    }
-
-    const scores = expandScores(rawScores, players);
-    const events = expandEvents(rawEvents, players);
-    const missions = expandMissions(rawMissions, players);
-
-    return scores && events && missions
-      ? { holeNumber: hole[0], par, backdoorOpen: Boolean(backdoorOpenFlag), scores, events, missions }
+    return scores && events
+      ? { holeNumber: hole[0], par: hole[1], backdoorOpen: Boolean(hole[2]), scores, events }
       : null;
   });
 
@@ -416,35 +379,6 @@ function expandEvents(value: unknown, players: readonly BettingPlayer[]): readon
   });
 
   return events.every((event): event is BettingHoleEvent => event !== null) ? events : null;
-}
-
-function expandMissions(value: unknown, players: readonly BettingPlayer[]): readonly BettingHoleMission[] | null {
-  if (!Array.isArray(value)) {
-    return null;
-  }
-
-  const missions = value.map((mission): BettingHoleMission | null => {
-    if (
-      !Array.isArray(mission) ||
-      mission.length !== 6 ||
-      typeof mission[0] !== 'string' ||
-      !isInteger(mission[1]) ||
-      typeof mission[2] !== 'string' ||
-      typeof mission[3] !== 'string' ||
-      !isInteger(mission[4]) ||
-      !isInteger(mission[5])
-    ) {
-      return null;
-    }
-
-    const player = players[mission[1]];
-    const outcome = missionOutcomes[mission[5]];
-    return player && outcome
-      ? { id: mission[0], playerId: player.id, missionId: mission[2], title: mission[3], points: mission[4], outcome }
-      : null;
-  });
-
-  return missions.every((mission): mission is BettingHoleMission => mission !== null) ? missions : null;
 }
 
 function extractEncodedPayload(rawHash: string): string | null {

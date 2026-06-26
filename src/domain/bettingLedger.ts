@@ -344,11 +344,12 @@ function calculateOjangLedger(round: BettingRound, handicap: AppliedHandicap): G
   const unit = round.gameUnits.ojang;
   const pointBalances = createMutableBalances(round.players);
   const rows: LedgerBreakdownRow[] = [];
-  let forceDoubleFromAllTie = false;
+  let nextBoardReasons: readonly string[] = [];
 
   for (const hole of completedHoles(round)) {
     const scores = scoreEntriesForHole(round, handicap, hole);
-    const board = resolveOjangBoardState(hole, scores, forceDoubleFromAllTie);
+    const board = resolveOjangBoardState(scores, nextBoardReasons);
+    const followingBoardReasons = ojangFollowingBoardReasons(hole, scores);
 
     if (board.allTied) {
       rows.push(createBreakdownRow({
@@ -356,16 +357,14 @@ function calculateOjangLedger(round: BettingRound, handicap: AppliedHandicap): G
         id: `ojang-${hole.holeNumber}-all-tie`,
         holeNumber: hole.holeNumber,
         label: `오장 ${board.label} · 전원 동타`,
-        detail: `${hole.holeNumber}번 홀 ${scores[0]?.settlementScore ?? 0}타 전원 동타로 정산 없음, 다음 완료 홀은 자동 배판`,
+        detail: `${hole.holeNumber}번 홀 ${scores[0]?.settlementScore ?? 0}타 전원 동타로 정산 없음, 다음 완료 홀은 배판`,
         points: 0,
         money: 0,
         balanceDeltas: createMutableBalances(round.players),
       }));
-      forceDoubleFromAllTie = true;
+      nextBoardReasons = followingBoardReasons;
       continue;
     }
-
-    forceDoubleFromAllTie = false;
 
     for (let leftIndex = 0; leftIndex < scores.length; leftIndex += 1) {
       for (let rightIndex = leftIndex + 1; rightIndex < scores.length; rightIndex += 1) {
@@ -412,29 +411,45 @@ function calculateOjangLedger(round: BettingRound, handicap: AppliedHandicap): G
         }));
       }
     }
+    nextBoardReasons = followingBoardReasons;
   }
 
   return buildGameLedger('ojang', '전통 오장', pointBalances, rows, round, unit);
 }
 
-function resolveOjangBoardState(hole: HoleResult, scores: readonly OjangScoreEntry[], forceDoubleFromAllTie: boolean): OjangBoardState {
-  const reasons: string[] = [];
+function resolveOjangBoardState(scores: readonly OjangScoreEntry[], boardReasons: readonly string[]): OjangBoardState {
   const scoreCounts = new Map<number, number>();
   for (const score of scores) {
     scoreCounts.set(score.settlementScore, (scoreCounts.get(score.settlementScore) ?? 0) + 1);
   }
 
   const allTied = scoreCounts.size === 1 && scores.length > 1;
+  const isDouble = boardReasons.length > 0;
+  return {
+    multiplier: isDouble ? 2 : 1,
+    label: isDouble ? '배판' : '민판',
+    reasons: boardReasons,
+    allTied,
+  };
+}
+
+function ojangFollowingBoardReasons(hole: HoleResult, scores: readonly OjangScoreEntry[]): readonly string[] {
+  const scoreCounts = new Map<number, number>();
+  for (const score of scores) {
+    scoreCounts.set(score.settlementScore, (scoreCounts.get(score.settlementScore) ?? 0) + 1);
+  }
+
+  const reasons: string[] = [];
+  const allTied = scoreCounts.size === 1 && scores.length > 1;
   const hasThreeWayTie = scores.length >= 4 && Array.from(scoreCounts.values()).some((count) => count === 3);
-  const blowupThreshold = hole.par === 3 ? hole.par + 2 : hole.par + 3;
-  const hasBlowup = scores.some((score) => score.rawScore >= blowupThreshold);
+  const hasTripleBogeyOrWorse = scores.some((score) => score.rawScore >= hole.par + 3);
   const hasUnderPar = scores.some((score) => score.rawScore < hole.par);
 
-  if (forceDoubleFromAllTie) {
+  if (allTied) {
     reasons.push('전 홀 전원 동타');
   }
-  if (hasBlowup) {
-    reasons.push(hole.par === 3 ? '파3 더블 이상' : '트리플 이상');
+  if (hasTripleBogeyOrWorse) {
+    reasons.push('트리플 보기 이상');
   }
   if (hasThreeWayTie) {
     reasons.push('3명 동타');
@@ -443,13 +458,7 @@ function resolveOjangBoardState(hole: HoleResult, scores: readonly OjangScoreEnt
     reasons.push('버디 이상');
   }
 
-  const isDouble = reasons.length > 0;
-  return {
-    multiplier: isDouble ? 2 : 1,
-    label: isDouble ? '배판' : '민판',
-    reasons,
-    allTied,
-  };
+  return reasons;
 }
 
 function ojangNearBonus(hole: HoleResult, entry: OjangScoreEntry, position: 'winner' | 'loser'): number {
