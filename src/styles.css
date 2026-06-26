@@ -109,15 +109,15 @@ h2 {
 
 .hero-copy,
 .hero-metric,
-.control-panel > * > *,
+.control-panel > *,
 .ledger-card > *,
 .calculation-card > *,
 .share-card > * {
   position: relative;
 }
 
-.hero-copy p:not(.eyebrow),
-.section-heading p p,
+.hero-copy p,
+.section-heading p,
 .share-card p,
 .share-status {
   color: #526070;
@@ -187,67 +187,8 @@ h2 {
 
 .rule-detail-panel p {
   margin: 0;
-  color: #344054 !important;
+  color: #344054;
   line-height: 1.5;
-}
-
-.setup-heading-row {
-  display: grid;
-  gap: 0.8rem;
-}
-
-.setup-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.45rem;
-  align-items: start;
-  justify-content: end;
-}
-
-.compact-action {
-  min-height: 2.45rem !important;
-  border: 1px solid rgba(16, 24, 40, 0.14);
-  background: #101828 !important;
-  color: #fff !important;
-  padding: 0 0.85rem;
-  font-size: 0.82rem;
-}
-
-.near-selector {
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  border-radius: 1rem;
-  background: rgba(255, 255, 255, 0.08);
-  padding: 0.75rem;
-}
-
-.on-putt-entry {
-  display: grid;
-  gap: 0.55rem;
-}
-
-.button-grid {
-  display: grid;
-  gap: 0.42rem;
-}
-
-.button-grid.six-up {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-
-.button-grid .toggle-action {
-  min-height: 2.65rem;
-  border-radius: 0.85rem;
-  padding: 0 0.45rem;
-}
-
-.hio-action {
-  width: 100%;
-  background: #fbbf24 !important;
-  color: #101828 !important;
-}
-
-.hio-action.active {
-  background: #fff !important;
 }
 
 .control-panel,
@@ -264,9 +205,27 @@ h2 {
   margin-bottom: 0;
 }
 
+.setup-heading-row {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.setup-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  align-items: start;
+  justify-content: end;
+}
+
 .setup-grid,
 .hole-toolbar,
-.ledger-grid {
+.ledger-grid,
+.player-strip,
+.score-list,
+.balance-list,
+.transfer-list,
+.calculation-list {
   display: grid;
   gap: 0.75rem;
 }
@@ -300,13 +259,40 @@ button:focus-visible {
   box-shadow: 0 0 0 0.25rem rgba(52, 97, 255, 0.14);
 }
 
-.player-strip,
-.score-list,
-.balance-list,
-.transfer-list,
-.calculation-list {
-  display: grid;
-  gap: 0.65rem;
+.secondary-action,
+.primary-action,
+.toggle-action {
+  min-height: 3.2rem;
+  border: 0;
+  border-radius: 999px;
+  padding: 0 1rem;
+  font-weight: 900;
+}
+
+.secondary-action {
+  border-radius: 1rem;
+  background: rgba(226, 232, 240, 0.9);
+  color: #334155;
+}
+
+.compact-action {
+  min-height: 2.45rem;
+  border: 1px solid rgba(16, 24, 40, 0.14);
+  background: #101828;
+  color: #fff;
+  padding: 0 0.85rem;
+  font-size: 0.82rem;
+}
+
+.primary-action,
+.toggle-action.active {
+  background: #101828;
+  color: #fff;
+}
+
+.toggle-action {
+  background: #e2e8f0;
+  color: #334155;
 }
 
 .player-strip {
@@ -314,7 +300,6 @@ button:focus-visible {
 }
 
 .player-chip,
-.game-stack article,
 .score-row,
 .balance-row,
 .transfer-list p,
@@ -342,35 +327,6 @@ button:focus-visible {
 .balance-row em,
 .calculation-list span {
   color: #667085;
-}
-
-.secondary-action {
-  border: 0;
-  border-radius: 1rem;
-  background: rgba(226, 232, 240, 0.9);
-  color: #334155;
-  font-weight: 900;
-}
-
-.scorecard-meta-grid {
-  display: grid;
-  gap: 0.5rem;
-}
-
-.backdoor-toggle,
-.score-choice {
-  border: 1px solid rgba(255, 255, 255, 0.36);
-  border-radius: 1rem;
-  background: rgba(255, 255, 255, 0.18);
-  color: #fff;
-  font-weight: 900;
-}
-
-.backdoor-toggle.active,
-.score-choice.active {
-  border-color: #8ef8cf;
-  background: #ecfdf3;
-  color: #101828;
 }
 
 .editable-chip label {
@@ -406,24 +362,29 @@ button:focus-visible {
   color: #101828;
 }
 
+.scorecard-meta-grid {
+  display: grid;
+  gap: 0.5rem;
+}
+
 .scorecard-meta-grid p,
-.backdoor-toggle {
+.backdoor-toggle,
+.near-selector {
   margin: 0;
   display: grid;
   gap: 0.25rem;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.08);
   padding: 0.75rem;
   text-align: left;
-}
-
-.scorecard-meta-grid p {
-  border: 1px solid rgba(255, 255, 255, 0.34);
-  border-radius: 1rem;
-  background: rgba(255, 255, 255, 0.16);
 }
 
 .backdoor-toggle {
   grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
+  color: #fff;
+  font-weight: 900;
 }
 
 .backdoor-toggle input {
@@ -443,8 +404,12 @@ button:focus-visible {
   font-weight: 800;
 }
 
-.backdoor-toggle.active span,
-.score-choice.active span {
+.backdoor-toggle.active {
+  background: #fff;
+  color: #101828;
+}
+
+.backdoor-toggle.active span {
   color: #475467;
 }
 
@@ -484,17 +449,7 @@ button:focus-visible {
   white-space: nowrap;
 }
 
-.extended-score-entry {
-  color: #fff;
-}
-
-.extended-score-entry input {
-  min-height: 2.75rem;
-  text-align: center;
-}
-
-.score-input-grid,
-.score-row-context,
+.on-putt-entry,
 .context-action-group {
   display: grid;
   gap: 0.55rem;
@@ -511,11 +466,39 @@ button:focus-visible {
   font-size: 0.82rem;
 }
 
-.context-action-group p {
-  margin: 0;
-  color: #cbd5e1;
-  font-size: 0.76rem;
-  line-height: 1.4;
+.button-grid {
+  display: grid;
+  gap: 0.42rem;
+}
+
+.button-grid.six-up {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.button-grid .toggle-action {
+  min-height: 2.65rem;
+  border-radius: 0.85rem;
+  padding: 0 0.45rem;
+}
+
+.hio-action {
+  width: 100%;
+  background: #fbbf24;
+  color: #101828;
+}
+
+.hio-action.active {
+  background: #fff;
+  color: #101828;
+}
+
+.extended-score-entry {
+  color: #fff;
+}
+
+.extended-score-entry input {
+  min-height: 2.75rem;
+  text-align: center;
 }
 
 .score-row-header b,
@@ -524,26 +507,6 @@ button:focus-visible {
 .transfer-list b {
   justify-self: end;
   white-space: nowrap;
-}
-
-.toggle-action,
-.primary-action {
-  min-height: 3.2rem;
-  border: 0;
-  border-radius: 999px;
-  padding: 0 1rem;
-  font-weight: 900;
-}
-
-.toggle-action {
-  background: #e2e8f0;
-  color: #334155;
-}
-
-.toggle-action.active,
-.primary-action {
-  background: #101828;
-  color: #fff;
 }
 
 .ledger-grid {
@@ -645,12 +608,6 @@ button:focus-visible {
   opacity: 0.58;
 }
 
-.secondary-action {
-  min-height: 3.2rem;
-  color: #101828;
-  background: rgba(255, 255, 255, 0.78);
-}
-
 .qr-chip {
   display: grid;
   grid-template-columns: repeat(5, 0.58rem);
@@ -704,6 +661,11 @@ button:focus-visible {
     padding: 1.6rem;
   }
 
+  .setup-heading-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+  }
+
   .setup-grid,
   .hole-toolbar,
   .ledger-grid {
@@ -714,10 +676,21 @@ button:focus-visible {
     grid-template-columns: 0.7fr 0.7fr 1.4fr;
   }
 
+  .scorecard-meta-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
   .player-strip {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
+  .on-putt-entry {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .hio-action {
+    grid-column: 1 / -1;
+  }
 
   .share-actions {
     grid-template-columns: repeat(2, minmax(0, 1fr));
