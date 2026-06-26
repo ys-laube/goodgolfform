@@ -4,8 +4,6 @@ import { availableLocalStorage } from './browserEnvironment';
 import { ScorecardGrid } from './ScorecardGrid';
 import {
   calculateRoundLedger,
-  eventBasePoints,
-  type BettingEventType,
   type BettingRound as LedgerBettingRound,
   type PlayerId,
 } from './domain/bettingLedger';
@@ -27,20 +25,10 @@ import {
   scoreSummary,
   useScorecardController,
 } from './useScorecardController';
-import { useBettingRoundSession, type BettingEventKey, type BettingGameKey } from './useBettingRoundSession';
+import { useBettingRoundSession } from './useBettingRoundSession';
 
-const gameKeys: readonly BettingGameKey[] = ['ojang'];
-const eventKeys: readonly BettingEventKey[] = ['near-pin'];
 const playerTones = ['#4f8cff', '#ff8aab', '#6ee7b7', '#fbbf24'] as const;
 const currencyFormatter = new Intl.NumberFormat('ko-KR');
-
-const gameLabels: Record<BettingGameKey, string> = {
-  ojang: '전통 오장',
-};
-
-const gameDescriptions: Record<BettingGameKey, string> = {
-  ojang: '홀마다 1:1 타수 차를 오장 단위로 정산하고, 버디·트리플·3명 동타·전원 동타 다음 홀은 배판',
-};
 
 let shareHashRestoreAttempted = false;
 let initialShareHashRestoreResult: BettingShareRestoreResult | null = null;
@@ -89,12 +77,6 @@ function shareRestoreReasonLabel(reason: Exclude<BettingShareRestoreResult, { re
   return labels[reason];
 }
 
-const eventLabels: Record<BettingEventKey, string> = {
-  'near-pin': '파3 니어',
-};
-
-type GameUnitField = 'points' | 'money';
-
 function roundToTwo(value: number): number {
   return Math.round((value + Number.EPSILON) * 100) / 100;
 }
@@ -142,36 +124,30 @@ function toLedgerRound(round: StoredBettingRound): LedgerBettingRound {
     })),
     settings: {
       holeCount: round.settings.holeCount,
-      scoringMode: round.settings.scoringMode,
-      handicapMode: round.settings.handicapMode,
+      scoringMode: 'money',
+      handicapMode: 'final-total',
     },
     enabledGames: {
-      ojang: round.enabledGames.ojang,
+      ojang: true,
     },
     gameUnits: {
-      ojang: { pointValue: round.gameUnits.ojang.points, moneyPerPoint: round.gameUnits.ojang.money },
+      ojang: { pointValue: round.gameUnits.stroke.points, moneyPerPoint: round.gameUnits.stroke.money },
     },
     holes: round.holes.map((hole) => ({
       holeNumber: hole.holeNumber,
+      par: hole.par,
       strokes: Object.fromEntries(round.players.map((player) => [
         player.id,
         hole.scores.find((score) => score.playerId === player.id)?.strokes ?? 0,
       ])) as Record<PlayerId, number>,
-      par: hole.par,
-      events: hole.events.map((event) => ({
-        type: event.event as BettingEventType,
+      events: hole.events.filter((event) => event.event === 'near-pin').map((event) => ({
+        type: 'near-pin',
         playerId: event.playerId,
         points: event.points,
-        label: eventLabels[event.event],
+        label: '니어핀',
       })),
     })),
   };
-}
-
-function eventIsActive(round: StoredBettingRound, holeNumber: number, event: BettingEventKey, playerId: string): boolean {
-  return round.holes
-    .find((hole) => hole.holeNumber === holeNumber)
-    ?.events.some((item) => item.event === event && item.playerId === playerId) ?? false;
 }
 
 function currentLocationHash(): string {
@@ -239,7 +215,7 @@ export function App() {
   const [courseName, setCourseName] = useState(() => restoredLabels.courseName);
   const [holeCountDraft, setHoleCountDraft] = useState<string | null>(null);
   const [playerHandicapDrafts, setPlayerHandicapDrafts] = useState<Record<string, string>>({});
-  const [gameUnitDrafts, setGameUnitDrafts] = useState<Record<string, string>>({});
+  const [unitAmountDraft, setUnitAmountDraft] = useState<string | null>(null);
   const [shareReady, setShareReady] = useState(false);
   const [shareStatusMessage, setShareStatusMessage] = useState<string | null>(() => initialShareHashStatus());
 
@@ -272,7 +248,7 @@ export function App() {
     markDirty: markShareDirty,
   });
   const ledger = useMemo(() => calculateRoundLedger(toLedgerRound(round)), [round]);
-  const settlementUnit = round.settings.scoringMode;
+  const settlementUnit = 'money' as const;
   const balanceRows = round.players
     .map((player, index) => ({
       player,
