@@ -257,7 +257,7 @@ function isBettingRound(value: unknown): value is BettingRound {
 }
 
 function isBettingPlayer(value: unknown): value is BettingPlayer {
-  return isRecord(value) && isNonEmptyString(value.id) && isNonEmptyString(value.name) && isIntegerInRange(value.handicap, -10, 54);
+  return isRecord(value) && isNonEmptyString(value.id) && typeof value.name === 'string' && isIntegerInRange(value.handicap, -10, 54);
 }
 
 function hasUniquePlayerIds(players: readonly BettingPlayer[]): boolean {

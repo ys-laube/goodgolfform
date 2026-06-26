@@ -78,6 +78,16 @@ describe('betting ledger local storage boundary', () => {
     expect(createDefaultBettingRound({ playerCount: 99 }).players).toHaveLength(4);
   });
 
+  it('round-trips intentionally blank player names for in-progress setup editing', () => {
+    const round = createDefaultBettingRound({ id: 'round-blank-name', now: '2026-06-25T00:00:00.000Z' });
+    const blankNameRound = {
+      ...round,
+      players: round.players.map((player, index) => (index === 0 ? { ...player, name: '' } : player)),
+    };
+
+    expect(deserializeBettingRound(serializeBettingRound(blankNameRound))).toEqual(blankNameRound);
+  });
+
   it('never reads or migrates old Korean caddie presets into betting round state', () => {
     const storage = new MemoryStorage({
       [legacyShotAdvicePresetStorageKey]: JSON.stringify({ version: 1, presets: [{ name: '저장된 캐디 거리표' }] }),

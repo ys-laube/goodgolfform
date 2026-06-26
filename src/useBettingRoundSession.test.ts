@@ -99,6 +99,14 @@ describe('useBettingRoundSession local state helpers', () => {
     expect(unitRound.updatedAt).toBe('2026-06-25T01:03:00.000Z');
   });
 
+  it('allows player name drafts to be fully cleared instead of restoring the previous name', () => {
+    const round = createDefaultBettingRound({ now: '2026-06-25T00:00:00.000Z' });
+    const clearedRound = applyPlayerMutation(round, 'player-1', { name: '' }, '2026-06-25T01:01:00.000Z');
+
+    expect(clearedRound.players[0]?.name).toBe('');
+    expect(clearedRound.players[1]?.name).toBe(round.players[1]?.name);
+  });
+
   it('resizes a round to 2–4 players, prunes inactive hole data, and disables Vegas below four players', () => {
     const round = {
       ...createDefaultBettingRound({ now: '2026-06-25T00:00:00.000Z' }),

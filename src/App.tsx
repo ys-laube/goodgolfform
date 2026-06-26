@@ -39,9 +39,21 @@ const eventLabels: Record<BettingEventKey, string> = {
   'ob-penalty': 'OB/벌타',
 };
 
+type GameUnitField = 'points' | 'money';
+
+export function parseEditableIntegerDraft(value: string): number | null {
+  const trimmedValue = value.trim();
+
+  if (!/^-?\d+$/.test(trimmedValue)) {
+    return null;
+  }
+
+  const parsed = Number.parseInt(trimmedValue, 10);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
 function parseIntegerDraft(value: string, fallback: number): number {
-  const parsed = Number.parseInt(value, 10);
-  return Number.isFinite(parsed) ? parsed : fallback;
+  return parseEditableIntegerDraft(value) ?? fallback;
 }
 
 function roundToTwo(value: number): number {
@@ -146,6 +158,9 @@ export function App() {
   const [courseName, setCourseName] = useState('남서울 · OUT');
   const [currentHoleDraft, setCurrentHoleDraft] = useState('1');
   const [parDraft, setParDraft] = useState('4');
+  const [holeCountDraft, setHoleCountDraft] = useState<string | null>(null);
+  const [playerHandicapDrafts, setPlayerHandicapDrafts] = useState<Record<string, string>>({});
+  const [gameUnitDrafts, setGameUnitDrafts] = useState<Record<string, string>>({});
   const [scoreDrafts, setScoreDrafts] = useState<Record<string, string>>({});
   const [missionPlayerId, setMissionPlayerId] = useState(round.players[0]?.id ?? '');
   const [missionCleared, setMissionCleared] = useState(true);
@@ -177,6 +192,46 @@ export function App() {
   function scoreInputValue(playerId: string): string {
     const draftKey = `${holeNumber}:${playerId}`;
     return scoreDrafts[draftKey] ?? scoreForPlayer(round, holeNumber, playerId)?.toString() ?? '';
+  }
+
+  function gameUnitDraftKey(game: BettingGameKey, field: GameUnitField): string {
+    return `${game}:${field}`;
+  }
+
+  function gameUnitInputValue(game: BettingGameKey, field: GameUnitField): string {
+    return gameUnitDrafts[gameUnitDraftKey(game, field)] ?? round.gameUnits[game][field].toString();
+  }
+
+  function playerHandicapInputValue(playerId: string, handicap: number): string {
+    return playerHandicapDrafts[playerId] ?? handicap.toString();
+  }
+
+  function commitIntegerDraft(value: string, commit: (parsedValue: number) => void) {
+    const parsedValue = parseEditableIntegerDraft(value);
+
+    if (parsedValue !== null) {
+      commit(parsedValue);
+    }
+  }
+
+  function updatePlayerHandicap(playerId: string, value: string) {
+    setPlayerHandicapDrafts((current) => ({ ...current, [playerId]: value }));
+    setShareReady(false);
+    commitIntegerDraft(value, (handicap) => session.updatePlayer(playerId, { handicap }));
+  }
+
+  function updateGameUnitDraft(game: BettingGameKey, field: GameUnitField, value: string) {
+    setGameUnitDrafts((current) => ({ ...current, [gameUnitDraftKey(game, field)]: value }));
+    setShareReady(false);
+    commitIntegerDraft(value, (unitValue) => {
+      session.updateGameUnit(game, field === 'points' ? { points: unitValue } : { money: unitValue });
+    });
+  }
+
+  function updateHoleCountDraft(value: string) {
+    setHoleCountDraft(value);
+    setShareReady(false);
+    commitIntegerDraft(value, (holeCount) => session.updateRoundSetup({ holeCount }));
   }
 
   function updateScore(playerId: string, value: string) {
@@ -277,8 +332,8 @@ export function App() {
                 핸디
                 <input
                   inputMode="numeric"
-                  value={player.handicap}
-                  onChange={(event) => session.updatePlayer(player.id, { handicap: parseIntegerDraft(event.currentTarget.value, player.handicap) })}
+                  value={playerHandicapInputValue(player.id, player.handicap)}
+                  onChange={(event) => updatePlayerHandicap(player.id, event.currentTarget.value)}
                 />
               </label>
             </article>
@@ -301,16 +356,16 @@ export function App() {
                   점수 단위
                   <input
                     inputMode="numeric"
-                    value={round.gameUnits[game].points}
-                    onChange={(event) => session.updateGameUnit(game, { points: parseIntegerDraft(event.currentTarget.value, round.gameUnits[game].points) })}
+                    value={gameUnitInputValue(game, 'points')}
+                    onChange={(event) => updateGameUnitDraft(game, 'points', event.currentTarget.value)}
                   />
                 </label>
                 <label>
                   1점 금액
                   <input
                     inputMode="numeric"
-                    value={round.gameUnits[game].money}
-                    onChange={(event) => session.updateGameUnit(game, { money: parseIntegerDraft(event.currentTarget.value, round.gameUnits[game].money) })}
+                    value={gameUnitInputValue(game, 'money')}
+                    onChange={(event) => updateGameUnitDraft(game, 'money', event.currentTarget.value)}
                   />
                 </label>
               </article>
@@ -338,8 +393,8 @@ export function App() {
             총 홀 수
             <input
               inputMode="numeric"
-              value={round.settings.holeCount}
-              onChange={(event) => session.updateRoundSetup({ holeCount: parseIntegerDraft(event.currentTarget.value, round.settings.holeCount) })}
+              value={holeCountDraft ?? round.settings.holeCount.toString()}
+              onChange={(event) => updateHoleCountDraft(event.currentTarget.value)}
             />
           </label>
         </div>

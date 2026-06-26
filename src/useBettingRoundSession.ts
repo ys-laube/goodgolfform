@@ -134,7 +134,7 @@ export function applyPlayerMutation(
         player.id === playerId
           ? {
               ...player,
-              name: patch.name === undefined ? player.name : normalizePlayerName(patch.name, player.name),
+              name: patch.name === undefined ? player.name : normalizePlayerName(patch.name),
               handicap: patch.handicap === undefined ? player.handicap : clampInteger(patch.handicap, -10, 54),
             }
           : player,
@@ -407,8 +407,8 @@ function stampRound(round: BettingRound, updatedAt: string): BettingRound {
   return cloneBettingRound({ ...round, updatedAt });
 }
 
-function normalizePlayerName(name: string, fallback: string): string {
-  return name.trim() || fallback;
+function normalizePlayerName(name: string): string {
+  return name;
 }
 
 function clampInteger(value: number, min: number, max: number): number {
