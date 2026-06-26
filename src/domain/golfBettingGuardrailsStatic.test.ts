@@ -12,6 +12,23 @@ const runtimeSourceEntries = Object.entries(runtimeSourceModules).filter(
   ([modulePath]) => !modulePath.endsWith('.test.ts') && !modulePath.endsWith('vite-env.d.ts') && !modulePath.endsWith('vitest-node.d.ts'),
 );
 
+const approvedRootDependencyNames = [
+  '@eslint/js',
+  '@types/react',
+  '@types/react-dom',
+  '@vitejs/plugin-react',
+  'eslint',
+  'eslint-plugin-react-hooks',
+  'eslint-plugin-react-refresh',
+  'globals',
+  'react',
+  'react-dom',
+  'typescript',
+  'typescript-eslint',
+  'vite',
+  'vitest',
+] as const;
+
 const retiredCaddieFilePattern = new RegExp(
   String.raw`(?:^|/)(?:CaddieShotVisual|useCaddieSession|caddiePresets|caddieRecommendationEngine|caddieShotVisualState|copy)\.(?:ts|tsx)$`,
   'i',
@@ -45,6 +62,25 @@ const forbiddenProviderOrRuntimePatterns = [
   new RegExp(String.raw`VITE_(?:API|BACKEND|AUTH|ROOM|MAP|WEATHER|PAYMENT|STRIPE|TOSS|PORTONE)_`, 'i'),
 ] as const;
 const forbiddenProductSurfacePattern = new RegExp(['송' + '금', '결' + '제', '지' + '갑', '에스' + '크로', '입' + '금', '출' + '금', '공개' + '방', '매' + '칭', '랭' + '킹', '실시간 ' + '방', 'wallet', 'escrow', 'public room', 'matching', 'leaderboard'].join('|'), 'i');
+const forbiddenSocialOrExternalSharePattern = new RegExp(
+  [
+    String.raw`navigator\.(?:canShare|share|sendBeacon)\b`,
+    String.raw`\b(?:open|postMessage)\s*\(`,
+    String.raw`\btarget\s*=\s*["']_blank["']`,
+    String.raw`\b(?:mailto|sms|tel):`,
+    String.raw`facebook(?:\.com)?`,
+    String.raw`instagram(?:\.com)?`,
+    String.raw`twitter(?:\.com)?`,
+    String.raw`\bx\.com\b`,
+    String.raw`threads(?:\.net)?`,
+    String.raw`telegram(?:\.me)?|t\.me`,
+    String.raw`discord(?:\.gg|\.com)?`,
+    String.raw`line(?:://|\.me)`,
+    'kakao(?:talk|story)?',
+    'naver(?:band)?',
+  ].join('|'),
+  'i',
+);
 const customRuleBuilderPattern = /custom rule|rule builder|사용자.*규칙|커스텀.*규칙|규칙.*빌더/i;
 
 function importSpecifiersFromSource(source: string): string[] {
@@ -52,6 +88,20 @@ function importSpecifiersFromSource(source: string): string[] {
     source.matchAll(/(?:import|export)\s+(?:type\s+)?(?:[^'"]*?\s+from\s+)?["']([^"']+)["']|import\(["']([^"']+)["']\)/g),
     (match) => match[1] ?? match[2],
   );
+}
+
+function sortedRootPackageLockDependencyNames(): string[] {
+  const packageLock = JSON.parse(packageLockSource) as {
+    readonly packages?: {
+      readonly '': {
+        readonly dependencies?: Readonly<Record<string, string>>;
+        readonly devDependencies?: Readonly<Record<string, string>>;
+      };
+    };
+  };
+  const rootPackage = packageLock.packages?.[''];
+
+  return [...Object.keys(rootPackage?.dependencies ?? {}), ...Object.keys(rootPackage?.devDependencies ?? {})].sort();
 }
 
 describe('betting-ledger static guardrails', () => {
@@ -83,6 +133,14 @@ describe('betting-ledger static guardrails', () => {
     }
   });
 
+  it('keeps the root dependency surface fixed to local-only React/Vite tooling', () => {
+    const approvedDependencyNames = [...approvedRootDependencyNames].sort();
+    const packageDependencyNames = [...Object.keys(packageJson.dependencies), ...Object.keys(packageJson.devDependencies ?? {})].sort();
+
+    expect(packageDependencyNames).toEqual(approvedDependencyNames);
+    expect(sortedRootPackageLockDependencyNames()).toEqual(approvedDependencyNames);
+  });
+
   it('keeps runtime source local-only and free of network calls, payment execution, public gambling, and custom rule builder surfaces', () => {
     const combinedRuntimeSource = runtimeSourceEntries.map(([modulePath, source]) => `// ${modulePath}\n${source}`).join('\n');
 
@@ -91,6 +149,7 @@ describe('betting-ledger static guardrails', () => {
     }
 
     expect(combinedRuntimeSource).not.toMatch(forbiddenProductSurfacePattern);
+    expect(combinedRuntimeSource).not.toMatch(forbiddenSocialOrExternalSharePattern);
     expect(combinedRuntimeSource).not.toMatch(customRuleBuilderPattern);
     expect(combinedRuntimeSource).toMatch(/localStorage|StorageLike|golf-bet-ledger|local/i);
   });
