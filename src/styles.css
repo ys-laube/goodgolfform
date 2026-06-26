@@ -45,7 +45,7 @@ h1, h2, h3, p { margin-top: 0; }
 .scorecard-section,
 .hole-panel,
 .review-card,
-.share-card {
+.export-card {
   margin-bottom: 1rem;
   border: 1px solid rgba(255, 255, 255, 0.74);
   border-radius: 2rem;
@@ -75,7 +75,7 @@ h1, h2, h3, p { margin-top: 0; }
   filter: blur(0.25rem);
 }
 
-.hero-card > *, .control-panel > *, .scorecard-section > *, .hole-panel > *, .review-card > *, .share-card > * { position: relative; }
+.hero-card > *, .control-panel > *, .scorecard-section > *, .hole-panel > *, .review-card > *, .export-card > * { position: relative; }
 
 .top-actions {
   display: flex;
@@ -92,7 +92,7 @@ h1, h2, h3, p { margin-top: 0; }
   letter-spacing: -0.08em;
 }
 
-.hero-copy p:not(.eyebrow), .section-heading p, .share-card p {
+.hero-copy p:not(.eyebrow), .section-heading p, .export-card p {
   color: #475569;
   line-height: 1.62;
 }
@@ -123,7 +123,7 @@ h1, h2, h3, p { margin-top: 0; }
 .scorecard-section,
 .hole-panel,
 .review-card,
-.share-card {
+.export-card {
   padding: 1rem;
 }
 
@@ -189,7 +189,7 @@ input:focus, textarea:focus { border-color: rgba(37, 99, 235, 0.6); box-shadow: 
 .scorecard-tabs,
 .button-row,
 .entry-footer,
-.share-actions {
+.export-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 0.45rem;
@@ -321,20 +321,20 @@ input:focus, textarea:focus { border-color: rgba(37, 99, 235, 0.6); box-shadow: 
 .memo-highlights ul { display: grid; gap: 0.5rem; margin: 0; padding-left: 1.1rem; color: #334155; }
 .memo-highlights p { margin-bottom: 0; color: #64748b; }
 
-.share-card {
+.export-card {
   display: grid;
   gap: 1rem;
   background: #0f172a;
   color: #ffffff;
 }
-.share-card .eyebrow { color: #93c5fd; }
-.share-card h2 { color: #ffffff; }
-.share-card p { color: #cbd5e1; }
+.export-card .eyebrow { color: #93c5fd; }
+.export-card h2 { color: #ffffff; }
+.export-card p { color: #cbd5e1; }
 .status-text { margin: 0; font-weight: 850; }
 
 @media (min-width: 780px) {
   .hero-card { grid-template-columns: 1fr 21rem; align-items: end; padding: 1.6rem; }
   .top-actions { grid-column: 1 / -1; }
   .entry-list { grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr)); }
-  .share-card { grid-template-columns: 1fr auto; align-items: center; }
+  .export-card { grid-template-columns: 1fr auto; align-items: center; }
 }

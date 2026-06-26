@@ -291,13 +291,13 @@ export function App() {
         </div>
       </section>
 
-      <section className="share-card" aria-labelledby="export-title">
+      <section className="export-card" aria-labelledby="export-title">
         <div>
           <p className="eyebrow">Save image</p>
           <h2 id="export-title">스코어카드 이미지 저장</h2>
           <p>전체 스코어카드와 입력한 홀 메모를 SVG 이미지 파일로 휴대폰에 저장합니다.</p>
         </div>
-        <div className="share-actions">
+        <div className="export-actions">
           <button className="primary-button" type="button" onClick={handleExportSvg}>스코어카드 SVG 저장</button>
           <button className="secondary-button" type="button" onClick={clearSavedRound}>저장 기록 지우기</button>
         </div>
