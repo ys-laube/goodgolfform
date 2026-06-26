@@ -177,7 +177,7 @@ export function App() {
           </div>
           <label className="mini-number-field">
             홀
-            <input inputMode="numeric" value={controller.currentHoleDraft} onChange={(event) => controller.updateHoleDraft(event.currentTarget.value)} />
+            <input inputMode="numeric" value={controller.currentHoleDraft} onBlur={controller.normalizeHoleDraft} onChange={(event) => controller.updateHoleDraft(event.currentTarget.value)} />
           </label>
         </div>
 

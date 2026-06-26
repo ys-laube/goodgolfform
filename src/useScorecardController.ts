@@ -133,6 +133,7 @@ export function useScorecardController({ round, session }: ScorecardControllerOp
     scorecardCellSubLabel,
     selectHole,
     updateHoleDraft: (value: string) => setCurrentHoleDraft(value),
+    normalizeHoleDraft: () => setCurrentHoleDraft(normalizeSelectedHoleDraft(currentHoleDraft, round.settings.holeCount)),
     updateHoleInOne,
     updateManualScore: commitManualScore,
     updateMemoDraft,
@@ -167,6 +168,10 @@ export function scorecardNavigationState(currentHoleDraft: string, holeCount: nu
 
 export function parseIntegerDraft(value: string, defaultValue: number): number {
   return parseEditableIntegerDraft(value) ?? defaultValue;
+}
+
+export function normalizeSelectedHoleDraft(value: string, holeCount: number): string {
+  return scorecardNavigationState(value, holeCount).holeNumber.toString();
 }
 
 export function normalizeParDraft(value: string): number | null {

@@ -4,6 +4,7 @@ import {
   holeInOneScoreInput,
   manualScoreInputFromDraft,
   normalizeParDraft,
+  normalizeSelectedHoleDraft,
   onPuttScoreInput,
   scorecardNavigationState,
 } from './useScorecardController';
@@ -13,6 +14,14 @@ describe('scorecard controller pure behavior', () => {
     expect(scorecardNavigationState('1', 18)).toEqual({ activeNine: 'front', holeNumber: 1, visibleHoleNumbers: [1, 2, 3, 4, 5, 6, 7, 8, 9] });
     expect(scorecardNavigationState('12', 18)).toEqual({ activeNine: 'back', holeNumber: 12, visibleHoleNumbers: [10, 11, 12, 13, 14, 15, 16, 17, 18] });
     expect(scorecardNavigationState('99', 12)).toEqual({ activeNine: 'back', holeNumber: 12, visibleHoleNumbers: [10, 11, 12] });
+  });
+
+  it('normalizes selected-hole draft text on blur boundaries', () => {
+    expect(normalizeSelectedHoleDraft('', 18)).toBe('1');
+    expect(normalizeSelectedHoleDraft('abc', 18)).toBe('1');
+    expect(normalizeSelectedHoleDraft('0', 18)).toBe('1');
+    expect(normalizeSelectedHoleDraft('99', 12)).toBe('12');
+    expect(normalizeSelectedHoleDraft('7', 18)).toBe('7');
   });
 
   it('keeps par draft clearing possible while clamping numeric values', () => {
