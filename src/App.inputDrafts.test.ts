@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import appSource from './App.tsx?raw';
-import { parseEditableIntegerDraft } from './App';
+import { parseEditableIntegerDraft } from './inputDrafts';
 
 describe('editable input draft helpers', () => {
   it('parses commit-ready integer drafts without treating blank Backspace drafts as zero or fallback', () => {

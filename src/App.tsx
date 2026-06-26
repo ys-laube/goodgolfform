@@ -9,6 +9,7 @@ import {
   type PlayerId,
 } from './domain/bettingLedger';
 import { type BettingRound as StoredBettingRound } from './domain/bettingStorage';
+import { parseEditableIntegerDraft } from './inputDrafts';
 import { useBettingRoundSession, type BettingEventKey, type BettingGameKey } from './useBettingRoundSession';
 
 const gameKeys: readonly BettingGameKey[] = ['stroke', 'skins', 'vegas', 'events', 'missions'];
@@ -40,17 +41,6 @@ const eventLabels: Record<BettingEventKey, string> = {
 };
 
 type GameUnitField = 'points' | 'money';
-
-export function parseEditableIntegerDraft(value: string): number | null {
-  const trimmedValue = value.trim();
-
-  if (!/^-?\d+$/.test(trimmedValue)) {
-    return null;
-  }
-
-  const parsed = Number.parseInt(trimmedValue, 10);
-  return Number.isFinite(parsed) ? parsed : null;
-}
 
 function parseIntegerDraft(value: string, fallback: number): number {
   return parseEditableIntegerDraft(value) ?? fallback;
