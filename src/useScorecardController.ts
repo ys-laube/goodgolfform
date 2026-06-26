@@ -1,12 +1,13 @@
 import { useState } from 'react';
 
-import { maximumHoleScoreStrokes, type BettingHoleResult, type BettingRound } from './domain/bettingStorage';
+import { maximumHoleScoreStrokes, type BettingHoleResult, type BettingHoleScore, type BettingRound } from './domain/bettingStorage';
 import { parseEditableIntegerDraft } from './inputDrafts';
+import type { BettingHoleScoreInput } from './useBettingRoundSession';
 
 type ScorecardControllerOptions = {
   readonly round: BettingRound;
   readonly updateHoleSetup: (holeNumber: number, patch: Partial<Pick<BettingHoleResult, 'par' | 'backdoorOpen'>>) => void;
-  readonly updateHoleScore: (holeNumber: number, playerId: string, strokes: number) => void;
+  readonly updateHoleScore: (holeNumber: number, playerId: string, score: BettingHoleScoreInput) => void;
   readonly markDirty: () => void;
 };
 
@@ -18,7 +19,6 @@ export function useScorecardController({ round, updateHoleSetup, updateHoleScore
   const holeNumber = Math.min(round.settings.holeCount, Math.max(1, parseIntegerDraft(currentHoleDraft, 1)));
   const holeParDraft = parInputValue(holeNumber);
   const holePar = clampInteger(parseIntegerDraft(holeParDraft, 4), 3, 5);
-  const scoreChoices = scoreChoicesForPar(holePar);
   const backdoorOpen = backdoorOpenForHole(holeNumber);
   const activeNine: 'front' | 'back' = holeNumber > 9 ? 'back' : 'front';
   const firstHoleInActiveNine = activeNine === 'front' ? 1 : 10;
@@ -45,14 +45,12 @@ export function useScorecardController({ round, updateHoleSetup, updateHoleScore
 
   function scoreInputValue(playerId: string): string {
     const draftKey = `${holeNumber}:${playerId}`;
-    return scoreDrafts[draftKey] ?? scoreForPlayer(round, holeNumber, playerId)?.toString() ?? '';
+    return scoreDrafts[draftKey] ?? scoreForPlayer(round, holeNumber, playerId)?.strokes.toString() ?? '';
   }
 
   function scorecardCellLabel(targetHoleNumber: number, playerId: string): string {
-    const targetPar = parForHole(targetHoleNumber);
-    const strokes = scoreForPlayer(round, targetHoleNumber, playerId);
-
-    return strokes ? `${scoreChoiceLabel(strokes, targetPar)} · ${strokes}타` : '—';
+    const score = scoreForPlayer(round, targetHoleNumber, playerId);
+    return score ? scoreLabel(score) : '—';
   }
 
   function updateHoleDraft(value: string) {
@@ -93,16 +91,36 @@ export function useScorecardController({ round, updateHoleSetup, updateHoleScore
     if (/^\d{1,2}$/.test(value)) {
       const normalizedScore = clampInteger(parseIntegerDraft(value, holePar + 1), 1, maximumHoleScoreStrokes);
       setScoreDrafts((current) => ({ ...current, [draftKey]: normalizedScore.toString() }));
-      updateHoleScore(holeNumber, playerId, normalizedScore);
+      updateHoleScore(holeNumber, playerId, { strokes: normalizedScore, entryMode: 'manual' });
     }
   }
 
-  function updateScoreButton(playerId: string, strokes: number) {
-    const normalizedScore = clampInteger(strokes, 1, maximumHoleScoreStrokes);
+  function updateOnGreenShots(playerId: string, onGreenShots: number) {
+    const currentScore = scoreForPlayer(round, holeNumber, playerId);
+    const normalizedOn = clampInteger(onGreenShots, 1, 6);
+    const putts = currentScore?.entryMode === 'on-putt' && currentScore.putts !== undefined ? currentScore.putts : 0;
+    commitOnPuttScore(playerId, normalizedOn, putts);
+  }
+
+  function updatePutts(playerId: string, putts: number) {
+    const currentScore = scoreForPlayer(round, holeNumber, playerId);
+    const onGreenShots = currentScore?.entryMode === 'on-putt' && currentScore.onGreenShots !== undefined ? currentScore.onGreenShots : 1;
+    commitOnPuttScore(playerId, onGreenShots, clampInteger(putts, 0, 5));
+  }
+
+  function updateHoleInOne(playerId: string) {
     const draftKey = `${holeNumber}:${playerId}`;
-    setScoreDrafts((current) => ({ ...current, [draftKey]: normalizedScore.toString() }));
+    setScoreDrafts((current) => ({ ...current, [draftKey]: '1' }));
     markDirty();
-    updateHoleScore(holeNumber, playerId, normalizedScore);
+    updateHoleScore(holeNumber, playerId, { strokes: 1, entryMode: 'hio', onGreenShots: 1, putts: 0, holeInOne: true });
+  }
+
+  function commitOnPuttScore(playerId: string, onGreenShots: number, putts: number) {
+    const strokes = clampInteger(onGreenShots + putts, 1, maximumHoleScoreStrokes);
+    const draftKey = `${holeNumber}:${playerId}`;
+    setScoreDrafts((current) => ({ ...current, [draftKey]: strokes.toString() }));
+    markDirty();
+    updateHoleScore(holeNumber, playerId, { strokes, entryMode: 'on-putt', onGreenShots, putts });
   }
 
   function resetScorecardDrafts() {
@@ -122,15 +140,16 @@ export function useScorecardController({ round, updateHoleSetup, updateHoleScore
     parForHole,
     parInputValue,
     resetScorecardDrafts,
-    scoreChoices,
     scoreInputValue,
     scorecardCellLabel,
     toggleBackdoorOpen,
     toggleBackdoorOpenForHole,
     updateHoleDraft,
+    updateHoleInOne,
+    updateOnGreenShots,
     updateParDraft,
     updateParDraftForHole,
-    updateScoreButton,
+    updatePutts,
     updateScoreDraft,
     visibleHoleNumbers,
   };
@@ -140,26 +159,27 @@ export function parseIntegerDraft(value: string, fallback: number): number {
   return parseEditableIntegerDraft(value) ?? fallback;
 }
 
-export function scoreForPlayer(round: BettingRound, holeNumber: number, playerId: string): number | undefined {
+export function scoreForPlayer(round: BettingRound, holeNumber: number, playerId: string): BettingHoleScore | undefined {
   return round.holes
     .find((hole) => hole.holeNumber === holeNumber)
-    ?.scores.find((score) => score.playerId === playerId)?.strokes;
+    ?.scores.find((score) => score.playerId === playerId);
 }
 
-export function scoreChoiceLabel(strokes: number, holePar: number): string {
-  return relativeScoreLabel(strokes - holePar);
-}
-
-export function scoreChoiceHint(strokes: number, holePar: number): string {
-  if (strokes === 1) {
-    return '홀인원 · 1타';
+export function scoreLabel(score: BettingHoleScore): string {
+  if (score.entryMode === 'hio' || score.holeInOne) {
+    return 'HIO · 1타';
   }
 
-  if (strokes === holePar * 2) {
-    return `더블파 · ${strokes}타`;
+  if (
+    score.entryMode === 'on-putt' &&
+    score.onGreenShots !== undefined &&
+    score.putts !== undefined &&
+    score.onGreenShots + score.putts === score.strokes
+  ) {
+    return `${score.strokes}타 · ${score.onGreenShots}온 ${score.putts}펏`;
   }
 
-  return `${strokes}타`;
+  return `${score.strokes}타 · 직접`;
 }
 
 export function scoreSummary(strokes: number, holePar: number): string {
@@ -168,6 +188,10 @@ export function scoreSummary(strokes: number, holePar: number): string {
   }
 
   const relativeLabel = relativeScoreLabel(strokes - holePar);
+
+  if (strokes === 1) {
+    return '홀인원';
+  }
 
   if (strokes === holePar * 2) {
     return `${strokes}타 · ${relativeLabel} 더블파`;
@@ -199,8 +223,4 @@ function relativeScoreLabel(relativeScore: number): string {
   }
 
   return relativeScore > 0 ? `+${relativeScore}` : `${relativeScore}`;
-}
-
-function scoreChoicesForPar(holePar: number): readonly number[] {
-  return Array.from({ length: holePar * 2 }, (_, index) => index + 1);
 }

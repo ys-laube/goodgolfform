@@ -1,26 +1,22 @@
 import { useMemo, useState } from 'react';
 
 import { availableLocalStorage } from './browserEnvironment';
-import { eventBasePoints, type BettingEventType } from './domain/bettingLedger';
 import {
   bettingActiveRoundStorageKey,
   clearBettingRound,
   cloneBettingRound,
   createDefaultBettingPlayers,
   createDefaultBettingRound,
+  defaultOjangUnitAmount,
   loadBettingRound,
   maximumHoleScoreStrokes,
   purgeKnownLegacyShotAdviceStorage,
   saveBettingRound,
-  type BettingEventKey,
-  type BettingGameKey,
-  type BettingGameUnit,
-  type BettingHandicapMode,
   type BettingHoleResult,
+  type BettingHoleScore,
   type BettingPlayer,
   type BettingRound,
   type BettingRoundSettings,
-  type BettingScoringMode,
   type StorageLike,
 } from './domain/bettingStorage';
 
@@ -34,20 +30,23 @@ export type BettingRoundSessionState = {
 };
 
 export type BettingRoundSession = BettingRoundSessionState & {
-  readonly gameAvailability: Record<BettingGameKey, { readonly available: boolean; readonly reason: string | null }>;
   readonly updateRoundSetup: (patch: Partial<BettingRoundSettings>) => void;
+  readonly updateUnitAmount: (unitAmount: number) => void;
   readonly setPlayerCount: (playerCount: number) => void;
   readonly updatePlayer: (playerId: string, patch: Partial<Pick<BettingPlayer, 'name' | 'handicap'>>) => void;
-  readonly setGameEnabled: (game: BettingGameKey, enabled: boolean) => void;
-  readonly updateGameUnit: (game: BettingGameKey, patch: Partial<BettingGameUnit>) => void;
   readonly updateHoleSetup: (holeNumber: number, patch: Partial<Pick<BettingHoleResult, 'par' | 'backdoorOpen'>>) => void;
-  readonly updateHoleScore: (holeNumber: number, playerId: string, strokes: number) => void;
-  readonly toggleHoleEvent: (holeNumber: number, event: BettingEventKey, playerId: string, points?: number) => void;
+  readonly updateHoleScore: (holeNumber: number, playerId: string, score: BettingHoleScoreInput) => void;
+  readonly setNearPlayer: (holeNumber: number, playerId: string | null) => void;
   readonly saveRound: () => boolean;
   readonly resetRound: () => void;
   readonly clearSavedRound: () => boolean;
   readonly purgeLegacyShotAdvicePresets: () => readonly string[];
 };
+
+export type BettingHoleScoreInput =
+  | { readonly strokes: number; readonly entryMode?: 'manual' }
+  | { readonly strokes: number; readonly entryMode: 'on-putt'; readonly onGreenShots: number; readonly putts: number }
+  | { readonly strokes: 1; readonly entryMode: 'hio'; readonly onGreenShots: 1; readonly putts: 0; readonly holeInOne: true };
 
 export function createInitialBettingRoundSessionState(storage: StorageLike | undefined, now = new Date().toISOString()): BettingRoundSessionState {
   const savedRound = loadBettingRound(storage);
@@ -74,14 +73,13 @@ export function createInitialBettingRoundSessionState(storage: StorageLike | und
 
 export function applyRoundSetupMutation(
   round: BettingRound,
-  patch: Partial<Pick<BettingRoundSettings, 'holeCount' | 'scoringMode' | 'handicapMode'>>,
+  patch: Partial<Pick<BettingRoundSettings, 'holeCount' | 'unitAmount'>>,
   now = new Date().toISOString(),
 ): BettingRound {
   const settings: BettingRoundSettings = {
     ...round.settings,
     holeCount: patch.holeCount === undefined ? round.settings.holeCount : clampInteger(patch.holeCount, 1, 18),
-    scoringMode: patch.scoringMode ?? round.settings.scoringMode,
-    handicapMode: patch.handicapMode ?? round.settings.handicapMode,
+    unitAmount: patch.unitAmount === undefined ? round.settings.unitAmount : clampInteger(patch.unitAmount, 1, 1_000_000),
   };
 
   return stampRound({ ...round, settings }, now);
@@ -100,19 +98,11 @@ export function applyPlayerCountMutation(round: BettingRound, playerCount: numbe
   const activePlayerIds = new Set(players.map((player) => player.id));
   const holes = round.holes.map((hole) => ({
     ...hole,
+    nearPlayerId: hole.nearPlayerId && activePlayerIds.has(hole.nearPlayerId) ? hole.nearPlayerId : null,
     scores: hole.scores.filter((score) => activePlayerIds.has(score.playerId)),
-    events: hole.events.filter((event) => activePlayerIds.has(event.playerId)),
   }));
 
-  return stampRound(
-    {
-      ...round,
-      players,
-      enabledGames: { ojang: true },
-      holes,
-    },
-    now,
-  );
+  return stampRound({ ...round, players, holes }, now);
 }
 
 export function applyPlayerMutation(
@@ -138,32 +128,6 @@ export function applyPlayerMutation(
   );
 }
 
-export function applyGameEnabledMutation(round: BettingRound, _game: BettingGameKey, _enabled: boolean, now = new Date().toISOString()): BettingRound {
-  return stampRound({ ...round, enabledGames: { ojang: true } }, now);
-}
-
-export function applyGameUnitMutation(
-  round: BettingRound,
-  game: BettingGameKey,
-  patch: Partial<BettingGameUnit>,
-  now = new Date().toISOString(),
-): BettingRound {
-  return stampRound(
-    {
-      ...round,
-      gameUnits: {
-        ...round.gameUnits,
-        [game]: {
-          ...round.gameUnits[game],
-          points: patch.points === undefined ? round.gameUnits[game].points : clampInteger(patch.points, 0, 100),
-          money: patch.money === undefined ? round.gameUnits[game].money : clampInteger(patch.money, 0, 1_000_000),
-        },
-      },
-    },
-    now,
-  );
-}
-
 export function applyHoleSetupMutation(
   round: BettingRound,
   holeNumber: number,
@@ -177,6 +141,7 @@ export function applyHoleSetupMutation(
       ...hole,
       par: patch.par === undefined ? hole.par : clampInteger(patch.par, 3, 5),
       backdoorOpen: patch.backdoorOpen ?? hole.backdoorOpen,
+      nearPlayerId: (patch.par !== undefined && clampInteger(patch.par, 3, 5) !== 3) ? null : hole.nearPlayerId,
     }),
     now,
   );
@@ -186,7 +151,7 @@ export function applyHoleScoreMutation(
   round: BettingRound,
   holeNumber: number,
   playerId: string,
-  strokes: number,
+  score: BettingHoleScoreInput,
   now = new Date().toISOString(),
 ): BettingRound {
   if (!hasPlayer(round, playerId)) {
@@ -198,51 +163,32 @@ export function applyHoleScoreMutation(
     holeNumber,
     (hole) => ({
       ...hole,
-      scores: upsertByPlayer(hole.scores, playerId, { playerId, strokes: clampInteger(strokes, 1, maximumHoleScoreStrokes) }),
+      scores: upsertByPlayer(hole.scores, playerId, sanitizeScore(playerId, score)),
     }),
     now,
   );
 }
 
-export function applyHoleEventToggleMutation(
+export function applyNearPlayerMutation(
   round: BettingRound,
   holeNumber: number,
-  event: BettingEventKey,
-  playerId: string,
-  points = defaultEventPoints(event),
+  playerId: string | null,
   now = new Date().toISOString(),
 ): BettingRound {
-  if (!hasPlayer(round, playerId)) {
-    return round;
-  }
-
   return mutateHole(
     round,
     holeNumber,
-    (hole) => {
-      const id = eventId(hole.holeNumber, event, playerId);
-      const exists = hole.events.some((item) => item.id === id);
-
-      return {
-        ...hole,
-        events: exists
-          ? hole.events.filter((item) => item.id !== id)
-          : [...hole.events, { id, playerId, event, points: clampInteger(points, -100, 100) }],
-      };
-    },
+    (hole) => ({
+      ...hole,
+      nearPlayerId: hole.par === 3 && playerId && hasPlayer(round, playerId) ? playerId : null,
+    }),
     now,
   );
 }
 
-export function bettingGameAvailability(_round: BettingRound): Record<BettingGameKey, { readonly available: boolean; readonly reason: string | null }> {
-  return {
-    ojang: { available: true, reason: null },
-  };
-}
-
 export function useBettingRoundSession(storageProvider: () => StorageLike | undefined = availableLocalStorage): BettingRoundSession {
   const [sessionState, setSessionState] = useState<BettingRoundSessionState>(() => createInitialBettingRoundSessionState(storageProvider()));
-  const gameAvailability = useMemo(() => bettingGameAvailability(sessionState.round), [sessionState.round]);
+  const stableState = useMemo(() => sessionState, [sessionState]);
 
   function commitRound(nextRound: BettingRound, successMessage: string) {
     const storage = storageProvider();
@@ -252,34 +198,31 @@ export function useBettingRoundSession(storageProvider: () => StorageLike | unde
       round: nextRound,
       storageStatus: saved ? 'saved' : 'memory-only',
       storageMessage: saved ? successMessage : '로컬 저장소에 쓸 수 없어 현재 세션 메모리에만 반영했습니다.',
-      hasSavedRound: saved || sessionState.hasSavedRound,
+      hasSavedRound: saved || stableState.hasSavedRound,
     });
   }
 
   function mutateRound(mutator: (round: BettingRound) => BettingRound, message: string) {
-    commitRound(mutator(sessionState.round), message);
+    commitRound(mutator(stableState.round), message);
   }
 
   return {
-    ...sessionState,
-    gameAvailability,
-    updateRoundSetup: (patch) => mutateRound((round) => applyRoundSetupMutation(round, patch), '라운드 설정을 이 기기에 저장했습니다.'),
+    ...stableState,
+    updateRoundSetup: (patch) => mutateRound((round) => applyRoundSetupMutation(round, patch), '오장 라운드 설정을 이 기기에 저장했습니다.'),
+    updateUnitAmount: (unitAmount) => mutateRound((round) => applyRoundSetupMutation(round, { unitAmount }), '타당 금액을 이 기기에 저장했습니다.'),
     setPlayerCount: (playerCount) => mutateRound((round) => applyPlayerCountMutation(round, playerCount), '플레이어 수를 이 기기에 저장했습니다.'),
     updatePlayer: (playerId, patch) => mutateRound((round) => applyPlayerMutation(round, playerId, patch), '플레이어 설정을 이 기기에 저장했습니다.'),
-    setGameEnabled: (game, enabled) => mutateRound((round) => applyGameEnabledMutation(round, game, enabled), '오장 룰을 이 기기에 저장했습니다.'),
-    updateGameUnit: (game, patch) => mutateRound((round) => applyGameUnitMutation(round, game, patch), '오장 단위를 이 기기에 저장했습니다.'),
     updateHoleSetup: (holeNumber, patch) => mutateRound((round) => applyHoleSetupMutation(round, holeNumber, patch), '홀 파와 뒷문오픈 설정을 이 기기에 저장했습니다.'),
-    updateHoleScore: (holeNumber, playerId, strokes) =>
-      mutateRound((round) => applyHoleScoreMutation(round, holeNumber, playerId, strokes), '홀 스코어를 이 기기에 저장했습니다.'),
-    toggleHoleEvent: (holeNumber, event, playerId, points) =>
-      mutateRound((round) => applyHoleEventToggleMutation(round, holeNumber, event, playerId, points), '파3 니어 표시를 이 기기에 저장했습니다.'),
+    updateHoleScore: (holeNumber, playerId, score) =>
+      mutateRound((round) => applyHoleScoreMutation(round, holeNumber, playerId, score), '홀 스코어를 이 기기에 저장했습니다.'),
+    setNearPlayer: (holeNumber, playerId) => mutateRound((round) => applyNearPlayerMutation(round, holeNumber, playerId), '파3 니어를 이 기기에 저장했습니다.'),
     saveRound: () => {
-      const saved = saveBettingRound(storageProvider(), sessionState.round);
+      const saved = saveBettingRound(storageProvider(), stableState.round);
       setSessionState({
-        ...sessionState,
+        ...stableState,
         storageStatus: saved ? 'saved' : 'memory-only',
-        storageMessage: saved ? `현재 라운드를 ${bettingActiveRoundStorageKey}에 저장했습니다.` : '로컬 저장소에 쓸 수 없어 현재 세션 메모리에만 보관합니다.',
-        hasSavedRound: saved || sessionState.hasSavedRound,
+        storageMessage: saved ? `현재 오장 라운드를 ${bettingActiveRoundStorageKey}에 저장했습니다.` : '로컬 저장소에 쓸 수 없어 현재 세션 메모리에만 보관합니다.',
+        hasSavedRound: saved || stableState.hasSavedRound,
       });
       return saved;
     },
@@ -290,10 +233,10 @@ export function useBettingRoundSession(storageProvider: () => StorageLike | unde
     clearSavedRound: () => {
       const cleared = clearBettingRound(storageProvider());
       setSessionState({
-        ...sessionState,
+        ...stableState,
         storageStatus: cleared ? 'cleared' : 'memory-only',
         storageMessage: cleared ? '이 기기에 저장된 오장 라운드를 삭제했습니다.' : '삭제할 로컬 저장소를 사용할 수 없습니다.',
-        hasSavedRound: cleared ? false : sessionState.hasSavedRound,
+        hasSavedRound: cleared ? false : stableState.hasSavedRound,
       });
       return cleared;
     },
@@ -309,7 +252,7 @@ function mutateHole(
 ): BettingRound {
   const normalizedHoleNumber = clampInteger(holeNumber, 1, round.settings.holeCount);
   const existingHole = round.holes.find((hole) => hole.holeNumber === normalizedHoleNumber);
-  const baseHole = existingHole ?? { holeNumber: normalizedHoleNumber, par: 4, backdoorOpen: false, scores: [], events: [] };
+  const baseHole = existingHole ?? { holeNumber: normalizedHoleNumber, par: 4, backdoorOpen: false, nearPlayerId: null, scores: [] };
   const nextHole = mutate(baseHole);
   const holes = existingHole
     ? round.holes.map((hole) => (hole.holeNumber === normalizedHoleNumber ? nextHole : hole))
@@ -324,12 +267,18 @@ function upsertByPlayer<T extends { readonly playerId: string }>(items: readonly
     : [...items, item];
 }
 
-function eventId(holeNumber: number, event: BettingEventKey, playerId: string): string {
-  return `hole-${holeNumber}:${event}:${playerId}`;
-}
+function sanitizeScore(playerId: string, score: BettingHoleScoreInput): BettingHoleScore {
+  if (score.entryMode === 'hio') {
+    return { playerId, strokes: 1, entryMode: 'hio', onGreenShots: 1, putts: 0, holeInOne: true };
+  }
 
-function defaultEventPoints(event: BettingEventKey): number {
-  return eventBasePoints[event as BettingEventType];
+  if (score.entryMode === 'on-putt') {
+    const onGreenShots = clampInteger(score.onGreenShots, 1, 6);
+    const putts = clampInteger(score.putts, 0, 5);
+    return { playerId, strokes: clampInteger(onGreenShots + putts, 1, maximumHoleScoreStrokes), entryMode: 'on-putt', onGreenShots, putts, holeInOne: false };
+  }
+
+  return { playerId, strokes: clampInteger(score.strokes, 1, maximumHoleScoreStrokes), entryMode: 'manual' };
 }
 
 function hasPlayer(round: BettingRound, playerId: string): boolean {
@@ -366,4 +315,4 @@ function uniquePlayerId(preferredId: string, usedPlayerIds: ReadonlySet<string>,
   return `player-${oneBasedIndex}-${usedPlayerIds.size + 1}`;
 }
 
-export type { BettingEventKey, BettingGameKey, BettingHandicapMode, BettingScoringMode };
+export { defaultOjangUnitAmount };
