@@ -445,6 +445,20 @@ export function App() {
       setScoreDrafts((current) => ({ ...current, [draftKey]: normalizedScore.toString() }));
       session.updateHoleScore(holeNumber, playerId, normalizedScore);
     }
+
+    if (/^\d{1,2}$/.test(value)) {
+      const normalizedScore = clampInteger(parseIntegerDraft(value, holePar + 1), 1, maximumHoleScoreStrokes);
+      setScoreDrafts((current) => ({ ...current, [draftKey]: normalizedScore.toString() }));
+      session.updateHoleScore(holeNumber, playerId, normalizedScore);
+    }
+  }
+
+  function updateScoreButton(playerId: string, strokes: number) {
+    const normalizedScore = clampInteger(strokes, 1, maximumHoleScoreStrokes);
+    const draftKey = `${holeNumber}:${playerId}`;
+    setScoreDrafts((current) => ({ ...current, [draftKey]: normalizedScore.toString() }));
+    setShareReady(false);
+    session.updateHoleScore(holeNumber, playerId, normalizedScore);
   }
 
   function updateScoreButton(playerId: string, strokes: number) {
@@ -487,6 +501,16 @@ export function App() {
     setScoreDrafts({});
     setMissionPlayerId('player-1');
     setMissionCleared(true);
+    setShareReady(false);
+  }
+
+  function updateParDraft(value: string) {
+    setParDraftsByHole((current) => ({ ...current, [holeNumber]: value }));
+    setShareReady(false);
+  }
+
+  function toggleBackdoorOpen() {
+    setBackdoorOpenByHole((current) => ({ ...current, [holeNumber]: !backdoorOpen }));
     setShareReady(false);
   }
 
