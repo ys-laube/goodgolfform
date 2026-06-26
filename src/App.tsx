@@ -110,6 +110,11 @@ function clampInteger(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, integer));
 }
 
+function clampInteger(value: number, min: number, max: number): number {
+  const integer = Number.isFinite(value) ? Math.round(value) : min;
+  return Math.min(max, Math.max(min, integer));
+}
+
 function roundToTwo(value: number): number {
   return Math.round((value + Number.EPSILON) * 100) / 100;
 }
