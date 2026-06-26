@@ -291,6 +291,10 @@ export function App() {
     );
   }
 
+  function unitAmountInputValue(): string {
+    return unitAmountDraft ?? round.gameUnits.stroke.money.toString();
+  }
+
   function playerHandicapInputValue(playerId: string, handicap: number): string {
     return playerHandicapDrafts[playerId] ?? handicap.toString();
   }
@@ -335,21 +339,16 @@ export function App() {
     commitIntegerDraft(value, (handicap) => session.updatePlayer(playerId, { handicap }));
   }
 
-  function updateUnitAmount(value: string) {
+  function updateUnitAmountDraft(value: string) {
     setUnitAmountDraft(value);
     markShareDirty();
-    commitIntegerDraft(value, (unitAmount) => session.updateUnitAmount(unitAmount));
+    commitIntegerDraft(value, (unitAmount) => session.updateGameUnit('stroke', { money: unitAmount }));
   }
 
   function updateHoleCountDraft(value: string) {
     setHoleCountDraft(value);
     markShareDirty();
     commitIntegerDraft(value, (holeCount) => session.updateRoundSetup({ holeCount }));
-  }
-
-  function updateNearPlayer(value: string) {
-    markShareDirty();
-    session.setNearPlayer(holeNumber, value || null);
   }
 
   function resetEditableRound() {
@@ -360,6 +359,7 @@ export function App() {
     setHoleCountDraft('');
     setUnitAmountDraft(defaultOjangUnitAmount.toString());
     setPlayerHandicapDrafts({ 'player-1': '', 'player-2': '', 'player-3': '', 'player-4': '' });
+    setUnitAmountDraft(null);
     setShareReady(false);
     setShareStatusMessage('새 오장 라운드로 초기화했습니다. 공유 링크와 내보내기는 다시 준비하세요.');
   }
@@ -412,7 +412,7 @@ export function App() {
           </label>
           <label>
             타당 금액
-            <input inputMode="numeric" value={unitAmountDraft ?? round.settings.unitAmount.toString()} onChange={(event) => updateUnitAmount(event.currentTarget.value)} />
+            <input inputMode="numeric" value={unitAmountInputValue()} onChange={(event) => updateUnitAmountDraft(event.currentTarget.value)} />
           </label>
           <label>
             플레이어 수
@@ -443,6 +443,7 @@ export function App() {
             </article>
           ))}
         </div>
+
       </section>
 
       <section className="control-panel hole-panel" aria-labelledby="hole-title">
@@ -514,8 +515,8 @@ export function App() {
 
         <div className="score-list" aria-label="홀별 온/펏 입력">
           {round.players.map((player, index) => {
-            const score = scoreForPlayer(round, holeNumber, player.id);
-            const rawScore = score?.strokes ?? 0;
+            const rawScore = scoreForPlayer(round, holeNumber, player.id) ?? 0;
+            const netScore = ledger.handicap.netHoleScores[holeNumber]?.[player.id] ?? rawScore;
 
             return (
               <article className="score-row" key={player.id}>
@@ -527,55 +528,31 @@ export function App() {
                   <small>{scoreSummary(rawScore, holePar)}</small>
                   <b>{signedMoneyLabel(ledger.playerBalances[player.id]?.money ?? 0)}</b>
                 </div>
-                <div className="on-putt-entry" aria-label={`${displayPlayerName(player.name)} 온 펏 입력`}>
-                  <div className="context-action-group">
-                    <strong>몇온</strong>
-                    <div className="button-grid six-up">
-                      {onGreenChoices.map((onGreenShots) => (
-                        <button
-                          className={score?.entryMode === 'on-putt' && score.onGreenShots === onGreenShots ? 'toggle-action active' : 'toggle-action'}
-                          key={`${player.id}:on:${onGreenShots}`}
-                          type="button"
-                          onClick={() => updateOnGreenShots(player.id, onGreenShots)}
-                        >
-                          {onGreenShots}온
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="context-action-group">
-                    <strong>몇펏</strong>
-                    <div className="button-grid six-up">
-                      {puttChoices.map((putts) => (
-                        <button
-                          className={score?.entryMode === 'on-putt' && score.putts === putts ? 'toggle-action active' : 'toggle-action'}
-                          key={`${player.id}:putt:${putts}`}
-                          type="button"
-                          onClick={() => updatePutts(player.id, putts)}
-                        >
-                          {putts}펏
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  <button
-                    className={score?.entryMode === 'hio' ? 'toggle-action hio-action active' : 'toggle-action hio-action'}
-                    type="button"
-                    onClick={() => updateHoleInOne(player.id)}
-                  >
-                    홀인원 빠른 입력
-                  </button>
+                <div className="score-options" aria-label={`${displayPlayerName(player.name)} 상대 스코어`}>
+                  {scoreChoices.map((strokes) => (
+                    <button
+                      className={rawScore === strokes ? 'score-choice active' : 'score-choice'}
+                      key={`${player.id}:${strokes}`}
+                      type="button"
+                      onClick={() => updateScoreButton(player.id, strokes)}
+                    >
+                      <strong>{scoreChoiceLabel(strokes, holePar)}</strong>
+                      <span>{scoreChoiceHint(strokes, holePar)}</span>
+                    </button>
+                  ))}
                 </div>
-                <label className="extended-score-entry">
-                  직접 총타 수정
-                  <input
-                    inputMode="numeric"
-                    value={scoreInputValue(player.id)}
-                    placeholder={backdoorOpen ? `1–${maximumHoleScoreStrokes}` : '예외 총타'}
-                    onChange={(event) => updateScoreDraft(player.id, event.currentTarget.value)}
-                    aria-label={`${displayPlayerName(player.name)} 직접 총타`}
-                  />
-                </label>
+                {backdoorOpen ? (
+                  <label className="extended-score-entry">
+                    뒷문오픈 직접 타수
+                    <input
+                      inputMode="numeric"
+                      value={scoreInputValue(player.id)}
+                      placeholder={`${holePar * 2 + 1}–${maximumHoleScoreStrokes}`}
+                      onChange={(event) => updateScoreDraft(player.id, event.currentTarget.value)}
+                      aria-label={`${displayPlayerName(player.name)} 뒷문오픈 타수`}
+                    />
+                  </label>
+                ) : null}
               </article>
             );
           })}
