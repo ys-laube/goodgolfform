@@ -16,9 +16,7 @@ import {
   type BettingGameKey,
   type BettingGameUnit,
   type BettingHandicapMode,
-  type BettingHoleMission,
   type BettingHoleResult,
-  type BettingMissionOutcome,
   type BettingPlayer,
   type BettingRound,
   type BettingRoundSettings,
@@ -45,8 +43,6 @@ export type BettingRoundSession = BettingRoundSessionState & {
   readonly updateHoleSetup: (holeNumber: number, patch: Partial<Pick<BettingHoleResult, 'par' | 'backdoorOpen'>>) => void;
   readonly updateHoleScore: (holeNumber: number, playerId: string, strokes: number) => void;
   readonly toggleHoleEvent: (holeNumber: number, event: BettingEventKey, playerId: string, points?: number) => void;
-  readonly setHoleMission: (holeNumber: number, mission: BettingHoleMission) => void;
-  readonly setMissionOutcome: (holeNumber: number, missionId: string, playerId: string, outcome: BettingMissionOutcome) => void;
   readonly saveRound: () => boolean;
   readonly resetRound: () => void;
   readonly clearSavedRound: () => boolean;
@@ -60,7 +56,7 @@ export function createInitialBettingRoundSessionState(storage: StorageLike | und
     return {
       round: savedRound,
       storageStatus: 'loaded',
-      storageMessage: '이 기기에 저장된 골프 내기 라운드를 불러왔습니다.',
+      storageMessage: '이 기기에 저장된 오장 라운드를 불러왔습니다.',
       hasSavedRound: true,
     };
   }
@@ -70,7 +66,7 @@ export function createInitialBettingRoundSessionState(storage: StorageLike | und
     round,
     storageStatus: storage ? 'default' : 'memory-only',
     storageMessage: storage
-      ? '새 골프 내기 라운드를 시작합니다. 이 기기에만 저장됩니다.'
+      ? '새 오장 라운드를 시작합니다. 이 기기에만 저장됩니다.'
       : '브라우저 로컬 저장소를 사용할 수 없어 현재 세션 메모리에만 보관합니다.',
     hasSavedRound: false,
   };
@@ -106,17 +102,13 @@ export function applyPlayerCountMutation(round: BettingRound, playerCount: numbe
     ...hole,
     scores: hole.scores.filter((score) => activePlayerIds.has(score.playerId)),
     events: hole.events.filter((event) => activePlayerIds.has(event.playerId)),
-    missions: hole.missions.filter((mission) => activePlayerIds.has(mission.playerId)),
   }));
 
   return stampRound(
     {
       ...round,
       players,
-      enabledGames: {
-        ...round.enabledGames,
-        vegas: nextPlayerCount === 4 ? round.enabledGames.vegas : false,
-      },
+      enabledGames: { ojang: true },
       holes,
     },
     now,
@@ -146,14 +138,8 @@ export function applyPlayerMutation(
   );
 }
 
-export function applyGameEnabledMutation(round: BettingRound, game: BettingGameKey, enabled: boolean, now = new Date().toISOString()): BettingRound {
-  const nextEnabledGames = { ...round.enabledGames, [game]: enabled };
-
-  if (game === 'vegas' && round.players.length !== 4) {
-    nextEnabledGames.vegas = false;
-  }
-
-  return stampRound({ ...round, enabledGames: nextEnabledGames }, now);
+export function applyGameEnabledMutation(round: BettingRound, _game: BettingGameKey, _enabled: boolean, now = new Date().toISOString()): BettingRound {
+  return stampRound({ ...round, enabledGames: { ojang: true } }, now);
 }
 
 export function applyGameUnitMutation(
@@ -248,58 +234,9 @@ export function applyHoleEventToggleMutation(
   );
 }
 
-export function applyHoleMissionMutation(
-  round: BettingRound,
-  holeNumber: number,
-  mission: BettingHoleMission,
-  now = new Date().toISOString(),
-): BettingRound {
-  if (!hasPlayer(round, mission.playerId)) {
-    return round;
-  }
-
-  return mutateHole(
-    round,
-    holeNumber,
-    (hole) => ({
-      ...hole,
-      missions: upsertMission(hole.missions, sanitizeMission(hole.holeNumber, mission)),
-    }),
-    now,
-  );
-}
-
-export function applyMissionOutcomeMutation(
-  round: BettingRound,
-  holeNumber: number,
-  missionId: string,
-  playerId: string,
-  outcome: BettingMissionOutcome,
-  now = new Date().toISOString(),
-): BettingRound {
-  return mutateHole(
-    round,
-    holeNumber,
-    (hole) => ({
-      ...hole,
-      missions: hole.missions.map((mission) =>
-        mission.missionId === missionId && mission.playerId === playerId ? { ...mission, outcome } : mission,
-      ),
-    }),
-    now,
-  );
-}
-
-export function bettingGameAvailability(round: BettingRound): Record<BettingGameKey, { readonly available: boolean; readonly reason: string | null }> {
+export function bettingGameAvailability(_round: BettingRound): Record<BettingGameKey, { readonly available: boolean; readonly reason: string | null }> {
   return {
-    stroke: { available: true, reason: null },
-    skins: { available: true, reason: null },
-    vegas: {
-      available: round.players.length === 4,
-      reason: round.players.length === 4 ? null : '베가스 팀전은 4명 라운드에서만 사용할 수 있습니다.',
-    },
-    events: { available: true, reason: null },
-    missions: { available: true, reason: null },
+    ojang: { available: true, reason: null },
   };
 }
 
@@ -329,16 +266,13 @@ export function useBettingRoundSession(storageProvider: () => StorageLike | unde
     updateRoundSetup: (patch) => mutateRound((round) => applyRoundSetupMutation(round, patch), '라운드 설정을 이 기기에 저장했습니다.'),
     setPlayerCount: (playerCount) => mutateRound((round) => applyPlayerCountMutation(round, playerCount), '플레이어 수를 이 기기에 저장했습니다.'),
     updatePlayer: (playerId, patch) => mutateRound((round) => applyPlayerMutation(round, playerId, patch), '플레이어 설정을 이 기기에 저장했습니다.'),
-    setGameEnabled: (game, enabled) => mutateRound((round) => applyGameEnabledMutation(round, game, enabled), '게임 구성을 이 기기에 저장했습니다.'),
-    updateGameUnit: (game, patch) => mutateRound((round) => applyGameUnitMutation(round, game, patch), '게임 단위를 이 기기에 저장했습니다.'),
+    setGameEnabled: (game, enabled) => mutateRound((round) => applyGameEnabledMutation(round, game, enabled), '오장 룰을 이 기기에 저장했습니다.'),
+    updateGameUnit: (game, patch) => mutateRound((round) => applyGameUnitMutation(round, game, patch), '오장 단위를 이 기기에 저장했습니다.'),
     updateHoleSetup: (holeNumber, patch) => mutateRound((round) => applyHoleSetupMutation(round, holeNumber, patch), '홀 파와 뒷문오픈 설정을 이 기기에 저장했습니다.'),
     updateHoleScore: (holeNumber, playerId, strokes) =>
       mutateRound((round) => applyHoleScoreMutation(round, holeNumber, playerId, strokes), '홀 스코어를 이 기기에 저장했습니다.'),
     toggleHoleEvent: (holeNumber, event, playerId, points) =>
-      mutateRound((round) => applyHoleEventToggleMutation(round, holeNumber, event, playerId, points), '홀 이벤트를 이 기기에 저장했습니다.'),
-    setHoleMission: (holeNumber, mission) => mutateRound((round) => applyHoleMissionMutation(round, holeNumber, mission), '미션 결과를 이 기기에 저장했습니다.'),
-    setMissionOutcome: (holeNumber, missionId, playerId, outcome) =>
-      mutateRound((round) => applyMissionOutcomeMutation(round, holeNumber, missionId, playerId, outcome), '미션 결과를 이 기기에 저장했습니다.'),
+      mutateRound((round) => applyHoleEventToggleMutation(round, holeNumber, event, playerId, points), '파3 니어 표시를 이 기기에 저장했습니다.'),
     saveRound: () => {
       const saved = saveBettingRound(storageProvider(), sessionState.round);
       setSessionState({
@@ -351,14 +285,14 @@ export function useBettingRoundSession(storageProvider: () => StorageLike | unde
     },
     resetRound: () => {
       const nextRound = createDefaultBettingRound({ now: new Date().toISOString() });
-      commitRound(nextRound, '새 골프 내기 라운드를 이 기기에 저장했습니다.');
+      commitRound(nextRound, '새 오장 라운드를 이 기기에 저장했습니다.');
     },
     clearSavedRound: () => {
       const cleared = clearBettingRound(storageProvider());
       setSessionState({
         ...sessionState,
         storageStatus: cleared ? 'cleared' : 'memory-only',
-        storageMessage: cleared ? '이 기기에 저장된 골프 내기 라운드를 삭제했습니다.' : '삭제할 로컬 저장소를 사용할 수 없습니다.',
+        storageMessage: cleared ? '이 기기에 저장된 오장 라운드를 삭제했습니다.' : '삭제할 로컬 저장소를 사용할 수 없습니다.',
         hasSavedRound: cleared ? false : sessionState.hasSavedRound,
       });
       return cleared;
@@ -375,7 +309,7 @@ function mutateHole(
 ): BettingRound {
   const normalizedHoleNumber = clampInteger(holeNumber, 1, round.settings.holeCount);
   const existingHole = round.holes.find((hole) => hole.holeNumber === normalizedHoleNumber);
-  const baseHole = existingHole ?? { holeNumber: normalizedHoleNumber, par: 4, backdoorOpen: false, scores: [], events: [], missions: [] };
+  const baseHole = existingHole ?? { holeNumber: normalizedHoleNumber, par: 4, backdoorOpen: false, scores: [], events: [] };
   const nextHole = mutate(baseHole);
   const holes = existingHole
     ? round.holes.map((hole) => (hole.holeNumber === normalizedHoleNumber ? nextHole : hole))
@@ -390,30 +324,8 @@ function upsertByPlayer<T extends { readonly playerId: string }>(items: readonly
     : [...items, item];
 }
 
-function upsertMission(missions: readonly BettingHoleMission[], mission: BettingHoleMission): readonly BettingHoleMission[] {
-  return missions.some((item) => item.id === mission.id)
-    ? missions.map((item) => (item.id === mission.id ? mission : item))
-    : [...missions, mission];
-}
-
-function sanitizeMission(holeNumber: number, mission: BettingHoleMission): BettingHoleMission {
-  const missionId = mission.missionId.trim() || 'mission-local';
-  return {
-    id: mission.id.trim() || missionEventId(holeNumber, missionId, mission.playerId),
-    playerId: mission.playerId,
-    missionId,
-    title: mission.title.trim() || '오늘의 미션',
-    points: clampInteger(mission.points, -100, 100),
-    outcome: mission.outcome,
-  };
-}
-
 function eventId(holeNumber: number, event: BettingEventKey, playerId: string): string {
   return `hole-${holeNumber}:${event}:${playerId}`;
-}
-
-function missionEventId(holeNumber: number, missionId: string, playerId: string): string {
-  return `hole-${holeNumber}:mission:${missionId}:${playerId}`;
 }
 
 function defaultEventPoints(event: BettingEventKey): number {
@@ -454,4 +366,4 @@ function uniquePlayerId(preferredId: string, usedPlayerIds: ReadonlySet<string>,
   return `player-${oneBasedIndex}-${usedPlayerIds.size + 1}`;
 }
 
-export type { BettingEventKey, BettingGameKey, BettingHandicapMode, BettingMissionOutcome, BettingScoringMode };
+export type { BettingEventKey, BettingGameKey, BettingHandicapMode, BettingScoringMode };
