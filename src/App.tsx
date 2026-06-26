@@ -740,7 +740,7 @@ export function App() {
               key={`${event}-${player.id}`}
               type="button"
               onClick={() => {
-                setShareReady(false);
+                markShareDirty();
                 session.toggleHoleEvent(holeNumber, event, player.id, eventBasePoints[event as BettingEventType]);
               }}
             >
@@ -811,19 +811,16 @@ export function App() {
           <h2 id="share-title">{courseName}</h2>
           <p>{shareCopy}</p>
         </div>
-        <div className="qr-chip" aria-label="공유 카드 장식 QR">
-          <span />
-          <span />
-          <span />
-          <span />
+        <div className="qr-chip" aria-label="로컬 결과 링크 QR 패턴">
+          {qrCells.map((isActive, index) => <span key={`qr-${index}`} data-active={isActive ? 'true' : 'false'} />)}
         </div>
         <div className="share-actions">
-          <button className="primary-action" type="button" onClick={() => setShareReady(true)}>공유 문구 고정</button>
-          <button className="secondary-action" type="button" onClick={() => session.saveRound()}>로컬 저장</button>
-          <button className="secondary-action" type="button" onClick={() => resetEditableRound()}>새 라운드</button>
+          <button className="primary-action" type="button" onClick={prepareScorecardExport}>스코어카드 캡처/내보내기</button>
+          <button className="secondary-action" type="button" onClick={prepareResultLinkShare} disabled={!shareHashResult.ok}>QR·결과 링크 공유</button>
         </div>
+        {resultLink ? <p className="result-link" aria-label="로컬 결과 링크">{resultLink}</p> : <p className="result-link warning">라운드 입력량이 많아 2200자 제한 안의 결과 링크를 만들 수 없습니다.</p>}
         <p className="share-status" aria-live="polite">
-          {shareReady ? '스코어카드 이미지나 결과 링크로 공유할 현재 정산 요약이 준비되었습니다.' : '공유 카드는 화면 맨 아래에서 스코어카드 내보내기와 결과 링크 공유만 제공합니다.'}
+          {shareStatusMessage ?? (shareReady ? '스코어카드 이미지나 결과 링크로 공유할 현재 정산 요약이 준비되었습니다.' : '공유 카드는 화면 맨 아래에서 스코어카드 내보내기와 결과 링크 공유만 제공합니다.')}
         </p>
       </section>
     </main>
