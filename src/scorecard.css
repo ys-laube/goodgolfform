@@ -69,18 +69,24 @@
 
 .scorecard-par-row input {
   min-height: 2.05rem;
-  border: 1px solid rgba(16, 24, 40, 0.16);
+  border: 1px solid rgba(15, 23, 42, 0.24);
   border-radius: 0.55rem;
-  background: #fff;
+  background: #ffffff;
   color: #101828;
+  caret-color: #101828;
   padding: 0 0.25rem;
   text-align: center;
   font-weight: 950;
 }
 
 .scorecard-par-row .scorecard-cell.active input {
-  border-color: rgba(2, 122, 72, 0.42);
-  background: #ffffff;
+  background: #f8fafc;
+  color: #101828;
+}
+
+.scorecard-par-row input::selection {
+  background: #1d4ed8;
+  color: #ffffff;
 }
 
 .checkbox-cell {
@@ -122,6 +128,7 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+
 .scorecard-tab {
   border: 1px solid rgba(255, 255, 255, 0.16);
   border-radius: 1rem;
@@ -135,8 +142,7 @@
 }
 
 .scorecard-tab.active {
-  border-color: #8ef8cf;
-  background: #ecfdf3;
+  background: #fff;
   color: #101828;
 }
 

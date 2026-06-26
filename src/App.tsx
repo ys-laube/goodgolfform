@@ -2,11 +2,7 @@ import { useMemo, useState, type CSSProperties } from 'react';
 
 import { availableLocalStorage } from './browserEnvironment';
 import { ScorecardGrid } from './ScorecardGrid';
-import {
-  calculateRoundLedger,
-  type BettingRound as LedgerBettingRound,
-  type PlayerId,
-} from './domain/bettingLedger';
+import { calculateRoundLedger, type BettingRound as LedgerBettingRound, type PlayerId } from './domain/bettingLedger';
 import {
   bettingShareHashMaxLength,
   createBettingRoundShareHash,
@@ -14,21 +10,16 @@ import {
   type BettingShareLabels,
   type BettingShareRestoreResult,
 } from './domain/bettingShareSnapshot';
-import { maximumHoleScoreStrokes, type BettingRound as StoredBettingRound } from './domain/bettingStorage';
+import { defaultOjangUnitAmount, maximumHoleScoreStrokes, type BettingRound as StoredBettingRound } from './domain/bettingStorage';
 import { parseEditableIntegerDraft } from './inputDrafts';
 import { createScorecardExportSvg, scorecardExportFileName } from './scorecardExport';
-import {
-  parseIntegerDraft,
-  scoreChoiceHint,
-  scoreChoiceLabel,
-  scoreForPlayer,
-  scoreSummary,
-  useScorecardController,
-} from './useScorecardController';
+import { parseIntegerDraft, scoreForPlayer, scoreLabel, scoreSummary, useScorecardController } from './useScorecardController';
 import { useBettingRoundSession } from './useBettingRoundSession';
 
 const playerTones = ['#4f8cff', '#ff8aab', '#6ee7b7', '#fbbf24'] as const;
 const currencyFormatter = new Intl.NumberFormat('ko-KR');
+const onGreenChoices = [1, 2, 3, 4, 5, 6] as const;
+const puttChoices = [0, 1, 2, 3, 4, 5] as const;
 
 let shareHashRestoreAttempted = false;
 let initialShareHashRestoreResult: BettingShareRestoreResult | null = null;
@@ -51,7 +42,7 @@ function initialShareHashStatus(): string | null {
   }
 
   if (initialShareHashRestoreResult.restored) {
-    return `결과 링크에서 라운드를 복원했습니다. 해시 ${initialShareHashRestoreResult.payloadLength}자, 이 기기에만 저장됩니다.`;
+    return `결과 링크에서 오장 라운드를 복원했습니다. 해시 ${initialShareHashRestoreResult.payloadLength}자, 이 기기에만 저장됩니다.`;
   }
 
   if (initialShareHashRestoreResult.reason === 'unsupported' || initialShareHashRestoreResult.reason === 'empty') {
@@ -77,27 +68,17 @@ function shareRestoreReasonLabel(reason: Exclude<BettingShareRestoreResult, { re
   return labels[reason];
 }
 
-function roundToTwo(value: number): number {
-  return Math.round((value + Number.EPSILON) * 100) / 100;
-}
-
-function signedAmountLabel(amount: number, mode: 'money' | 'points'): string {
+function signedMoneyLabel(amount: number): string {
   if (Math.abs(amount) < 0.005) {
-    return mode === 'money' ? '₩0' : '0점';
+    return '₩0';
   }
 
   const sign = amount > 0 ? '+' : '-';
-  const absoluteAmount = Math.abs(amount);
-
-  if (mode === 'money') {
-    return `${sign}₩${currencyFormatter.format(Math.round(absoluteAmount))}`;
-  }
-
-  return `${sign}${roundToTwo(absoluteAmount)}점`;
+  return `${sign}₩${currencyFormatter.format(Math.round(Math.abs(amount)))}`;
 }
 
-function transferAmountLabel(amount: number, unit: 'money' | 'points'): string {
-  return unit === 'money' ? `₩${currencyFormatter.format(Math.round(amount))}` : `${roundToTwo(amount)}점`;
+function transferAmountLabel(amount: number): string {
+  return `₩${currencyFormatter.format(Math.round(amount))}`;
 }
 
 function playerTeam(index: number): '청팀' | '백팀' {
@@ -124,28 +105,17 @@ function toLedgerRound(round: StoredBettingRound): LedgerBettingRound {
     })),
     settings: {
       holeCount: round.settings.holeCount,
-      scoringMode: 'money',
-      handicapMode: 'final-total',
-    },
-    enabledGames: {
-      ojang: true,
-    },
-    gameUnits: {
-      ojang: { pointValue: round.gameUnits.stroke.points, moneyPerPoint: round.gameUnits.stroke.money },
+      unitAmount: round.settings.unitAmount,
     },
     holes: round.holes.map((hole) => ({
       holeNumber: hole.holeNumber,
       par: hole.par,
-      strokes: Object.fromEntries(round.players.map((player) => [
-        player.id,
-        hole.scores.find((score) => score.playerId === player.id)?.strokes ?? 0,
-      ])) as Record<PlayerId, number>,
-      events: hole.events.filter((event) => event.event === 'near-pin').map((event) => ({
-        type: 'near-pin',
-        playerId: event.playerId,
-        points: event.points,
-        label: '니어핀',
-      })),
+      backdoorOpen: hole.backdoorOpen,
+      nearPlayerId: hole.nearPlayerId ?? null,
+      scores: round.players.flatMap((player) => {
+        const score = hole.scores.find((candidate) => candidate.playerId === player.id);
+        return score ? [{ ...score, playerId: player.id as PlayerId }] : [];
+      }),
     })),
   };
 }
@@ -214,9 +184,10 @@ export function App() {
   const [roundName, setRoundName] = useState(() => restoredLabels.roundName);
   const [courseName, setCourseName] = useState(() => restoredLabels.courseName);
   const [holeCountDraft, setHoleCountDraft] = useState<string | null>(null);
-  const [playerHandicapDrafts, setPlayerHandicapDrafts] = useState<Record<string, string>>({});
   const [unitAmountDraft, setUnitAmountDraft] = useState<string | null>(null);
+  const [playerHandicapDrafts, setPlayerHandicapDrafts] = useState<Record<string, string>>({});
   const [shareReady, setShareReady] = useState(false);
+  const [ruleDetailsOpen, setRuleDetailsOpen] = useState(false);
   const [shareStatusMessage, setShareStatusMessage] = useState<string | null>(() => initialShareHashStatus());
 
   const {
@@ -230,15 +201,16 @@ export function App() {
     parForHole,
     parInputValue,
     resetScorecardDrafts,
-    scoreChoices,
     scoreInputValue,
     scorecardCellLabel,
     toggleBackdoorOpen,
     toggleBackdoorOpenForHole,
     updateHoleDraft,
+    updateHoleInOne,
+    updateOnGreenShots,
     updateParDraft,
     updateParDraftForHole,
-    updateScoreButton,
+    updatePutts,
     updateScoreDraft,
     visibleHoleNumbers,
   } = useScorecardController({
@@ -248,20 +220,18 @@ export function App() {
     markDirty: markShareDirty,
   });
   const ledger = useMemo(() => calculateRoundLedger(toLedgerRound(round)), [round]);
-  const settlementUnit = 'money' as const;
   const balanceRows = round.players
     .map((player, index) => ({
       player,
       index,
-      amount: settlementUnit === 'money'
-        ? (ledger.playerBalances[player.id]?.money ?? 0)
-        : (ledger.playerBalances[player.id]?.points ?? 0),
+      amount: ledger.playerBalances[player.id]?.money ?? 0,
     }))
     .sort((left, right) => right.amount - left.amount);
-  const completedHoleCount = ledger.handicap.completedHoleNumbers.length;
+  const completedHoleCount = ledger.completedHoleNumbers.length;
   const leader = balanceRows[0];
-  const shareCopy = `${roundName} ${completedHoleCount || holeNumber}H 정산 · ${balanceRows
-    .map((entry) => `${displayPlayerName(entry.player.name)} ${signedAmountLabel(entry.amount, settlementUnit)}`)
+  const selectedHole = round.holes.find((hole) => hole.holeNumber === holeNumber);
+  const shareCopy = `${roundName} ${completedHoleCount || holeNumber}H 오장 정산 · ${balanceRows
+    .map((entry) => `${displayPlayerName(entry.player.name)} ${signedMoneyLabel(entry.amount)}`)
     .join(' / ')}`;
   const shareHashResult = useMemo(() => createBettingRoundShareHash(round, { roundName, courseName }), [courseName, round, roundName]);
   const shareHash = shareHashResult.ok ? shareHashResult.hash : '';
@@ -283,12 +253,7 @@ export function App() {
       players: round.players.map((player, index) => ({
         name: displayPlayerName(player.name),
         team: playerTeam(index),
-        balance: signedAmountLabel(
-          settlementUnit === 'money'
-            ? (ledger.playerBalances[player.id]?.money ?? 0)
-            : (ledger.playerBalances[player.id]?.points ?? 0),
-          settlementUnit,
-        ),
+        balance: signedMoneyLabel(ledger.playerBalances[player.id]?.money ?? 0),
       })),
       holes: Array.from({ length: round.settings.holeCount }, (_, index) => {
         const exportHoleNumber = index + 1;
@@ -305,7 +270,7 @@ export function App() {
     setShareReady(exported);
     setShareStatusMessage(
       exported
-        ? '현재 전후반 스코어카드를 SVG 이미지 파일로 로컬 내보내기했습니다.'
+        ? '현재 전후반 오장 스코어카드를 SVG 이미지 파일로 로컬 내보내기했습니다.'
         : '브라우저가 로컬 파일 내보내기를 허용하지 않아 스코어카드를 만들지 못했습니다.',
     );
   }
@@ -324,14 +289,6 @@ export function App() {
         ? `로컬 결과 링크가 준비되었습니다 (${shareHashResult.payloadLength}자${shareHashResult.withinTarget ? '' : ', 긴 링크'}). 서버 없이 이 주소의 해시만 공유합니다.`
         : '브라우저 주소 해시를 갱신할 수 없어 결과 링크를 만들지 못했습니다.',
     );
-  }
-
-  function gameUnitDraftKey(game: BettingGameKey, field: GameUnitField): string {
-    return `${game}:${field}`;
-  }
-
-  function gameUnitInputValue(game: BettingGameKey, field: GameUnitField): string {
-    return gameUnitDrafts[gameUnitDraftKey(game, field)] ?? round.gameUnits[game][field].toString();
   }
 
   function playerHandicapInputValue(playerId: string, handicap: number): string {
@@ -362,11 +319,6 @@ export function App() {
     markShareDirty();
   }
 
-  function updateRoundSetupDraft(patch: Parameters<typeof session.updateRoundSetup>[0]) {
-    markShareDirty();
-    session.updateRoundSetup(patch);
-  }
-
   function updatePlayerCount(value: string) {
     markShareDirty();
     session.setPlayerCount(parseIntegerDraft(value, round.players.length));
@@ -377,23 +329,16 @@ export function App() {
     session.updatePlayer(playerId, { name: value });
   }
 
-  function toggleGameEnabled(game: BettingGameKey) {
-    markShareDirty();
-    session.setGameEnabled(game, !round.enabledGames[game]);
-  }
-
   function updatePlayerHandicap(playerId: string, value: string) {
     setPlayerHandicapDrafts((current) => ({ ...current, [playerId]: value }));
     markShareDirty();
     commitIntegerDraft(value, (handicap) => session.updatePlayer(playerId, { handicap }));
   }
 
-  function updateGameUnitDraft(game: BettingGameKey, field: GameUnitField, value: string) {
-    setGameUnitDrafts((current) => ({ ...current, [gameUnitDraftKey(game, field)]: value }));
+  function updateUnitAmount(value: string) {
+    setUnitAmountDraft(value);
     markShareDirty();
-    commitIntegerDraft(value, (unitValue) => {
-      session.updateGameUnit(game, field === 'points' ? { points: unitValue } : { money: unitValue });
-    });
+    commitIntegerDraft(value, (unitAmount) => session.updateUnitAmount(unitAmount));
   }
 
   function updateHoleCountDraft(value: string) {
@@ -402,38 +347,58 @@ export function App() {
     commitIntegerDraft(value, (holeCount) => session.updateRoundSetup({ holeCount }));
   }
 
+  function updateNearPlayer(value: string) {
+    markShareDirty();
+    session.setNearPlayer(holeNumber, value || null);
+  }
+
   function resetEditableRound() {
     session.resetRound();
     setRoundName('');
     setCourseName('');
     resetScorecardDrafts();
     setHoleCountDraft('');
+    setUnitAmountDraft(defaultOjangUnitAmount.toString());
     setPlayerHandicapDrafts({ 'player-1': '', 'player-2': '', 'player-3': '', 'player-4': '' });
-    setGameUnitDrafts({});
     setShareReady(false);
-    setShareStatusMessage('새 라운드로 초기화했습니다. 공유 링크와 내보내기는 다시 준비하세요.');
+    setShareStatusMessage('새 오장 라운드로 초기화했습니다. 공유 링크와 내보내기는 다시 준비하세요.');
   }
 
   return (
     <main className="app-shell" aria-labelledby="app-title" data-mobile-layout="safe-area-inset">
       <section className="hero-card" aria-labelledby="app-title">
         <div className="hero-copy">
-          <p className="eyebrow">펀골프 정산 장부</p>
-          <h1 id="app-title">한국형 골프 내기 정산</h1>
-          <p>2~4명 라운드 세팅부터 홀 입력, 전통 오장 민판·배판 계산, 순정산, 공유 카드까지 한 화면에서 처리하는 모바일 우선 장부입니다.</p>
+          <h1 id="app-title">오늘 폼 정말 좋으시네요 ^0^</h1>
+          <button className="rule-disclosure" type="button" onClick={() => setRuleDetailsOpen((current) => !current)} aria-expanded={ruleDetailsOpen}>
+            오장 룰 자세히 보기
+          </button>
+          {ruleDetailsOpen ? (
+            <div className="rule-detail-panel">
+              <p><strong>오장:</strong> 매 홀 전원 1:1로 타수차 × 타당 금액을 계산합니다.</p>
+              <p><strong>배판:</strong> 버디 이상, 트리플 이상, 파3 더블 이상, 3명 동타는 현재 홀 2배입니다. 4명 동타는 다음 홀 배판으로 넘어갑니다.</p>
+              <p><strong>버디값/니어:</strong> 버디 +1, 이글 +2, 홀인원 +3 타값. 파3 니어는 파 이하 성공 +1, 실패 -1 타값입니다.</p>
+              <p><strong>핸디 보정:</strong> 홀별 배분 없이 마지막에 총타-핸디 기준 차액만 따로 반영합니다.</p>
+            </div>
+          ) : null}
         </div>
         <div className="hero-metric" aria-label="현재 1위">
           <span>{completedHoleCount}개 홀 반영</span>
           <strong>{leader ? displayPlayerName(leader.player.name) : '대기'}</strong>
-          <em>{signedAmountLabel(leader?.amount ?? 0, settlementUnit)}</em>
+          <em>{signedMoneyLabel(leader?.amount ?? 0)}</em>
         </div>
       </section>
 
       <section className="control-panel" aria-labelledby="setup-title">
-        <div className="section-heading">
-          <p className="eyebrow">라운드 세팅</p>
-          <h2 id="setup-title">플레이어와 오장 룰</h2>
-          <p>{session.storageMessage}</p>
+        <div className="section-heading setup-heading-row">
+          <div>
+            <p className="eyebrow">라운드 세팅</p>
+            <h2 id="setup-title">플레이어와 오장 룰</h2>
+            <p>{session.storageMessage}</p>
+          </div>
+          <div className="setup-actions" aria-label="로컬 라운드 작업">
+            <button className="secondary-action compact-action" type="button" onClick={() => session.saveRound()}>로컬 저장</button>
+            <button className="secondary-action compact-action" type="button" onClick={() => resetEditableRound()}>새 라운드</button>
+          </div>
         </div>
 
         <div className="setup-grid">
@@ -446,18 +411,8 @@ export function App() {
             <input value={courseName} onChange={(event) => updateCourseName(event.currentTarget.value)} />
           </label>
           <label>
-            정산 방식
-            <select value={round.settings.scoringMode} onChange={(event) => updateRoundSetupDraft({ scoringMode: event.currentTarget.value as 'money' | 'points' })}>
-              <option value="money">원화 정산</option>
-              <option value="points">포인트 정산</option>
-            </select>
-          </label>
-          <label>
-            핸디 방식
-            <select value={round.settings.handicapMode} onChange={(event) => updateRoundSetupDraft({ handicapMode: event.currentTarget.value as 'final-total' | 'hole-allocation' })}>
-              <option value="final-total">최종 합계 보정</option>
-              <option value="hole-allocation">홀별 핸디 배분</option>
-            </select>
+            타당 금액
+            <input inputMode="numeric" value={unitAmountDraft ?? round.settings.unitAmount.toString()} onChange={(event) => updateUnitAmount(event.currentTarget.value)} />
           </label>
           <label>
             플레이어 수
@@ -467,8 +422,6 @@ export function App() {
               <option value={4}>4명</option>
             </select>
           </label>
-          <button className="secondary-action" type="button" onClick={() => session.saveRound()}>로컬 저장</button>
-          <button className="secondary-action" type="button" onClick={() => resetEditableRound()}>새 라운드</button>
         </div>
 
         <div className="player-strip" aria-label="플레이어와 핸디캡">
@@ -490,45 +443,12 @@ export function App() {
             </article>
           ))}
         </div>
-
-        <div className="game-stack" aria-label="오장 룰 구성">
-          {gameKeys.map((game) => {
-            const availability = session.gameAvailability[game];
-            const isEnabled = round.enabledGames[game] && availability.available;
-
-            return (
-              <article key={game} className={isEnabled ? 'game-card active' : 'game-card'}>
-                <button type="button" disabled={!availability.available} onClick={() => toggleGameEnabled(game)}>
-                  <span>{availability.available ? '고정 룰' : '사용 불가'}</span>
-                  <strong>{gameLabels[game]}</strong>
-                </button>
-                <p>{availability.reason ?? gameDescriptions[game]}</p>
-                <label>
-                  오장 점수 단위
-                  <input
-                    inputMode="numeric"
-                    value={gameUnitInputValue(game, 'points')}
-                    onChange={(event) => updateGameUnitDraft(game, 'points', event.currentTarget.value)}
-                  />
-                </label>
-                <label>
-                  1점 금액(기본 5천원)
-                  <input
-                    inputMode="numeric"
-                    value={gameUnitInputValue(game, 'money')}
-                    onChange={(event) => updateGameUnitDraft(game, 'money', event.currentTarget.value)}
-                  />
-                </label>
-              </article>
-            );
-          })}
-        </div>
       </section>
 
       <section className="control-panel hole-panel" aria-labelledby="hole-title">
         <div className="section-heading compact-heading">
           <p className="eyebrow">홀 입력</p>
-          <h2 id="hole-title">{holeNumber}번 홀 스코어</h2>
+          <h2 id="hole-title">{holeNumber}번 홀 온/펏 스코어</h2>
         </div>
 
         <ScorecardGrid
@@ -542,7 +462,7 @@ export function App() {
           parInputValue={parInputValue}
           parForHole={parForHole}
           backdoorOpenForHole={backdoorOpenForHole}
-          scoreForPlayer={(scorecardHoleNumber, playerId) => scoreForPlayer(round, scorecardHoleNumber, playerId)}
+          scoreForPlayer={(scorecardHoleNumber, playerId) => scoreForPlayer(round, scorecardHoleNumber, playerId)?.strokes}
           scorecardCellLabel={scorecardCellLabel}
           scoreSummary={scoreSummary}
           onSelectHole={(scorecardHoleNumber) => updateHoleDraft(scorecardHoleNumber.toString())}
@@ -572,76 +492,90 @@ export function App() {
         <div className="scorecard-meta-grid" aria-label="현재 홀 입력 규칙">
           <p>
             <strong>파 row</strong>
-            <span>{holePar}파 기준 · 홀인원부터 더블파({holePar * 2}타)까지 버튼 입력</span>
+            <span>{holePar}파 기준 · 온/펏 버튼 합계가 총타로 저장됩니다.</span>
           </p>
           <label className={backdoorOpen ? 'backdoor-toggle active' : 'backdoor-toggle'}>
             <input type="checkbox" checked={backdoorOpen} onChange={toggleBackdoorOpen} />
             <strong>뒷문오픈 row</strong>
-            <span>{backdoorOpen ? `${maximumHoleScoreStrokes}타까지 직접 입력` : '더블파까지만 버튼 입력'}</span>
+            <span>{backdoorOpen ? `${maximumHoleScoreStrokes}타까지 직접 입력` : '직접 총타 수정은 예외 입력으로 유지'}</span>
           </label>
+          {holePar === 3 ? (
+            <label className="near-selector">
+              파3 니어 선택
+              <select value={selectedHole?.nearPlayerId ?? ''} onChange={(event) => updateNearPlayer(event.currentTarget.value)}>
+                <option value="">니어 미선택</option>
+                {round.players.map((player) => (
+                  <option key={player.id} value={player.id}>{displayPlayerName(player.name) || player.id}</option>
+                ))}
+              </select>
+            </label>
+          ) : null}
         </div>
 
-        <div className="score-list" aria-label="홀별 타수 입력">
+        <div className="score-list" aria-label="홀별 온/펏 입력">
           {round.players.map((player, index) => {
-            const rawScore = scoreForPlayer(round, holeNumber, player.id) ?? 0;
-            const netScore = ledger.handicap.netHoleScores[holeNumber]?.[player.id] ?? rawScore;
+            const score = scoreForPlayer(round, holeNumber, player.id);
+            const rawScore = score?.strokes ?? 0;
+
             return (
               <article className="score-row" key={player.id}>
                 <div className="score-row-header">
                   <span>
                     <strong>{displayPlayerName(player.name)}</strong>
-                    <em>{playerTeam(index)} · 네트 {netScore || '-'}</em>
+                    <em>{playerTeam(index)} · {score ? scoreLabel(score) : '입력 전'}</em>
                   </span>
                   <small>{scoreSummary(rawScore, holePar)}</small>
-                  <b>{signedAmountLabel(ledger.playerBalances[player.id]?.money ?? 0, 'money')}</b>
+                  <b>{signedMoneyLabel(ledger.playerBalances[player.id]?.money ?? 0)}</b>
                 </div>
-                <div className="score-options" aria-label={`${displayPlayerName(player.name)} 상대 스코어`}>
-                  {scoreChoices.map((strokes) => (
-                    <button
-                      className={rawScore === strokes ? 'score-choice active' : 'score-choice'}
-                      key={`${player.id}:${strokes}`}
-                      type="button"
-                      onClick={() => updateScoreButton(player.id, strokes)}
-                    >
-                      <strong>{scoreChoiceLabel(strokes, holePar)}</strong>
-                      <span>{scoreChoiceHint(strokes, holePar)}</span>
-                    </button>
-                  ))}
-                </div>
-                {backdoorOpen ? (
-                  <label className="extended-score-entry">
-                    뒷문오픈 직접 타수
-                    <input
-                      inputMode="numeric"
-                      value={scoreInputValue(player.id)}
-                      placeholder={`${holePar * 2 + 1}–${maximumHoleScoreStrokes}`}
-                      onChange={(event) => updateScoreDraft(player.id, event.currentTarget.value)}
-                      aria-label={`${displayPlayerName(player.name)} 뒷문오픈 타수`}
-                    />
-                  </label>
-                ) : null}
-                <div className="score-row-context" aria-label={`${displayPlayerName(player.name)} ${holeNumber}번 홀 오장 옵션`}>
+                <div className="on-putt-entry" aria-label={`${displayPlayerName(player.name)} 온 펏 입력`}>
                   <div className="context-action-group">
-                    <strong>파3 니어</strong>
-                    <p>파3 홀에서 니어를 잡은 플레이어를 표시하면 오장 계산 근거에 보너스/실패 페널티가 함께 남습니다.</p>
-                    <div className="score-event-grid">
-                      {eventKeys.map((event) => (
+                    <strong>몇온</strong>
+                    <div className="button-grid six-up">
+                      {onGreenChoices.map((onGreenShots) => (
                         <button
-                          className={eventIsActive(round, holeNumber, event, player.id) ? 'event-pill active' : 'event-pill'}
-                          key={`${player.id}:${event}`}
+                          className={score?.entryMode === 'on-putt' && score.onGreenShots === onGreenShots ? 'toggle-action active' : 'toggle-action'}
+                          key={`${player.id}:on:${onGreenShots}`}
                           type="button"
-                          onClick={() => {
-                            markShareDirty();
-                            session.toggleHoleEvent(holeNumber, event, player.id, eventBasePoints[event as BettingEventType]);
-                          }}
+                          onClick={() => updateOnGreenShots(player.id, onGreenShots)}
                         >
-                          <span>{eventLabels[event]}</span>
-                          <strong>{eventBasePoints[event as BettingEventType] > 0 ? '+' : ''}{eventBasePoints[event as BettingEventType]}점</strong>
+                          {onGreenShots}온
                         </button>
                       ))}
                     </div>
                   </div>
+                  <div className="context-action-group">
+                    <strong>몇펏</strong>
+                    <div className="button-grid six-up">
+                      {puttChoices.map((putts) => (
+                        <button
+                          className={score?.entryMode === 'on-putt' && score.putts === putts ? 'toggle-action active' : 'toggle-action'}
+                          key={`${player.id}:putt:${putts}`}
+                          type="button"
+                          onClick={() => updatePutts(player.id, putts)}
+                        >
+                          {putts}펏
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <button
+                    className={score?.entryMode === 'hio' ? 'toggle-action hio-action active' : 'toggle-action hio-action'}
+                    type="button"
+                    onClick={() => updateHoleInOne(player.id)}
+                  >
+                    홀인원 빠른 입력
+                  </button>
                 </div>
+                <label className="extended-score-entry">
+                  직접 총타 수정
+                  <input
+                    inputMode="numeric"
+                    value={scoreInputValue(player.id)}
+                    placeholder={backdoorOpen ? `1–${maximumHoleScoreStrokes}` : '예외 총타'}
+                    onChange={(event) => updateScoreDraft(player.id, event.currentTarget.value)}
+                    aria-label={`${displayPlayerName(player.name)} 직접 총타`}
+                  />
+                </label>
               </article>
             );
           })}
@@ -661,7 +595,7 @@ export function App() {
                   <strong>{displayPlayerName(entry.player.name)}</strong>
                   <em>{playerTeam(entry.index)}</em>
                 </span>
-                <b className={entry.amount >= 0 ? 'positive' : 'negative'}>{signedAmountLabel(entry.amount, settlementUnit)}</b>
+                <b className={entry.amount >= 0 ? 'positive' : 'negative'}>{signedMoneyLabel(entry.amount)}</b>
               </div>
             ))}
           </div>
@@ -678,7 +612,7 @@ export function App() {
                 <strong>{displayPlayerNameById(transfer.payerId)}</strong>
                 <span>→</span>
                 <strong>{displayPlayerNameById(transfer.payeeId)}</strong>
-                <b>{transferAmountLabel(transfer.amount, transfer.unit)}</b>
+                <b>{transferAmountLabel(transfer.amount)}</b>
               </p>
             ))}
           </div>
@@ -688,17 +622,17 @@ export function App() {
       <section className="calculation-card" aria-labelledby="calculation-title">
         <div className="section-heading compact-heading">
           <p className="eyebrow">계산 내역</p>
-          <h2 id="calculation-title">오장 계산 근거</h2>
+          <h2 id="calculation-title">오장 공식별 근거</h2>
         </div>
         <div className="calculation-list">
-          {ledger.breakdownRows.slice(0, 12).map((line) => (
+          {ledger.breakdownRows.slice(0, 14).map((line) => (
             <article key={line.id}>
               <span>{line.label}</span>
               <strong>{line.detail}</strong>
-              <b className={line.money >= 0 ? 'positive' : 'negative'}>{signedAmountLabel(line.money, 'money')}</b>
+              <b className={line.money >= 0 ? 'positive' : 'negative'}>{signedMoneyLabel(line.money)}</b>
             </article>
           ))}
-          {ledger.breakdownRows.length === 0 ? <article><span>대기</span><strong>각 플레이어 타수를 입력하면 계산 근거가 여기에 쌓입니다.</strong><b>₩0</b></article> : null}
+          {ledger.breakdownRows.length === 0 ? <article><span>대기</span><strong>각 플레이어 타수를 입력하면 배판, 니어, 버디값, 핸디 보정 근거가 여기에 쌓입니다.</strong><b>₩0</b></article> : null}
         </div>
       </section>
 
@@ -717,7 +651,7 @@ export function App() {
         </div>
         {resultLink ? <p className="result-link" aria-label="로컬 결과 링크">{resultLink}</p> : <p className="result-link warning">라운드 입력량이 많아 2200자 제한 안의 결과 링크를 만들 수 없습니다.</p>}
         <p className="share-status" aria-live="polite">
-          {shareStatusMessage ?? (shareReady ? '스코어카드 이미지나 결과 링크로 공유할 현재 정산 요약이 준비되었습니다.' : '공유 카드는 화면 맨 아래에서 스코어카드 내보내기와 결과 링크 공유만 제공합니다.')}
+          {shareStatusMessage ?? (shareReady ? '스코어카드 이미지나 결과 링크로 공유할 현재 오장 요약이 준비되었습니다.' : '공유 카드는 화면 맨 아래에서 스코어카드 내보내기와 결과 링크 공유만 제공합니다.')}
         </p>
       </section>
     </main>

@@ -75,7 +75,6 @@ h2 {
 
 .hero-card,
 .control-panel,
-.mission-card,
 .ledger-card,
 .calculation-card,
 .share-card {
@@ -110,8 +109,7 @@ h2 {
 
 .hero-copy,
 .hero-metric,
-.control-panel > *,
-.mission-card > *,
+.control-panel > * > *,
 .ledger-card > *,
 .calculation-card > *,
 .share-card > * {
@@ -119,8 +117,7 @@ h2 {
 }
 
 .hero-copy p:not(.eyebrow),
-.section-heading p,
-.mission-card p,
+.section-heading p p,
 .share-card p,
 .share-status {
   color: #526070;
@@ -151,7 +148,6 @@ h2 {
 .hero-metric em,
 .player-chip span,
 .player-chip em,
-.game-stack span,
 .balance-row em,
 .calculation-list span {
   font-size: 0.78rem;
@@ -169,35 +165,92 @@ h2 {
   color: #8ef8cf;
 }
 
-.ojang-rule-details {
-  display: grid;
-  gap: 0.65rem;
-  max-width: 38rem;
-  border: 1px solid rgba(16, 24, 40, 0.1);
-  border-radius: 1.35rem;
-  background: rgba(255, 255, 255, 0.72);
-  padding: 0.85rem 1rem;
-}
-
-.ojang-rule-details summary {
-  color: #0f172a;
-  cursor: pointer;
+.rule-disclosure {
+  min-height: 2.85rem;
+  border: 0;
+  border-radius: 999px;
+  background: #101828;
+  color: #fff;
+  padding: 0 1rem;
   font-weight: 950;
-  letter-spacing: -0.02em;
 }
 
-.ojang-rule-details ul {
+.rule-detail-panel {
   display: grid;
-  gap: 0.35rem;
-  margin: 0.65rem 0 0;
-  padding-left: 1.15rem;
-  color: #344054;
-  font-size: 0.92rem;
-  line-height: 1.55;
+  gap: 0.45rem;
+  max-width: 46rem;
+  border: 1px solid rgba(16, 24, 40, 0.1);
+  border-radius: 1.2rem;
+  background: rgba(255, 255, 255, 0.76);
+  padding: 0.9rem;
+}
+
+.rule-detail-panel p {
+  margin: 0;
+  color: #344054 !important;
+  line-height: 1.5;
+}
+
+.setup-heading-row {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.setup-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  align-items: start;
+  justify-content: end;
+}
+
+.compact-action {
+  min-height: 2.45rem !important;
+  border: 1px solid rgba(16, 24, 40, 0.14);
+  background: #101828 !important;
+  color: #fff !important;
+  padding: 0 0.85rem;
+  font-size: 0.82rem;
+}
+
+.near-selector {
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 0.75rem;
+}
+
+.on-putt-entry {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.button-grid {
+  display: grid;
+  gap: 0.42rem;
+}
+
+.button-grid.six-up {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.button-grid .toggle-action {
+  min-height: 2.65rem;
+  border-radius: 0.85rem;
+  padding: 0 0.45rem;
+}
+
+.hio-action {
+  width: 100%;
+  background: #fbbf24 !important;
+  color: #101828 !important;
+}
+
+.hio-action.active {
+  background: #fff !important;
 }
 
 .control-panel,
-.mission-card,
 .calculation-card,
 .share-card {
   display: grid;
@@ -248,7 +301,6 @@ button:focus-visible {
 }
 
 .player-strip,
-.game-stack,
 .score-list,
 .balance-list,
 .transfer-list,
@@ -287,7 +339,6 @@ button:focus-visible {
 
 .player-chip span,
 .player-chip em,
-.game-stack span,
 .balance-row em,
 .calculation-list span {
   color: #667085;
@@ -347,18 +398,6 @@ button:focus-visible {
   border-color: #8ef8cf;
   background: #ecfdf3;
   color: #101828;
-}
-
-.game-card button:disabled {
-  cursor: not-allowed;
-  opacity: 0.56;
-}
-
-.game-card p {
-  margin: 0;
-  color: #667085;
-  font-size: 0.82rem;
-  line-height: 1.45;
 }
 
 .editable-chip label {
@@ -472,24 +511,6 @@ button:focus-visible {
   white-space: nowrap;
 }
 
-.score-options {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 0.42rem;
-}
-
-.score-choice {
-  display: grid;
-  gap: 0.1rem;
-  min-height: 3rem;
-  padding: 0.48rem;
-}
-
-.score-choice span {
-  color: #e2e8f0;
-  font-size: 0.72rem;
-}
-
 .extended-score-entry {
   color: #fff;
 }
@@ -523,74 +544,12 @@ button:focus-visible {
   line-height: 1.4;
 }
 
-.score-event-grid,
-.mission-button-row {
-  display: grid;
-  gap: 0.42rem;
-}
-
-.score-event-grid {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.mission-button-row {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.mission-button-row .toggle-action {
-  border-radius: 1rem;
-  font-size: 0.82rem;
-}
-
-.mission-button-row .toggle-action.danger.active {
-  background: #7f1d1d;
-}
-
 .score-row-header b,
 .balance-row b,
 .calculation-list b,
 .transfer-list b {
   justify-self: end;
   white-space: nowrap;
-}
-
-.mission-card {
-  grid-template-columns: 1fr;
-  overflow: hidden;
-  background:
-    radial-gradient(circle at 100% 0%, rgba(251, 191, 36, 0.28), transparent 13rem),
-    rgba(255, 255, 255, 0.78);
-}
-
-.mission-controls {
-  display: grid;
-  gap: 0.75rem;
-}
-
-.event-card {
-  background:
-    radial-gradient(circle at 0% 0%, rgba(79, 140, 255, 0.2), transparent 12rem),
-    rgba(255, 255, 255, 0.78);
-}
-
-.event-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.5rem;
-}
-
-.event-pill {
-  display: grid;
-  gap: 0.1rem;
-  min-height: 3.2rem;
-  padding: 0.65rem;
-  text-align: left;
-}
-
-.event-pill span {
-  color: inherit;
-  opacity: 0.72;
-  font-size: 0.72rem;
 }
 
 .toggle-action,
@@ -786,13 +745,6 @@ button:focus-visible {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
-  .game-stack {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-  }
-
-  .event-grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
 
   .share-actions {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -805,7 +757,6 @@ button:focus-visible {
   }
 
   .control-panel,
-  .mission-card,
   .ledger-card,
   .calculation-card,
   .share-card {
