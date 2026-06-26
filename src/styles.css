@@ -344,39 +344,12 @@ button:focus-visible {
   color: #667085;
 }
 
-.game-stack article {
-  display: grid;
-  gap: 0.22rem;
-  padding: 0.9rem;
-}
-
-.game-card {
-  gap: 0.7rem !important;
-}
-
-.game-card button,
-.event-pill,
 .secondary-action {
   border: 0;
   border-radius: 1rem;
   background: rgba(226, 232, 240, 0.9);
   color: #334155;
   font-weight: 900;
-}
-
-.game-card button {
-  display: grid;
-  gap: 0.2rem;
-  width: 100%;
-  min-height: 3.6rem;
-  padding: 0.85rem;
-  text-align: left;
-}
-
-.game-card.active button,
-.event-pill.active {
-  background: #101828;
-  color: #fff;
 }
 
 .scorecard-meta-grid {
@@ -520,6 +493,7 @@ button:focus-visible {
   text-align: center;
 }
 
+.score-input-grid,
 .score-row-context,
 .context-action-group {
   display: grid;
@@ -732,8 +706,7 @@ button:focus-visible {
 
   .setup-grid,
   .hole-toolbar,
-  .ledger-grid,
-  .mission-card {
+  .ledger-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 

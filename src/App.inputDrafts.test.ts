@@ -17,13 +17,13 @@ describe('editable input draft helpers', () => {
 
   it('keeps persisted numeric inputs on local draft state so Backspace can clear the visible field', () => {
     expect(appSource).toContain('const [holeCountDraft, setHoleCountDraft]');
+    expect(appSource).toContain('const [unitAmountDraft, setUnitAmountDraft]');
     expect(appSource).toContain('const [playerHandicapDrafts, setPlayerHandicapDrafts]');
-    expect(appSource).toContain('const [gameUnitDrafts, setGameUnitDrafts]');
     expect(appSource).toContain('value={holeCountDraft ?? round.settings.holeCount.toString()}');
-    expect(appSource).toContain("value={gameUnitInputValue(game, 'points')}");
+    expect(appSource).toContain('value={unitAmountInputValue()}');
     expect(appSource).toContain('value={playerHandicapInputValue(player.id, player.handicap)}');
     expect(appSource).not.toContain('parseIntegerDraft(event.currentTarget.value, player.handicap)');
-    expect(appSource).not.toContain('parseIntegerDraft(event.currentTarget.value, round.gameUnits[game].points)');
+    expect(appSource).not.toContain('parseIntegerDraft(event.currentTarget.value, round.settings.unitAmount)');
     expect(appSource).not.toContain('parseIntegerDraft(event.currentTarget.value, round.settings.holeCount)');
   });
 
@@ -41,13 +41,12 @@ describe('editable input draft helpers', () => {
     expect(scorecardControllerSource).toContain("setCurrentHoleDraft('')");
     expect(scorecardControllerSource).toContain('setParDraftsByHole({})');
     expect(scorecardControllerSource).toContain('setScoreDrafts({})');
-    expect(appSource).not.toContain('const [backdoorOpenByHole, setBackdoorOpenByHole]');
     expect(appSource).toContain('function resetEditableRound()');
     expect(appSource).toContain("setRoundName('')");
     expect(appSource).toContain("setCourseName('')");
     expect(appSource).toContain('resetScorecardDrafts();');
-    expect(appSource).not.toContain('setBackdoorOpenByHole({})');
     expect(appSource).toContain("setHoleCountDraft('')");
+    expect(appSource).toContain("setUnitAmountDraft('')");
     expect(appSource).toContain('onClick={() => resetEditableRound()}');
     expect(appSource).not.toContain("useState('금요 새벽 라운드')");
     expect(appSource).not.toContain("useState('남서울 · OUT')");
@@ -73,8 +72,8 @@ describe('editable input draft helpers', () => {
     expect(appSource).toContain('createBettingRoundShareHash(round, { roundName, courseName })');
     expect(appSource).toContain('initialShareLabels()');
     expect(appSource).toContain('function updateRoundName(value: string)');
-    expect(appSource).toContain('function updateRoundSetupDraft');
-    expect(appSource).toContain('function toggleGameEnabled(game: BettingGameKey)');
+    expect(appSource).toContain('function updateUnitAmountDraft(value: string)');
+    expect(appSource).toContain('session.updateUnitAmount(unitAmount)');
     expect(scorecardExportSource).toContain('export function createScorecardExportSvg');
     expect(scorecardExportSource).toContain('new Intl.DateTimeFormat');
   });

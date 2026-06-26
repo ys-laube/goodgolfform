@@ -10,7 +10,7 @@ import {
   type BettingShareLabels,
   type BettingShareRestoreResult,
 } from './domain/bettingShareSnapshot';
-import { defaultOjangUnitAmount, maximumHoleScoreStrokes, type BettingRound as StoredBettingRound } from './domain/bettingStorage';
+import { maximumHoleScoreStrokes, type BettingRound as StoredBettingRound } from './domain/bettingStorage';
 import { parseEditableIntegerDraft } from './inputDrafts';
 import { createScorecardExportSvg, scorecardExportFileName } from './scorecardExport';
 import { parseIntegerDraft, scoreForPlayer, scoreLabel, scoreSummary, useScorecardController } from './useScorecardController';
@@ -292,7 +292,7 @@ export function App() {
   }
 
   function unitAmountInputValue(): string {
-    return unitAmountDraft ?? round.gameUnits.stroke.money.toString();
+    return unitAmountDraft ?? round.settings.unitAmount.toString();
   }
 
   function playerHandicapInputValue(playerId: string, handicap: number): string {
@@ -342,7 +342,7 @@ export function App() {
   function updateUnitAmountDraft(value: string) {
     setUnitAmountDraft(value);
     markShareDirty();
-    commitIntegerDraft(value, (unitAmount) => session.updateGameUnit('stroke', { money: unitAmount }));
+    commitIntegerDraft(value, (unitAmount) => session.updateUnitAmount(unitAmount));
   }
 
   function updateHoleCountDraft(value: string) {
@@ -357,9 +357,8 @@ export function App() {
     setCourseName('');
     resetScorecardDrafts();
     setHoleCountDraft('');
-    setUnitAmountDraft(defaultOjangUnitAmount.toString());
-    setPlayerHandicapDrafts({ 'player-1': '', 'player-2': '', 'player-3': '', 'player-4': '' });
-    setUnitAmountDraft(null);
+    setUnitAmountDraft('');
+    setPlayerHandicapDrafts({});
     setShareReady(false);
     setShareStatusMessage('새 오장 라운드로 초기화했습니다. 공유 링크와 내보내기는 다시 준비하세요.');
   }
@@ -503,7 +502,7 @@ export function App() {
           {holePar === 3 ? (
             <label className="near-selector">
               파3 니어 선택
-              <select value={selectedHole?.nearPlayerId ?? ''} onChange={(event) => updateNearPlayer(event.currentTarget.value)}>
+              <select value={selectedHole?.nearPlayerId ?? ''} onChange={(event) => session.setNearPlayer(holeNumber, event.currentTarget.value || null)}>
                 <option value="">니어 미선택</option>
                 {round.players.map((player) => (
                   <option key={player.id} value={player.id}>{displayPlayerName(player.name) || player.id}</option>
@@ -515,8 +514,10 @@ export function App() {
 
         <div className="score-list" aria-label="홀별 온/펏 입력">
           {round.players.map((player, index) => {
-            const rawScore = scoreForPlayer(round, holeNumber, player.id) ?? 0;
-            const netScore = ledger.handicap.netHoleScores[holeNumber]?.[player.id] ?? rawScore;
+            const score = scoreForPlayer(round, holeNumber, player.id);
+            const rawScore = score?.strokes ?? 0;
+            const selectedOn = score?.entryMode === 'on-putt' && score.onGreenShots !== undefined ? score.onGreenShots : null;
+            const selectedPutts = score?.entryMode === 'on-putt' && score.putts !== undefined ? score.putts : null;
 
             return (
               <article className="score-row" key={player.id}>
@@ -528,18 +529,43 @@ export function App() {
                   <small>{scoreSummary(rawScore, holePar)}</small>
                   <b>{signedMoneyLabel(ledger.playerBalances[player.id]?.money ?? 0)}</b>
                 </div>
-                <div className="score-options" aria-label={`${displayPlayerName(player.name)} 상대 스코어`}>
-                  {scoreChoices.map((strokes) => (
-                    <button
-                      className={rawScore === strokes ? 'score-choice active' : 'score-choice'}
-                      key={`${player.id}:${strokes}`}
-                      type="button"
-                      onClick={() => updateScoreButton(player.id, strokes)}
-                    >
-                      <strong>{scoreChoiceLabel(strokes, holePar)}</strong>
-                      <span>{scoreChoiceHint(strokes, holePar)}</span>
+                <div className="score-input-grid" aria-label={`${displayPlayerName(player.name)} 온펏 입력`}>
+                  <div className="score-row-context">
+                    <span>몇 온</span>
+                    <div className="score-options compact-options">
+                      {onGreenChoices.map((onGreenShots) => (
+                        <button
+                          className={selectedOn === onGreenShots ? 'score-choice active' : 'score-choice'}
+                          key={`${player.id}:on:${onGreenShots}`}
+                          type="button"
+                          onClick={() => updateOnGreenShots(player.id, onGreenShots)}
+                        >
+                          <strong>{onGreenShots}온</strong>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="score-row-context">
+                    <span>몇 펏</span>
+                    <div className="score-options compact-options">
+                      {puttChoices.map((putts) => (
+                        <button
+                          className={selectedPutts === putts ? 'score-choice active' : 'score-choice'}
+                          key={`${player.id}:putt:${putts}`}
+                          type="button"
+                          onClick={() => updatePutts(player.id, putts)}
+                        >
+                          <strong>{putts}펏</strong>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  {holePar === 3 ? (
+                    <button className={score?.entryMode === 'hio' ? 'score-choice active hio-choice' : 'score-choice hio-choice'} type="button" onClick={() => updateHoleInOne(player.id)}>
+                      <strong>홀인원</strong>
+                      <span>1타 저장</span>
                     </button>
-                  ))}
+                  ) : null}
                 </div>
                 {backdoorOpen ? (
                   <label className="extended-score-entry">

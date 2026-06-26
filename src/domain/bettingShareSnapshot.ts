@@ -257,7 +257,7 @@ function expandLegacyCompactRound(value: unknown): unknown | null {
     return null;
   }
 
-  const [id, createdAt, updatedAt, rawPlayers, rawSettings, _rawEnabledMask, rawGameUnits, rawHoles] = value;
+  const [id, createdAt, updatedAt, rawPlayers, rawSettings, , rawGameUnits, rawHoles] = value;
   const players = expandPlayers(rawPlayers);
   if (typeof id !== 'string' || typeof createdAt !== 'string' || typeof updatedAt !== 'string' || !players || !Array.isArray(rawSettings)) {
     return null;
