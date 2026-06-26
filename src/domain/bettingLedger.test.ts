@@ -90,7 +90,8 @@ describe('handicap calculation views', () => {
       ],
     });
 
-    expect(ojangLedger(finalTotalRound).rows).toHaveLength(0);
+    expect(ojangLedger(finalTotalRound).rows).toHaveLength(1);
+    expect(ojangLedger(finalTotalRound).rows[0]).toMatchObject({ label: '오장 민판 · 전원 동타', points: 0 });
     expect(calculateRoundLedger(finalTotalRound).handicap.adjustedTotals).toMatchObject({ a: 4, b: 3 });
     expect(ojangLedger(holeAllocationRound).pointBalances).toMatchObject({ a: -1, b: 1 });
     expect(ojangLedger(holeAllocationRound).rows[0]?.detail).toContain('서준 3타 vs 민준 4타');
@@ -155,8 +156,11 @@ describe('traditional Ojang settlement formulas', () => {
       }],
     }));
 
-    expect(ledger.gameLedgers[0].pointBalances).toMatchObject({ a: 6, b: -2, c: -2, d: -2 });
-    expect(ledger.breakdownRows.some((row) => row.detail.includes('니어 보너스'))).toBe(true);
+    expect(nearSuccess.pointBalances).toMatchObject({ a: 14, b: -4, c: -10 });
+    expect(nearSuccess.rows.some((row) => row.detail.includes('니어 보너스 +2'))).toBe(true);
+    expect(nearFail.pointBalances).toMatchObject({ a: 10, b: -4, c: -6 });
+    expect(nearFail.rows.some((row) => row.detail.includes('니어 실패 페널티 +2'))).toBe(true);
+    expect(nonParThree.rows.some((row) => row.detail.includes('니어'))).toBe(false);
   });
 });
 

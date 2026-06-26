@@ -624,6 +624,64 @@ function createSettlementRow(transfer: NetTransfer, index: number): LedgerBreakd
   });
 }
 
+function completedHoles(round: BettingRound): readonly HoleResult[] {
+  return round.holes.filter((hole) => isCompletedHole(hole, round.players));
+}
+
+function isCompletedHole(hole: HoleResult, players: readonly Player[]): boolean {
+  return players.every((player) => (hole.strokes[player.id] ?? 0) > 0);
+}
+
+function scoreEntriesForHole(
+  round: BettingRound,
+  handicap: AppliedHandicap,
+  hole: HoleResult,
+): readonly OjangScoreEntry[] {
+  return round.players.map((player) => ({
+    player,
+    rawScore: hole.strokes[player.id] ?? 0,
+    settlementScore: scoreForHole(round, handicap, hole, player.id),
+  }));
+}
+
+function scoreForHole(
+  round: BettingRound,
+  handicap: AppliedHandicap,
+  hole: HoleResult,
+  playerId: PlayerId,
+): number {
+  if (round.settings.handicapMode === 'hole-allocation') {
+    return handicap.netHoleScores[hole.holeNumber]?.[playerId] ?? (hole.strokes[playerId] ?? 0);
+  }
+
+  return hole.strokes[playerId] ?? 0;
+}
+
+function toMoneyBalances(pointBalances: BalanceMap, scoringMode: ScoringMode, unit: GameUnit): BalanceMap {
+  if (scoringMode !== 'money') {
+    return Object.fromEntries(Object.keys(pointBalances).map((playerId) => [playerId, 0]));
+  }
+
+  return Object.fromEntries(Object.entries(pointBalances).map(([playerId, points]) => [
+    playerId,
+    roundToTwo(points * unit.moneyPerPoint),
+  ]));
+}
+
+function normalizeEnabledGames(enabledGames: EnabledGames): EnabledGames {
+  return Object.fromEntries(bettingGameIds.map((game) => [game, enabledGames[game] ?? defaultEnabledGames[game]])) as EnabledGames;
+}
+
+function normalizeGameUnits(gameUnits: GameUnitMap): GameUnitMap {
+  return Object.fromEntries(bettingGameIds.map((game) => {
+    const unit = gameUnits[game] ?? defaultGameUnits[game];
+    return [game, {
+      pointValue: positiveNumber(unit.pointValue, defaultGameUnits[game]?.pointValue ?? 1),
+      moneyPerPoint: Math.max(0, normalizeNumber(unit.moneyPerPoint, defaultGameUnits[game]?.moneyPerPoint ?? 0)),
+    }];
+  })) as GameUnitMap;
+}
+
 function normalizeHole(hole: HoleResult, playerIds: readonly PlayerId[], holeCount: number): HoleResult | null {
   const holeNumber = clampInteger(hole.holeNumber, 1, holeCount);
   if (!Number.isFinite(holeNumber)) {
@@ -717,7 +775,7 @@ function roundBalances(balances: BalanceMap): BalanceMap {
 }
 
 function normalizeNumber(value: number | undefined, fallback = 0): number {
-  return Number.isFinite(value) ? value : fallback;
+  return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
 }
 
 function positiveTotal(balances: BalanceMap): number {
