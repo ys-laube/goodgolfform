@@ -2,16 +2,10 @@ import {
   bettingLedgerStorageVersion,
   deserializeBettingRound,
   saveBettingRound,
-  type BettingEventKey,
-  type BettingGameKey,
-  type BettingGameUnits,
-  type BettingHandicapMode,
-  type BettingHoleEvent,
   type BettingHoleResult,
+  type BettingHoleScore,
   type BettingPlayer,
   type BettingRound,
-  type BettingRoundSettings,
-  type BettingScoringMode,
   type StorageLike,
 } from './bettingStorage';
 
@@ -20,10 +14,7 @@ export const bettingShareHashTargetLength = 1_800;
 export const bettingShareHashMaxLength = 2_200;
 
 const bettingShareSnapshotVersion = 3;
-const gameKeys = ['ojang'] as const satisfies readonly BettingGameKey[];
-const eventKeys = ['near-pin'] as const satisfies readonly BettingEventKey[];
-const scoringModes = ['points', 'money'] as const satisfies readonly BettingScoringMode[];
-const handicapModes = ['final-total', 'hole-allocation'] as const satisfies readonly BettingHandicapMode[];
+const scoreEntryModes = ['manual', 'on-putt', 'hio'] as const;
 
 type ShareHashFailureReason = 'encoding-unavailable' | 'payload-too-large';
 
@@ -59,22 +50,11 @@ export type BettingShareRestoreResult =
   | { readonly restored: false; readonly reason: 'empty' | 'unsupported' | 'payload-too-large' | 'invalid' | 'storage-unavailable'; readonly payloadLength: number };
 
 type CompactPlayer = readonly [string, string, number];
-type CompactSettings = readonly [number, number, number];
-type CompactGameUnit = readonly [number, number];
-type CompactHoleScore = readonly [number, number];
-type CompactHoleEvent = readonly [string, number, number, number];
-type CompactHole = readonly [number, number, number, readonly CompactHoleScore[], readonly CompactHoleEvent[]];
+type CompactSettings = readonly [number, number];
+type CompactScore = readonly [number, number, number, number, number, number];
+type CompactHole = readonly [number, number, number, number, readonly CompactScore[]];
 type CompactLabels = readonly [string, string];
-type CompactRound = readonly [
-  string,
-  string,
-  string,
-  readonly CompactPlayer[],
-  CompactSettings,
-  number,
-  readonly CompactGameUnit[],
-  readonly CompactHole[],
-];
+type CompactRound = readonly [string, string, string, readonly CompactPlayer[], CompactSettings, readonly CompactHole[]];
 type CompactPayload = readonly [typeof bettingShareSnapshotVersion, CompactRound, CompactLabels];
 
 const emptyShareLabels: BettingShareLabels = { roundName: '', courseName: '' };
@@ -180,9 +160,7 @@ function compactPayload(round: BettingRound, labels: Partial<BettingShareLabels>
       round.createdAt,
       round.updatedAt,
       round.players.map(compactPlayer),
-      [round.settings.holeCount, scoringModes.indexOf(round.settings.scoringMode), handicapModes.indexOf(round.settings.handicapMode)],
-      enabledGameMask(round),
-      gameKeys.map((game) => [round.gameUnits[game].points, round.gameUnits[game].money]),
+      [round.settings.holeCount, round.settings.unitAmount],
       round.holes.map((hole) => compactHole(hole, playerIndex)),
     ],
     compactLabels(labels),
@@ -202,38 +180,104 @@ function compactPlayer(player: BettingPlayer): CompactPlayer {
 }
 
 function compactHole(hole: BettingHoleResult, playerIndex: ReadonlyMap<string, number>): CompactHole {
+  const nearIndex = hole.nearPlayerId ? playerIndex.get(hole.nearPlayerId) : undefined;
   return [
     hole.holeNumber,
     hole.par,
     hole.backdoorOpen ? 1 : 0,
-    hole.scores.flatMap((score) => {
-      const index = playerIndex.get(score.playerId);
-      return index === undefined ? [] : ([[index, score.strokes]] satisfies CompactHoleScore[]);
-    }),
-    hole.events.flatMap((event) => compactEvent(event, playerIndex)),
+    nearIndex ?? -1,
+    hole.scores.flatMap((score) => compactScore(score, playerIndex)),
   ];
 }
 
-function compactEvent(event: BettingHoleEvent, playerIndex: ReadonlyMap<string, number>): readonly CompactHoleEvent[] {
-  const index = playerIndex.get(event.playerId);
-  const eventIndex = eventKeys.indexOf(event.event);
-  return index === undefined || eventIndex < 0 ? [] : [[event.id, index, eventIndex, event.points]];
-}
-
-function enabledGameMask(round: BettingRound): number {
-  return gameKeys.reduce((mask, game, index) => (round.enabledGames[game] ? mask | (1 << index) : mask), 0);
+function compactScore(score: BettingHoleScore, playerIndex: ReadonlyMap<string, number>): readonly CompactScore[] {
+  const index = playerIndex.get(score.playerId);
+  if (index === undefined) {
+    return [];
+  }
+  const modeIndex = scoreEntryModes.indexOf(score.entryMode ?? 'manual');
+  return [[
+    index,
+    score.strokes,
+    Math.max(0, modeIndex),
+    score.onGreenShots ?? 0,
+    score.putts ?? 0,
+    score.holeInOne ? 1 : 0,
+  ]];
 }
 
 function expandCompactPayload(value: unknown): BettingShareSnapshot | null {
-  if (!Array.isArray(value) || value.length !== 3 || value[0] !== bettingShareSnapshotVersion) {
+  if (!Array.isArray(value) || (value[0] !== 1 && value[0] !== 2 && value[0] !== bettingShareSnapshotVersion)) {
     return null;
   }
 
-  const round = expandCompactRound(value[1]);
-  const parsedRound = round ? deserializeBettingRound(JSON.stringify({ version: bettingLedgerStorageVersion, round })) : null;
-  const labels = expandLabels(value[2]);
+  if (value[0] === bettingShareSnapshotVersion) {
+    if (value.length !== 3) {
+      return null;
+    }
+    const round = expandCompactRound(value[1]);
+    const parsedRound = round ? deserializeBettingRound(JSON.stringify({ version: bettingLedgerStorageVersion, round })) : null;
+    const labels = expandLabels(value[2]);
+    return parsedRound && labels ? { round: parsedRound, labels } : null;
+  }
 
+  return expandLegacyCompactPayload(value);
+}
+
+function expandCompactRound(value: unknown): BettingRound | null {
+  if (!Array.isArray(value) || value.length !== 6) {
+    return null;
+  }
+
+  const [id, createdAt, updatedAt, rawPlayers, rawSettings, rawHoles] = value;
+  const players = expandPlayers(rawPlayers);
+  const settings = expandSettings(rawSettings);
+  const holes = expandHoles(rawHoles, players);
+
+  if (typeof id !== 'string' || typeof createdAt !== 'string' || typeof updatedAt !== 'string' || !players || !settings || !holes) {
+    return null;
+  }
+
+  return { id, createdAt, updatedAt, players, settings, holes };
+}
+
+function expandLegacyCompactPayload(value: readonly unknown[]): BettingShareSnapshot | null {
+  if ((value[0] === 1 && value.length !== 2) || (value[0] === 2 && value.length !== 3)) {
+    return null;
+  }
+
+  const rawRound = expandLegacyCompactRound(value[1]);
+  const parsedRound = rawRound ? deserializeBettingRound(JSON.stringify({ version: 2, round: rawRound })) : null;
+  const labels = value[0] === 2 ? expandLabels(value[2]) : emptyShareLabels;
   return parsedRound && labels ? { round: parsedRound, labels } : null;
+}
+
+function expandLegacyCompactRound(value: unknown): unknown | null {
+  if (!Array.isArray(value) || value.length !== 8) {
+    return null;
+  }
+
+  const [id, createdAt, updatedAt, rawPlayers, rawSettings, _rawEnabledMask, rawGameUnits, rawHoles] = value;
+  const players = expandPlayers(rawPlayers);
+  if (typeof id !== 'string' || typeof createdAt !== 'string' || typeof updatedAt !== 'string' || !players || !Array.isArray(rawSettings)) {
+    return null;
+  }
+
+  const holeCount = isInteger(rawSettings[0]) ? rawSettings[0] : 18;
+  const strokeUnit = Array.isArray(rawGameUnits) && Array.isArray(rawGameUnits[0]) && isInteger(rawGameUnits[0][1]) ? rawGameUnits[0][1] : undefined;
+  const holes = expandLegacyHoles(rawHoles, players);
+  if (!holes) {
+    return null;
+  }
+
+  return {
+    id,
+    createdAt,
+    updatedAt,
+    players,
+    settings: { holeCount, unitAmount: strokeUnit },
+    holes,
+  };
 }
 
 function expandLabels(value: unknown): BettingShareLabels | null {
@@ -242,34 +286,6 @@ function expandLabels(value: unknown): BettingShareLabels | null {
   }
 
   return { roundName: sanitizeShareLabel(value[0]), courseName: sanitizeShareLabel(value[1]) };
-}
-
-function expandCompactRound(value: unknown): BettingRound | null {
-  if (!Array.isArray(value) || value.length !== 8) {
-    return null;
-  }
-
-  const [id, createdAt, updatedAt, rawPlayers, rawSettings, rawEnabledMask, rawGameUnits, rawHoles] = value;
-  const players = expandPlayers(rawPlayers);
-  const settings = expandSettings(rawSettings);
-  const enabledGames = expandEnabledGames(rawEnabledMask);
-  const gameUnits = expandGameUnits(rawGameUnits);
-  const holes = expandHoles(rawHoles, players);
-
-  if (
-    typeof id !== 'string' ||
-    typeof createdAt !== 'string' ||
-    typeof updatedAt !== 'string' ||
-    !players ||
-    !settings ||
-    !enabledGames ||
-    !gameUnits ||
-    !holes
-  ) {
-    return null;
-  }
-
-  return { id, createdAt, updatedAt, players, settings, enabledGames, gameUnits, holes };
 }
 
 function expandPlayers(value: unknown): readonly BettingPlayer[] | null {
@@ -288,34 +304,12 @@ function expandPlayers(value: unknown): readonly BettingPlayer[] | null {
   return players.every((player): player is BettingPlayer => player !== null) ? players : null;
 }
 
-function expandSettings(value: unknown): BettingRoundSettings | null {
-  if (!Array.isArray(value) || value.length !== 3 || !isInteger(value[0]) || !isInteger(value[1]) || !isInteger(value[2])) {
+function expandSettings(value: unknown): { readonly holeCount: number; readonly unitAmount: number } | null {
+  if (!Array.isArray(value) || value.length !== 2 || !isInteger(value[0]) || !isInteger(value[1])) {
     return null;
   }
 
-  const scoringMode = scoringModes[value[1]];
-  const handicapMode = handicapModes[value[2]];
-
-  return scoringMode && handicapMode ? { holeCount: value[0], scoringMode, handicapMode } : null;
-}
-
-function expandEnabledGames(value: unknown): Record<BettingGameKey, boolean> | null {
-  if (!isInteger(value) || value < 0) {
-    return null;
-  }
-
-  return { ojang: Boolean(value & 1) };
-}
-
-function expandGameUnits(value: unknown): BettingGameUnits | null {
-  if (!Array.isArray(value) || value.length !== gameKeys.length) {
-    return null;
-  }
-
-  const unit = value[0];
-  return Array.isArray(unit) && unit.length === 2 && isInteger(unit[0]) && isInteger(unit[1])
-    ? { ojang: { points: unit[0], money: unit[1] } }
-    : null;
+  return { holeCount: value[0], unitAmount: value[1] };
 }
 
 function expandHoles(value: unknown, players: readonly BettingPlayer[] | null): readonly BettingHoleResult[] | null {
@@ -324,61 +318,87 @@ function expandHoles(value: unknown, players: readonly BettingPlayer[] | null): 
   }
 
   const holes = value.map((hole): BettingHoleResult | null => {
-    if (!Array.isArray(hole) || hole.length !== 5 || !isInteger(hole[0]) || !isInteger(hole[1]) || !isInteger(hole[2])) {
+    if (!Array.isArray(hole) || hole.length !== 5 || !isInteger(hole[0]) || !isInteger(hole[1]) || !isInteger(hole[2]) || !isInteger(hole[3])) {
       return null;
     }
 
-    const scores = expandScores(hole[3], players);
-    const events = expandEvents(hole[4], players);
-
-    return scores && events
-      ? { holeNumber: hole[0], par: hole[1], backdoorOpen: Boolean(hole[2]), scores, events }
-      : null;
+    const nearPlayer = players[hole[3]];
+    const scores = expandScores(hole[4], players);
+    return scores ? { holeNumber: hole[0], par: hole[1], backdoorOpen: Boolean(hole[2]), nearPlayerId: nearPlayer?.id ?? null, scores } : null;
   });
 
   return holes.every((hole): hole is BettingHoleResult => hole !== null) ? holes : null;
 }
 
-function expandScores(value: unknown, players: readonly BettingPlayer[]): readonly { readonly playerId: string; readonly strokes: number }[] | null {
+function expandScores(value: unknown, players: readonly BettingPlayer[]): readonly BettingHoleScore[] | null {
   if (!Array.isArray(value)) {
     return null;
   }
 
-  const scores = value.map((score) => {
+  const scores = value.map((score): BettingHoleScore | null => {
+    if (!Array.isArray(score) || score.length !== 6 || !score.every(isInteger)) {
+      return null;
+    }
+
+    const player = players[score[0]];
+    const mode = scoreEntryModes[score[2]];
+    if (!player || !mode) {
+      return null;
+    }
+
+    if (mode === 'hio' || score[5] === 1) {
+      return { playerId: player.id, strokes: 1, entryMode: 'hio', onGreenShots: 1, putts: 0, holeInOne: true };
+    }
+
+    if (mode === 'on-putt') {
+      return { playerId: player.id, strokes: score[1], entryMode: 'on-putt', onGreenShots: score[3], putts: score[4], holeInOne: false };
+    }
+
+    return { playerId: player.id, strokes: score[1], entryMode: 'manual' };
+  });
+
+  return scores.every((score): score is BettingHoleScore => score !== null) ? scores : null;
+}
+
+function expandLegacyHoles(value: unknown, players: readonly BettingPlayer[]): readonly unknown[] | null {
+  if (!Array.isArray(value)) {
+    return null;
+  }
+
+  const holes = value.map((hole): unknown | null => {
+    if (!Array.isArray(hole) || (hole.length !== 4 && hole.length !== 6) || !isInteger(hole[0])) {
+      return null;
+    }
+
+    const legacyCompactHole = hole.length === 4;
+    const par = legacyCompactHole ? 4 : hole[1];
+    const backdoorOpenFlag = legacyCompactHole ? 0 : hole[2];
+    const rawScores = legacyCompactHole ? hole[1] : hole[3];
+    const scores = expandLegacyScores(rawScores, players);
+
+    return scores && isInteger(par) && isInteger(backdoorOpenFlag)
+      ? { holeNumber: hole[0], par, backdoorOpen: Boolean(backdoorOpenFlag), scores }
+      : null;
+  });
+
+  return holes.every((hole) => hole !== null) ? holes : null;
+}
+
+function expandLegacyScores(value: unknown, players: readonly BettingPlayer[]): readonly BettingHoleScore[] | null {
+  if (!Array.isArray(value)) {
+    return null;
+  }
+
+  const scores = value.map((score): BettingHoleScore | null => {
     if (!Array.isArray(score) || score.length !== 2 || !isInteger(score[0]) || !isInteger(score[1])) {
       return null;
     }
 
     const player = players[score[0]];
-    return player ? { playerId: player.id, strokes: score[1] } : null;
+    return player ? { playerId: player.id, strokes: score[1], entryMode: 'manual' } : null;
   });
 
-  return scores.every((score): score is { readonly playerId: string; readonly strokes: number } => score !== null) ? scores : null;
-}
-
-function expandEvents(value: unknown, players: readonly BettingPlayer[]): readonly BettingHoleEvent[] | null {
-  if (!Array.isArray(value)) {
-    return null;
-  }
-
-  const events = value.map((event): BettingHoleEvent | null => {
-    if (
-      !Array.isArray(event) ||
-      event.length !== 4 ||
-      typeof event[0] !== 'string' ||
-      !isInteger(event[1]) ||
-      !isInteger(event[2]) ||
-      !isInteger(event[3])
-    ) {
-      return null;
-    }
-
-    const player = players[event[1]];
-    const eventKey = eventKeys[event[2]];
-    return player && eventKey ? { id: event[0], playerId: player.id, event: eventKey, points: event[3] } : null;
-  });
-
-  return events.every((event): event is BettingHoleEvent => event !== null) ? events : null;
+  return scores.every((score): score is BettingHoleScore => score !== null) ? scores : null;
 }
 
 function extractEncodedPayload(rawHash: string): string | null {
