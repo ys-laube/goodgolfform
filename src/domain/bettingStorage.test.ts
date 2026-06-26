@@ -8,6 +8,7 @@ import {
   deserializeBettingRound,
   knownLegacyShotAdviceStorageKeys,
   legacyBettingActiveRoundStorageKeyV1,
+  legacyBettingActiveRoundStorageKeyV2,
   legacyShotAdvicePresetStorageKey,
   loadBettingRound,
   purgeKnownLegacyShotAdviceStorage,
@@ -60,25 +61,27 @@ class ThrowingStorage implements StorageLike {
   }
 }
 
-describe('betting ledger local storage boundary', () => {
+describe('Ojang ledger local storage boundary', () => {
   it('serializes, saves, and loads active rounds through the fresh golf-bet-ledger namespace', () => {
     const storage = new MemoryStorage();
     const round = createDefaultBettingRound({ id: 'round-storage-test', now: '2026-06-25T00:00:00.000Z' });
 
-    expect(bettingActiveRoundStorageKey).toBe('golf-bet-ledger:active-round:v2');
+    expect(bettingActiveRoundStorageKey).toBe('golf-bet-ledger:active-round:v3');
     expect(bettingActiveRoundStorageKey.startsWith(`${bettingLedgerStoragePrefix}:`)).toBe(true);
     expect(saveBettingRound(storage, round)).toBe(true);
     expect(storage.peek(bettingActiveRoundStorageKey)).toContain('round-storage-test');
     expect(loadBettingRound(storage)).toEqual(round);
   });
 
-  it('creates default 2, 3, and 4 player rounds for setup flows', () => {
+  it('creates default 2, 3, and 4 player Ojang rounds for setup flows', () => {
     expect(createDefaultBettingRound({ playerCount: 2 }).players).toHaveLength(2);
     expect(createDefaultBettingRound({ playerCount: 3 }).players).toHaveLength(3);
     expect(createDefaultBettingRound({ playerCount: 4 }).players).toHaveLength(4);
     expect(createDefaultBettingRound({ playerCount: 99 }).players).toHaveLength(4);
     expect(createDefaultBettingRound().players.map((player) => player.name)).toEqual(['', '', '', '']);
     expect(createDefaultBettingRound().players.map((player) => player.handicap)).toEqual([0, 0, 0, 0]);
+    expect(createDefaultBettingRound().enabledGames).toEqual({ ojang: true });
+    expect(createDefaultBettingRound().gameUnits.ojang).toEqual({ points: 1, money: 5000 });
   });
 
   it('round-trips intentionally blank player names for in-progress setup editing', () => {
@@ -91,7 +94,7 @@ describe('betting ledger local storage boundary', () => {
     expect(deserializeBettingRound(serializeBettingRound(blankNameRound))).toEqual(blankNameRound);
   });
 
-  it('persists per-hole par and backdoor-open metadata while defaulting older hole payloads', () => {
+  it('persists per-hole par/backdoor/near metadata while defaulting older hole payloads', () => {
     const round = {
       ...createDefaultBettingRound({ id: 'round-hole-meta', now: '2026-06-25T00:00:00.000Z' }),
       holes: [
@@ -100,8 +103,7 @@ describe('betting ledger local storage boundary', () => {
           par: 5,
           backdoorOpen: true,
           scores: [{ playerId: 'player-1', strokes: 9 }],
-          events: [],
-          missions: [],
+          events: [{ id: 'hole-1:near-pin:player-1', playerId: 'player-1', event: 'near-pin' as const, points: 1 }],
         },
       ],
     };
@@ -111,36 +113,47 @@ describe('betting ledger local storage boundary', () => {
     };
 
     expect(deserializeBettingRound(serializeBettingRound(round))).toEqual(round);
-    expect(deserializeBettingRound(JSON.stringify({ version: 1, round: legacyRound }))?.holes[0]).toMatchObject({
+    expect(deserializeBettingRound(JSON.stringify({ version: 2, round: legacyRound }))?.holes[0]).toMatchObject({
       holeNumber: 2,
       par: 4,
       backdoorOpen: false,
+      events: [],
     });
   });
 
-
-  it('migrates the previous betting round storage key to the current explicit v2 key', () => {
-    const round = createDefaultBettingRound({ id: 'round-storage-v1', now: '2026-06-25T00:00:00.000Z' });
+  it('migrates the previous betting round storage key to the current explicit v3 key', () => {
+    const round = createDefaultBettingRound({ id: 'round-storage-v2', now: '2026-06-25T00:00:00.000Z' });
+    const legacyPayload = {
+      ...round,
+      enabledGames: { stroke: true, skins: true, vegas: true, events: true, missions: true },
+      gameUnits: {
+        stroke: { points: 1, money: 1000 },
+        skins: { points: 1, money: 1000 },
+        vegas: { points: 1, money: 1000 },
+        events: { points: 1, money: 1000 },
+        missions: { points: 1, money: 1000 },
+      },
+    };
     const storage = new MemoryStorage({
-      [legacyBettingActiveRoundStorageKeyV1]: JSON.stringify({ version: 1, round }),
+      [legacyBettingActiveRoundStorageKeyV2]: JSON.stringify({ version: 2, round: legacyPayload }),
     });
 
-    expect(loadBettingRound(storage)).toEqual(round);
+    expect(loadBettingRound(storage)).toMatchObject({ id: 'round-storage-v2', enabledGames: { ojang: true }, gameUnits: { ojang: { points: 1, money: 5000 } } });
     expect(storage.calls).toEqual([
       `get:${bettingActiveRoundStorageKey}`,
-      `get:${legacyBettingActiveRoundStorageKeyV1}`,
+      `get:${legacyBettingActiveRoundStorageKeyV2}`,
       `set:${bettingActiveRoundStorageKey}`,
     ]);
-    expect(storage.peek(bettingActiveRoundStorageKey)).toContain('round-storage-v1');
+    expect(storage.peek(bettingActiveRoundStorageKey)).toContain('round-storage-v2');
   });
 
-  it('never reads or migrates old Korean caddie presets into betting round state', () => {
+  it('never reads or migrates old Korean caddie presets into Ojang round state', () => {
     const storage = new MemoryStorage({
       [legacyShotAdvicePresetStorageKey]: JSON.stringify({ version: 1, presets: [{ name: '저장된 캐디 거리표' }] }),
     });
 
     expect(loadBettingRound(storage)).toBeNull();
-    expect(storage.calls).toEqual([`get:${bettingActiveRoundStorageKey}`, `get:${legacyBettingActiveRoundStorageKeyV1}`]);
+    expect(storage.calls).toEqual([`get:${bettingActiveRoundStorageKey}`, `get:${legacyBettingActiveRoundStorageKeyV2}`, `get:${legacyBettingActiveRoundStorageKeyV1}`]);
     expect(storage.peek(legacyShotAdvicePresetStorageKey)).toContain('저장된 캐디 거리표');
   });
 
@@ -163,20 +176,22 @@ describe('betting ledger local storage boundary', () => {
     });
 
     expect(loadBettingRound(storage)).toBeNull();
-    expect(storage.calls).toEqual([`get:${bettingActiveRoundStorageKey}`, `get:${legacyBettingActiveRoundStorageKeyV1}`]);
+    expect(storage.calls).toEqual([`get:${bettingActiveRoundStorageKey}`, `get:${legacyBettingActiveRoundStorageKeyV2}`, `get:${legacyBettingActiveRoundStorageKeyV1}`]);
     expect(storage.peek(legacyShotAdvicePresetStorageKey)).toBe('do not touch');
   });
 
-  it('clears both current and previous betting round keys without touching old caddie presets', () => {
+  it('clears current and previous betting round keys without touching old caddie presets', () => {
     const storage = new MemoryStorage({
       [bettingActiveRoundStorageKey]: 'current betting state',
-      [legacyBettingActiveRoundStorageKeyV1]: 'previous betting state',
+      [legacyBettingActiveRoundStorageKeyV2]: 'previous betting state',
+      [legacyBettingActiveRoundStorageKeyV1]: 'old betting state',
       [legacyShotAdvicePresetStorageKey]: 'legacy caddie preset',
     });
 
     expect(clearBettingRound(storage)).toBe(true);
-    expect(storage.calls).toEqual([`remove:${bettingActiveRoundStorageKey}`, `remove:${legacyBettingActiveRoundStorageKeyV1}`]);
+    expect(storage.calls).toEqual([`remove:${bettingActiveRoundStorageKey}`, `remove:${legacyBettingActiveRoundStorageKeyV2}`, `remove:${legacyBettingActiveRoundStorageKeyV1}`]);
     expect(storage.peek(bettingActiveRoundStorageKey)).toBeNull();
+    expect(storage.peek(legacyBettingActiveRoundStorageKeyV2)).toBeNull();
     expect(storage.peek(legacyBettingActiveRoundStorageKeyV1)).toBeNull();
     expect(storage.peek(legacyShotAdvicePresetStorageKey)).toBe('legacy caddie preset');
   });
@@ -184,17 +199,19 @@ describe('betting ledger local storage boundary', () => {
   it('rejects invalid saved payloads and unavailable storage safely', () => {
     const round = createDefaultBettingRound({ now: '2026-06-25T00:00:00.000Z' });
     const tooFewPlayers = { ...round, players: round.players.slice(0, 1) };
-    const badHolePlayer = { ...round, holes: [{ holeNumber: 1, par: 4, backdoorOpen: false, scores: [{ playerId: 'ghost', strokes: 4 }], events: [], missions: [] }] };
-    const extendedBackdoorScore = { ...round, holes: [{ holeNumber: 1, par: 4, backdoorOpen: true, scores: [{ playerId: 'player-1', strokes: 30 }], events: [], missions: [] }] };
-    const tooHighBackdoorScore = { ...round, holes: [{ holeNumber: 1, par: 4, backdoorOpen: true, scores: [{ playerId: 'player-1', strokes: 31 }], events: [], missions: [] }] };
-    const badPar = { ...round, holes: [{ holeNumber: 1, par: 8, backdoorOpen: false, scores: [], events: [], missions: [] }] };
+    const badHolePlayer = { ...round, holes: [{ holeNumber: 1, par: 4, backdoorOpen: false, scores: [{ playerId: 'ghost', strokes: 4 }], events: [] }] };
+    const extendedBackdoorScore = { ...round, holes: [{ holeNumber: 1, par: 4, backdoorOpen: true, scores: [{ playerId: 'player-1', strokes: 30 }], events: [] }] };
+    const tooHighBackdoorScore = { ...round, holes: [{ holeNumber: 1, par: 4, backdoorOpen: true, scores: [{ playerId: 'player-1', strokes: 31 }], events: [] }] };
+    const badPar = { ...round, holes: [{ holeNumber: 1, par: 8, backdoorOpen: false, scores: [], events: [] }] };
+    const disabledOjang = { ...round, enabledGames: { ojang: false } };
 
     expect(deserializeBettingRound(JSON.stringify({ version: 999, round }))).toBeNull();
-    expect(deserializeBettingRound(JSON.stringify({ version: 1, round: tooFewPlayers }))).toBeNull();
-    expect(deserializeBettingRound(JSON.stringify({ version: 1, round: badHolePlayer }))).toBeNull();
-    expect(deserializeBettingRound(JSON.stringify({ version: 1, round: extendedBackdoorScore }))).toEqual(extendedBackdoorScore);
-    expect(deserializeBettingRound(JSON.stringify({ version: 1, round: tooHighBackdoorScore }))).toBeNull();
-    expect(deserializeBettingRound(JSON.stringify({ version: 1, round: badPar }))).toBeNull();
+    expect(deserializeBettingRound(JSON.stringify({ version: 3, round: tooFewPlayers }))).toBeNull();
+    expect(deserializeBettingRound(JSON.stringify({ version: 3, round: badHolePlayer }))).toBeNull();
+    expect(deserializeBettingRound(JSON.stringify({ version: 3, round: extendedBackdoorScore }))).toEqual(extendedBackdoorScore);
+    expect(deserializeBettingRound(JSON.stringify({ version: 3, round: tooHighBackdoorScore }))).toBeNull();
+    expect(deserializeBettingRound(JSON.stringify({ version: 3, round: badPar }))).toBeNull();
+    expect(deserializeBettingRound(JSON.stringify({ version: 3, round: disabledOjang }))).toBeNull();
 
     const throwingStorage = new ThrowingStorage();
     expect(loadBettingRound(throwingStorage)).toBeNull();
