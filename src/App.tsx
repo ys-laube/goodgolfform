@@ -1,5 +1,6 @@
 import { useMemo, useState, type CSSProperties } from 'react';
 
+import { availableLocalStorage } from './browserEnvironment';
 import {
   calculateRoundLedger,
   drawMissionCard,
@@ -8,7 +9,13 @@ import {
   type BettingRound as LedgerBettingRound,
   type PlayerId,
 } from './domain/bettingLedger';
-import { maximumHoleScoreStrokes, type BettingRound as StoredBettingRound } from './domain/bettingStorage';
+import {
+  bettingShareHashMaxLength,
+  createBettingRoundShareHash,
+  restoreBettingRoundShareHashToStorage,
+  type BettingShareRestoreResult,
+} from './domain/bettingShareSnapshot';
+import { type BettingRound as StoredBettingRound } from './domain/bettingStorage';
 import { useBettingRoundSession, type BettingEventKey, type BettingGameKey } from './useBettingRoundSession';
 
 const gameKeys: readonly BettingGameKey[] = ['stroke', 'skins', 'vegas', 'events', 'missions'];
@@ -31,6 +38,49 @@ const gameDescriptions: Record<BettingGameKey, string> = {
   events: '니어핀, 롱기스트, 버디, OB',
   missions: '고정 미션 성공/실패 보너스',
 };
+
+let shareHashRestoreAttempted = false;
+let initialShareHashRestoreResult: BettingShareRestoreResult | null = null;
+
+function shareHashRestoringLocalStorage() {
+  const storage = availableLocalStorage();
+
+  if (!shareHashRestoreAttempted) {
+    shareHashRestoreAttempted = true;
+    const hash = currentLocationHash();
+    initialShareHashRestoreResult = hash ? restoreBettingRoundShareHashToStorage(hash, storage) : null;
+  }
+
+  return storage;
+}
+
+function initialShareHashStatus(): string | null {
+  if (!initialShareHashRestoreResult) {
+    return null;
+  }
+
+  if (initialShareHashRestoreResult.restored) {
+    return `결과 링크에서 라운드를 복원했습니다. 해시 ${initialShareHashRestoreResult.payloadLength}자, 이 기기에만 저장됩니다.`;
+  }
+
+  if (initialShareHashRestoreResult.reason === 'unsupported' || initialShareHashRestoreResult.reason === 'empty') {
+    return null;
+  }
+
+  return `결과 링크를 복원하지 못했습니다: ${shareRestoreReasonLabel(initialShareHashRestoreResult.reason)}.`;
+}
+
+function shareRestoreReasonLabel(reason: Exclude<BettingShareRestoreResult, { readonly restored: true }>['reason']): string {
+  const labels: Record<typeof reason, string> = {
+    empty: '빈 링크',
+    unsupported: '지원하지 않는 해시',
+    'payload-too-large': `링크가 ${bettingShareHashMaxLength}자를 초과함`,
+    invalid: '잘못된 링크',
+    'storage-unavailable': '로컬 저장소 사용 불가',
+  };
+
+  return labels[reason];
+}
 
 const eventLabels: Record<BettingEventKey, string> = {
   'near-pin': '니어핀',
