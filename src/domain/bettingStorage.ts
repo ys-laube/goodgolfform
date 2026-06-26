@@ -7,13 +7,10 @@ export const legacyShotAdvicePresetStorageKey = 'korean-caddie:preset-distances:
 export const knownLegacyShotAdviceStorageKeys = [legacyShotAdvicePresetStorageKey] as const;
 export const bettingPlayerCountOptions = [2, 3, 4] as const;
 export const maximumHoleScoreStrokes = 30;
+export const defaultOjangUnitAmount = 5_000;
 
 export type StorageLike = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>;
-
-export type BettingScoringMode = 'points' | 'money';
-export type BettingHandicapMode = 'final-total' | 'hole-allocation';
-export type BettingGameKey = 'ojang';
-export type BettingEventKey = 'near-pin';
+export type BettingScoreEntryMode = 'on-putt' | 'hio' | 'manual';
 
 export type BettingPlayer = {
   readonly id: string;
@@ -23,37 +20,24 @@ export type BettingPlayer = {
 
 export type BettingRoundSettings = {
   readonly holeCount: number;
-  readonly scoringMode: BettingScoringMode;
-  readonly handicapMode: BettingHandicapMode;
+  readonly unitAmount: number;
 };
-
-export type BettingGameFlags = Record<BettingGameKey, boolean>;
-
-export type BettingGameUnit = {
-  readonly points: number;
-  readonly money: number;
-};
-
-export type BettingGameUnits = Record<BettingGameKey, BettingGameUnit>;
 
 export type BettingHoleScore = {
   readonly playerId: string;
   readonly strokes: number;
-};
-
-export type BettingHoleEvent = {
-  readonly id: string;
-  readonly playerId: string;
-  readonly event: BettingEventKey;
-  readonly points: number;
+  readonly entryMode?: BettingScoreEntryMode;
+  readonly onGreenShots?: number;
+  readonly putts?: number;
+  readonly holeInOne?: boolean;
 };
 
 export type BettingHoleResult = {
   readonly holeNumber: number;
   readonly par: number;
   readonly backdoorOpen: boolean;
+  readonly nearPlayerId?: string | null;
   readonly scores: readonly BettingHoleScore[];
-  readonly events: readonly BettingHoleEvent[];
 };
 
 export type BettingRound = {
@@ -62,8 +46,6 @@ export type BettingRound = {
   readonly updatedAt: string;
   readonly players: readonly BettingPlayer[];
   readonly settings: BettingRoundSettings;
-  readonly enabledGames: BettingGameFlags;
-  readonly gameUnits: BettingGameUnits;
   readonly holes: readonly BettingHoleResult[];
 };
 
@@ -72,25 +54,12 @@ type StoredBettingRoundPayload = {
   readonly round: unknown;
 };
 
-const defaultGameFlags: BettingGameFlags = {
-  ojang: true,
-};
-
-const defaultGameUnits: BettingGameUnits = {
-  ojang: { points: 1, money: 5000 },
-};
-
 const defaultPlayers: readonly BettingPlayer[] = [
   { id: 'player-1', name: '', handicap: 0 },
   { id: 'player-2', name: '', handicap: 0 },
   { id: 'player-3', name: '', handicap: 0 },
   { id: 'player-4', name: '', handicap: 0 },
 ];
-
-const bettingGameKeys: readonly BettingGameKey[] = ['ojang'];
-const bettingEventKeys: readonly BettingEventKey[] = ['near-pin'];
-const scoringModes: readonly BettingScoringMode[] = ['points', 'money'];
-const handicapModes: readonly BettingHandicapMode[] = ['final-total', 'hole-allocation'];
 
 export function createDefaultBettingPlayers(playerCount = 4): readonly BettingPlayer[] {
   const count = normalizePlayerCount(playerCount);
@@ -105,15 +74,13 @@ export function createDefaultBettingRound(input: { readonly id?: string; readonl
     createdAt: now,
     updatedAt: now,
     players: createDefaultBettingPlayers(input.playerCount ?? 4),
-    settings: { holeCount: 18, scoringMode: 'money', handicapMode: 'final-total' },
-    enabledGames: { ...defaultGameFlags },
-    gameUnits: cloneGameUnits(defaultGameUnits),
+    settings: { holeCount: 18, unitAmount: defaultOjangUnitAmount },
     holes: [],
   };
 }
 
 export function serializeBettingRound(round: BettingRound): string {
-  return JSON.stringify({ version: bettingLedgerStorageVersion, round });
+  return JSON.stringify({ version: bettingLedgerStorageVersion, round: cloneBettingRound(round) });
 }
 
 export function deserializeBettingRound(raw: string | null): BettingRound | null {
@@ -123,16 +90,7 @@ export function deserializeBettingRound(raw: string | null): BettingRound | null
 
   try {
     const parsed = JSON.parse(raw) as Partial<StoredBettingRoundPayload>;
-
-    if (parsed.version === bettingLedgerStorageVersion && isBettingRound(parsed.round)) {
-      return cloneBettingRound(parsed.round);
-    }
-
-    if ((parsed.version === 1 || parsed.version === 2) && parsed.round) {
-      return migrateLegacyBettingRound(parsed.round);
-    }
-
-    return null;
+    return isSupportedStorageVersion(parsed.version) ? normalizeBettingRoundPayload(parsed.round) : null;
   } catch {
     return null;
   }
@@ -152,7 +110,6 @@ export function loadBettingRound(storage: StorageLike | undefined): BettingRound
 
     for (const legacyKey of [legacyBettingActiveRoundStorageKeyV2, legacyBettingActiveRoundStorageKeyV1]) {
       const legacyRound = deserializeBettingRound(storage.getItem(legacyKey));
-
       if (legacyRound) {
         saveBettingRound(storage, legacyRound);
         return legacyRound;
@@ -216,16 +173,35 @@ export function cloneBettingRound(round: BettingRound): BettingRound {
     ...round,
     players: round.players.map((player) => ({ ...player })),
     settings: { ...round.settings },
-    enabledGames: { ...round.enabledGames },
-    gameUnits: cloneGameUnits(round.gameUnits),
     holes: round.holes.map(cloneHoleResult),
   };
 }
 
-function cloneGameUnits(units: BettingGameUnits): BettingGameUnits {
-  return Object.fromEntries(
-    bettingGameKeys.map((game) => [game, { ...units[game] }]),
-  ) as BettingGameUnits;
+export function normalizeBettingRoundPayload(value: unknown): BettingRound | null {
+  if (!isRecord(value) || !Array.isArray(value.players) || value.players.length < 2 || value.players.length > 4) {
+    return null;
+  }
+
+  const players = normalizePlayers(value.players);
+  if (!players || !hasUniquePlayerIds(players)) {
+    return null;
+  }
+
+  const id = typeof value.id === 'string' && value.id.trim() ? value.id.trim() : 'round-local-active';
+  const createdAt = isIsoString(value.createdAt) ? value.createdAt : new Date(0).toISOString();
+  const updatedAt = isIsoString(value.updatedAt) ? value.updatedAt : createdAt;
+  const holeCount = normalizeHoleCount(isRecord(value.settings) ? value.settings.holeCount : undefined);
+  const unitAmount = normalizeUnitAmount(value);
+  const holes = normalizeHoles(Array.isArray(value.holes) ? value.holes : [], players, holeCount);
+
+  return {
+    id,
+    createdAt,
+    updatedAt,
+    players,
+    settings: { holeCount, unitAmount },
+    holes,
+  };
 }
 
 function cloneHoleResult(hole: BettingHoleResult): BettingHoleResult {
@@ -233,192 +209,82 @@ function cloneHoleResult(hole: BettingHoleResult): BettingHoleResult {
     holeNumber: hole.holeNumber,
     par: normalizeHolePar(hole.par),
     backdoorOpen: hole.backdoorOpen === true,
+    nearPlayerId: hole.nearPlayerId ?? null,
     scores: hole.scores.map((score) => ({ ...score })),
-    events: hole.events.map((event) => ({ ...event })),
   };
 }
 
-function migrateLegacyBettingRound(value: unknown): BettingRound | null {
-  if (!isRecord(value) || !Array.isArray(value.players) || !Array.isArray(value.holes) || !isRecord(value.settings)) {
-    return null;
-  }
+function normalizePlayers(values: readonly unknown[]): readonly BettingPlayer[] | null {
+  const players = values.map((value): BettingPlayer | null => {
+    if (!isRecord(value) || !isNonEmptyString(value.id) || typeof value.name !== 'string' || !isIntegerInRange(value.handicap, -10, 54)) {
+      return null;
+    }
 
-  const players = value.players.map(readLegacyPlayer);
-  if (!players.every((player): player is BettingPlayer => player !== null) || players.length < 2 || players.length > 4 || !hasUniquePlayerIds(players)) {
-    return null;
-  }
+    return { id: value.id.trim(), name: value.name, handicap: value.handicap };
+  });
 
-  const settings = readLegacySettings(value.settings);
-  if (!settings) {
-    return null;
-  }
-
-  const holes = value.holes.map((hole) => readLegacyHole(hole, players));
-  if (!holes.every((hole): hole is BettingHoleResult => hole !== null)) {
-    return null;
-  }
-
-  const migrated: BettingRound = {
-    id: typeof value.id === 'string' && value.id.trim() ? value.id : 'round-local-active',
-    createdAt: typeof value.createdAt === 'string' && isIsoString(value.createdAt) ? value.createdAt : new Date(0).toISOString(),
-    updatedAt: typeof value.updatedAt === 'string' && isIsoString(value.updatedAt) ? value.updatedAt : new Date(0).toISOString(),
-    players,
-    settings,
-    enabledGames: { ...defaultGameFlags },
-    gameUnits: { ...defaultGameUnits },
-    holes,
-  };
-
-  return isBettingRound(migrated) ? cloneBettingRound(migrated) : null;
+  return players.every((player): player is BettingPlayer => player !== null) ? players : null;
 }
 
-function readLegacyPlayer(value: unknown): BettingPlayer | null {
-  if (!isRecord(value) || !isNonEmptyString(value.id) || typeof value.name !== 'string' || !isIntegerInRange(value.handicap, -10, 54)) {
-    return null;
-  }
+function normalizeHoles(values: readonly unknown[], players: readonly BettingPlayer[], holeCount: number): readonly BettingHoleResult[] {
+  const playerIds = players.map((player) => player.id);
+  return values
+    .map((value): BettingHoleResult | null => {
+      if (!isRecord(value) || !isIntegerInRange(value.holeNumber, 1, 18)) {
+        return null;
+      }
 
-  return { id: value.id, name: value.name, handicap: value.handicap };
+      const holeNumber = clampInteger(value.holeNumber, 1, holeCount);
+      const par = normalizeHolePar(typeof value.par === 'number' ? value.par : 4);
+      const nearPlayerId = typeof value.nearPlayerId === 'string' && playerIds.includes(value.nearPlayerId) ? value.nearPlayerId : null;
+      const scores = Array.isArray(value.scores)
+        ? value.scores.flatMap((score) => normalizeScore(score, playerIds))
+        : [];
+
+      return { holeNumber, par, backdoorOpen: value.backdoorOpen === true, nearPlayerId, scores };
+    })
+    .filter((hole): hole is BettingHoleResult => hole !== null)
+    .sort((left, right) => left.holeNumber - right.holeNumber);
 }
 
-function readLegacySettings(value: Record<string, unknown>): BettingRoundSettings | null {
-  if (!isIntegerInRange(value.holeCount, 1, 18) || !includesValue(scoringModes, value.scoringMode) || !includesValue(handicapModes, value.handicapMode)) {
-    return null;
+function normalizeScore(value: unknown, playerIds: readonly string[]): readonly BettingHoleScore[] {
+  if (!isRecord(value) || !isPlayerId(value.playerId, playerIds) || !isIntegerInRange(value.strokes, 1, maximumHoleScoreStrokes)) {
+    return [];
   }
 
-  return { holeCount: value.holeCount, scoringMode: value.scoringMode, handicapMode: value.handicapMode };
-}
-
-function readLegacyHole(value: unknown, players: readonly BettingPlayer[]): BettingHoleResult | null {
-  if (!isRecord(value) || !isIntegerInRange(value.holeNumber, 1, 18)) {
-    return null;
-  }
-
-  const scores = Array.isArray(value.scores)
-    ? value.scores.map((score) => readLegacyHoleScore(score, players))
-    : [];
-  const events = Array.isArray(value.events)
-    ? value.events.map((event) => readLegacyHoleEvent(event, players)).filter((event): event is BettingHoleEvent => event !== null)
-    : [];
-
-  if (!scores.every((score): score is BettingHoleScore => score !== null)) {
-    return null;
-  }
-
-  return {
-    holeNumber: value.holeNumber,
-    par: isIntegerInRange(value.par, 3, 5) ? value.par : 4,
-    backdoorOpen: value.backdoorOpen === true,
-    scores,
-    events,
-  };
-}
-
-function readLegacyHoleScore(value: unknown, players: readonly BettingPlayer[]): BettingHoleScore | null {
-  if (!isRecord(value) || !isPlayerId(value.playerId, players) || !isIntegerInRange(value.strokes, 1, maximumHoleScoreStrokes)) {
-    return null;
-  }
-
-  return { playerId: value.playerId, strokes: value.strokes };
-}
-
-function readLegacyHoleEvent(value: unknown, players: readonly BettingPlayer[]): BettingHoleEvent | null {
-  if (!isRecord(value) || !isNonEmptyString(value.id) || !isPlayerId(value.playerId, players) || value.event !== 'near-pin' || !isIntegerInRange(value.points, -100, 100)) {
-    return null;
-  }
-
-  return { id: value.id, playerId: value.playerId, event: 'near-pin', points: value.points };
-}
-
-function isBettingRound(value: unknown): value is BettingRound {
-  if (!isRecord(value)) {
-    return false;
+  const playerId = value.playerId;
+  if (value.holeInOne === true || value.entryMode === 'hio') {
+    return [{ playerId, strokes: 1, entryMode: 'hio', onGreenShots: 1, putts: 0, holeInOne: true }];
   }
 
   if (
-    !Array.isArray(value.players) ||
-    value.players.length < 2 ||
-    value.players.length > 4 ||
-    !value.players.every(isBettingPlayer) ||
-    !hasUniquePlayerIds(value.players)
+    value.entryMode === 'on-putt' &&
+    isIntegerInRange(value.onGreenShots, 1, 6) &&
+    isIntegerInRange(value.putts, 0, 5) &&
+    value.onGreenShots + value.putts === value.strokes
   ) {
-    return false;
+    return [{ playerId, strokes: value.strokes, entryMode: 'on-putt', onGreenShots: value.onGreenShots, putts: value.putts, holeInOne: false }];
   }
 
-  const players = value.players;
-
-  return (
-    typeof value.id === 'string' &&
-    value.id.trim().length > 0 &&
-    isIsoString(value.createdAt) &&
-    isIsoString(value.updatedAt) &&
-    isBettingRoundSettings(value.settings) &&
-    isBettingGameFlags(value.enabledGames) &&
-    isBettingGameUnits(value.gameUnits) &&
-    Array.isArray(value.holes) &&
-    value.holes.every((hole) => isBettingHoleResult(hole, players))
-  );
+  return [{ playerId, strokes: value.strokes, entryMode: 'manual' }];
 }
 
-function isBettingPlayer(value: unknown): value is BettingPlayer {
-  return isRecord(value) && isNonEmptyString(value.id) && typeof value.name === 'string' && isIntegerInRange(value.handicap, -10, 54);
+function normalizeUnitAmount(value: Record<string, unknown>): number {
+  const settings = isRecord(value.settings) ? value.settings : undefined;
+  if (isIntegerInRange(settings?.unitAmount, 1, 1_000_000)) {
+    return settings.unitAmount;
+  }
+
+  const oldStrokeMoney = isRecord(value.gameUnits) && isRecord(value.gameUnits.stroke) ? value.gameUnits.stroke.money : undefined;
+  return isIntegerInRange(oldStrokeMoney, 1, 1_000_000) ? oldStrokeMoney : defaultOjangUnitAmount;
 }
 
 function hasUniquePlayerIds(players: readonly BettingPlayer[]): boolean {
   return new Set(players.map((player) => player.id)).size === players.length;
 }
 
-function isBettingRoundSettings(value: unknown): value is BettingRoundSettings {
-  return (
-    isRecord(value) &&
-    isIntegerInRange(value.holeCount, 1, 18) &&
-    includesValue(scoringModes, value.scoringMode) &&
-    includesValue(handicapModes, value.handicapMode)
-  );
-}
-
-function isBettingGameFlags(value: unknown): value is BettingGameFlags {
-  return isRecord(value) && value.ojang === true;
-}
-
-function isBettingGameUnits(value: unknown): value is BettingGameUnits {
-  return isRecord(value) && isBettingGameUnit(value.ojang);
-}
-
-function isBettingGameUnit(value: unknown): value is BettingGameUnit {
-  return isRecord(value) && isIntegerInRange(value.points, 0, 100) && isIntegerInRange(value.money, 0, 1_000_000);
-}
-
-function isBettingHoleResult(value: unknown, players: readonly BettingPlayer[]): value is BettingHoleResult {
-  if (!isRecord(value) || !isIntegerInRange(value.holeNumber, 1, 18)) {
-    return false;
-  }
-
-  return (
-    (value.par === undefined || isIntegerInRange(value.par, 3, 5)) &&
-    (value.backdoorOpen === undefined || typeof value.backdoorOpen === 'boolean') &&
-    Array.isArray(value.scores) &&
-    value.scores.every((score) => isBettingHoleScore(score, players)) &&
-    Array.isArray(value.events) &&
-    value.events.every((event) => isBettingHoleEvent(event, players))
-  );
-}
-
-function isBettingHoleScore(value: unknown, players: readonly BettingPlayer[]): value is BettingHoleScore {
-  return isRecord(value) && isPlayerId(value.playerId, players) && isIntegerInRange(value.strokes, 1, maximumHoleScoreStrokes);
-}
-
-function isBettingHoleEvent(value: unknown, players: readonly BettingPlayer[]): value is BettingHoleEvent {
-  return (
-    isRecord(value) &&
-    isNonEmptyString(value.id) &&
-    isPlayerId(value.playerId, players) &&
-    includesValue(bettingEventKeys, value.event) &&
-    isIntegerInRange(value.points, -100, 100)
-  );
-}
-
-function isPlayerId(value: unknown, players: readonly BettingPlayer[]): value is string {
-  return typeof value === 'string' && players.some((player) => player.id === value);
+function isPlayerId(value: unknown, playerIds: readonly string[]): value is string {
+  return typeof value === 'string' && playerIds.includes(value);
 }
 
 function isIntegerInRange(value: unknown, min: number, max: number): value is number {
@@ -437,8 +303,8 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
 }
 
-function includesValue<T extends string>(values: readonly T[], value: unknown): value is T {
-  return typeof value === 'string' && values.includes(value as T);
+function isSupportedStorageVersion(value: unknown): value is 1 | 2 | typeof bettingLedgerStorageVersion {
+  return value === 1 || value === 2 || value === bettingLedgerStorageVersion;
 }
 
 function normalizePlayerCount(playerCount: number): 2 | 3 | 4 {
@@ -446,7 +312,15 @@ function normalizePlayerCount(playerCount: number): 2 | 3 | 4 {
   return Math.min(4, Math.max(2, rounded)) as 2 | 3 | 4;
 }
 
+function normalizeHoleCount(value: unknown): number {
+  return typeof value === 'number' ? clampInteger(value, 1, 18) : 18;
+}
+
 function normalizeHolePar(value: number): number {
-  const rounded = Number.isFinite(value) ? Math.round(value) : 4;
-  return Math.min(5, Math.max(3, rounded));
+  return clampInteger(value, 3, 5);
+}
+
+function clampInteger(value: number, min: number, max: number): number {
+  const integer = Number.isFinite(value) ? Math.round(value) : min;
+  return Math.min(max, Math.max(min, integer));
 }
