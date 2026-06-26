@@ -58,7 +58,7 @@ describe('useBettingRoundSession local state helpers', () => {
     expect(sessionState.storageStatus).toBe('loaded');
     expect(sessionState.hasSavedRound).toBe(true);
     expect(sessionState.round.id).toBe('round-saved');
-    expect(sessionState.round.settings.unitAmount).toBe(1000);
+    expect(sessionState.round.settings.unitAmount).toBe(5000);
     expect(sessionState.round.players.map((player) => player.name)).not.toContain('캐디 프리셋은 플레이어가 아님');
     expect(storage.calls).toEqual([`get:${bettingActiveRoundStorageKey}`]);
   });
@@ -71,7 +71,7 @@ describe('useBettingRoundSession local state helpers', () => {
     expect(corruptState.storageStatus).toBe('default');
     expect(corruptState.round.players).toHaveLength(4);
     expect(corruptState.round.createdAt).toBe('2026-06-25T02:00:00.000Z');
-    expect(corruptState.round.settings.unitAmount).toBe(1000);
+    expect(corruptState.round.settings.unitAmount).toBe(5000);
     expect(memoryState.storageStatus).toBe('memory-only');
     expect(memoryState.storageMessage).toContain('현재 세션 메모리');
   });

@@ -346,11 +346,11 @@ function expandScores(value: unknown, players: readonly BettingPlayer[]): readon
       return null;
     }
 
-    if (mode === 'hio' || score[5] === 1) {
-      return { playerId: player.id, strokes: 1, entryMode: 'hio', onGreenShots: 1, putts: 0, holeInOne: true };
+    if ((mode === 'hio' || score[5] === 1) && score[1] === 1) {
+      return { playerId: player.id, strokes: score[1], entryMode: 'hio', onGreenShots: 1, putts: 0, holeInOne: true };
     }
 
-    if (mode === 'on-putt') {
+    if (mode === 'on-putt' && score[3] + score[4] === score[1]) {
       return { playerId: player.id, strokes: score[1], entryMode: 'on-putt', onGreenShots: score[3], putts: score[4], holeInOne: false };
     }
 

@@ -80,7 +80,7 @@ describe('Ojang ledger local storage boundary', () => {
     expect(createDefaultBettingRound({ playerCount: 99 }).players).toHaveLength(4);
     expect(createDefaultBettingRound().players.map((player) => player.name)).toEqual(['', '', '', '']);
     expect(createDefaultBettingRound().players.map((player) => player.handicap)).toEqual([0, 0, 0, 0]);
-    expect(createDefaultBettingRound().settings).toEqual({ holeCount: 18, unitAmount: 1000 });
+    expect(createDefaultBettingRound().settings).toEqual({ holeCount: 18, unitAmount: 5000 });
   });
 
   it('round-trips intentionally blank player names for in-progress setup editing', () => {
@@ -119,6 +119,27 @@ describe('Ojang ledger local storage boundary', () => {
       nearPlayerId: null,
       scores: [{ playerId: 'player-1', strokes: 4, entryMode: 'manual' }],
     });
+  });
+
+  it('preserves strokes as canonical truth when restored score metadata is inconsistent', () => {
+    const round = {
+      ...createDefaultBettingRound({ now: '2026-06-25T00:00:00.000Z' }),
+      holes: [{
+        holeNumber: 1,
+        par: 4,
+        backdoorOpen: false,
+        nearPlayerId: null,
+        scores: [
+          { playerId: 'player-1', strokes: 5, entryMode: 'hio' as const, onGreenShots: 1, putts: 0, holeInOne: true },
+          { playerId: 'player-2', strokes: 4, entryMode: 'on-putt' as const, onGreenShots: 1, putts: 2, holeInOne: false },
+        ],
+      }],
+    };
+
+    expect(deserializeBettingRound(JSON.stringify({ version: 3, round }))?.holes[0]?.scores).toEqual([
+      { playerId: 'player-1', strokes: 5, entryMode: 'manual' },
+      { playerId: 'player-2', strokes: 4, entryMode: 'manual' },
+    ]);
   });
 
   it('migrates previous betting round keys into the current explicit v3 Ojang shape', () => {

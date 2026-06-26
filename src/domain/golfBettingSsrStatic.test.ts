@@ -5,6 +5,7 @@ import designSource from '../../DESIGN.md?raw';
 import indexSource from '../../index.html?raw';
 import readmeSource from '../../README.md?raw';
 import appSource from '../App.tsx?raw';
+import scorecardExportSource from '../scorecardExport.ts?raw';
 import scorecardGridSource from '../ScorecardGrid.tsx?raw';
 import stylesSource from '../styles.css?raw';
 import { App } from '../App';
@@ -120,13 +121,15 @@ describe('Korean traditional Ojang ledger SSR/static integration contract', () =
   });
 
   it('keeps the app source and stylesheet oriented around mobile Ojang ledger surfaces', () => {
-    const appAndStyles = `${appSource}\n${stylesSource}`;
+    const appAndStyles = `${appSource}\n${stylesSource}\n${scorecardExportSource}`;
 
     expect(appAndStyles).toMatch(/라운드 세팅|round setup|RoundSetup/i);
     expect(appAndStyles).toMatch(/홀 입력|hole input|HoleInput/i);
     expect(appSource).toMatch(/<h1 id="app-title">오늘 폼 정말 좋으시네요 \^0\^<\/h1>/);
     expect(appSource).toMatch(/오장 룰 자세히 보기/);
     expect(appSource).not.toMatch(/한국형 골프 내기 정산/);
+    expect(scorecardExportSource).not.toMatch(/펀골프 정산 장부/);
+    expect(scorecardExportSource).toMatch(/전통 오장 스코어카드/);
     expect(appSource).not.toMatch(/2~4명 라운드 세팅부터 홀 입력, 이벤트, 미션, 순정산, 공유 카드까지/);
     expect(scorecardGridSource).not.toMatch(/scorecard-hole-grid|scorecard-hole/);
     expect(appSource).toMatch(/score-row-context/);

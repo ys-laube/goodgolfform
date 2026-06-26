@@ -75,6 +75,8 @@ describe('editable input draft helpers', () => {
     expect(appSource).toContain('function updateUnitAmountDraft(value: string)');
     expect(appSource).toContain('session.updateUnitAmount(unitAmount)');
     expect(scorecardExportSource).toContain('export function createScorecardExportSvg');
+    expect(scorecardExportSource).toContain('전통 오장 스코어카드 · 로컬 내보내기');
+    expect(scorecardExportSource).not.toContain('펀골프 정산 장부');
     expect(scorecardExportSource).toContain('new Intl.DateTimeFormat');
   });
 });

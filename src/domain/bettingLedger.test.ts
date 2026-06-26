@@ -55,7 +55,7 @@ describe('traditional Ojang ledger setup', () => {
     expect(createDefaultRound({ playerCount: 4 }).players).toHaveLength(4);
     expect(createDefaultRound({ playerCount: 4 }).players.map((player) => player.name)).toEqual(['', '', '', '']);
     expect(createDefaultRound({ playerCount: 4 }).players.map((player) => player.handicap)).toEqual([0, 0, 0, 0]);
-    expect(createDefaultRound({ playerCount: 4 }).settings).toMatchObject({ holeCount: 18, unitAmount: 1000 });
+    expect(createDefaultRound({ playerCount: 4 }).settings).toMatchObject({ holeCount: 18, unitAmount: 5000 });
   });
 
   it('rejects rounds outside the 2–4 player field scope', () => {
@@ -68,22 +68,21 @@ describe('traditional Ojang ledger setup', () => {
 describe('traditional Ojang settlement formulas', () => {
   it('settles every completed hole as all-vs-all pairwise stroke differences', () => {
     const ledger = calculateRoundLedger(fixtureRound({
-      holes: [hole(1, 4, { a: 4, b: 5, c: 6, d: 4 })],
+      settings: { holeCount: 18, unitAmount: 5000 },
+      holes: [hole(1, 4, { a: 4, b: 5, c: 5, d: 6 })],
     }));
 
     expect(ledger.completedHoleNumbers).toEqual([1]);
     expect(ledger.playerBalances).toMatchObject({
-      a: { money: 3000 },
-      b: { money: -1000 },
-      c: { money: -5000 },
-      d: { money: 3000 },
+      a: { money: 20000 },
+      b: { money: 0 },
+      c: { money: 0 },
+      d: { money: -20000 },
     });
     expect(balanceSum(Object.fromEntries(Object.entries(ledger.playerBalances).map(([id, value]) => [id, value.money])))).toBeCloseTo(0, 2);
     expect(ledger.breakdownRows.some((row) => row.label === '오장 타수차' && row.detail.includes('전원 1:1'))).toBe(true);
     expect(ledger.netTransfers).toEqual([
-      { payerId: 'c', payeeId: 'a', amount: 3000, unit: 'money' },
-      { payerId: 'c', payeeId: 'd', amount: 2000, unit: 'money' },
-      { payerId: 'b', payeeId: 'd', amount: 1000, unit: 'money' },
+      { payerId: 'd', payeeId: 'a', amount: 20000, unit: 'money' },
     ]);
   });
 
@@ -93,10 +92,10 @@ describe('traditional Ojang settlement formulas', () => {
     }));
 
     expect(birdieLedger.playerBalances).toMatchObject({
-      a: { money: 9000 },
-      b: { money: -3000 },
-      c: { money: -3000 },
-      d: { money: -3000 },
+      a: { money: 35000 },
+      b: { money: -11666.67 },
+      c: { money: -11666.67 },
+      d: { money: -11666.66 },
     });
     expect(birdieLedger.breakdownRows.some((row) => row.label.includes('배판') && row.detail.includes('버디 이상'))).toBe(true);
     expect(birdieLedger.breakdownRows.some((row) => row.label.includes('버디 값'))).toBe(true);
@@ -109,10 +108,10 @@ describe('traditional Ojang settlement formulas', () => {
     }));
 
     expect(carryLedger.playerBalances).toMatchObject({
-      a: { money: 6000 },
-      b: { money: -2000 },
-      c: { money: -2000 },
-      d: { money: -2000 },
+      a: { money: 30000 },
+      b: { money: -10000 },
+      c: { money: -10000 },
+      d: { money: -10000 },
     });
     expect(carryLedger.breakdownRows[0]?.label).toContain('4명 동타');
     expect(carryLedger.breakdownRows.some((row) => row.label.includes('배판') && row.detail.includes('이월'))).toBe(true);
@@ -124,16 +123,39 @@ describe('traditional Ojang settlement formulas', () => {
     }));
     const successRow = nearSuccess.breakdownRows.find((row) => row.label.includes('니어 성공'));
 
-    expect(successRow?.balanceDeltas).toMatchObject({ a: 3000, b: -1000, c: -1000, d: -1000 });
-    expect(nearSuccess.playerBalances.a.money).toBe(9000);
+    expect(successRow?.balanceDeltas).toMatchObject({ a: 5000, b: -1666.67, c: -1666.67, d: -1666.66 });
+    expect(nearSuccess.playerBalances.a.money).toBe(35000);
 
     const nearFail = calculateRoundLedger(fixtureRound({
       holes: [hole(1, 3, { a: 3, b: 4, c: 4, d: 4 }, { nearPlayerId: 'b' })],
     }));
     const failRow = nearFail.breakdownRows.find((row) => row.label.includes('니뻐'));
 
-    expect(failRow?.balanceDeltas).toMatchObject({ a: 1000, b: -3000, c: 1000, d: 1000 });
+    expect(failRow?.balanceDeltas).toMatchObject({ a: 1666.67, b: -5000, c: 1666.67, d: 1666.66 });
     expect(nearFail.breakdownRows.some((row) => row.detail.includes('니뻐'))).toBe(true);
+  });
+
+  it('preserves canonical strokes when score metadata is inconsistent', () => {
+    const ledger = calculateRoundLedger(fixtureRound({
+      players: players.slice(0, 2),
+      settings: { holeCount: 1, unitAmount: 1000 },
+      holes: [{
+        holeNumber: 1,
+        par: 4,
+        backdoorOpen: false,
+        scores: [
+          { playerId: 'a', strokes: 5, entryMode: 'hio', onGreenShots: 1, putts: 0, holeInOne: true },
+          { playerId: 'b', strokes: 4, entryMode: 'on-putt', onGreenShots: 1, putts: 2 },
+        ],
+      }],
+    }));
+
+    expect(ledger.normalizedRound.holes[0]?.scores).toEqual([
+      { playerId: 'a', strokes: 5, entryMode: 'manual' },
+      { playerId: 'b', strokes: 4, entryMode: 'manual' },
+    ]);
+    expect(ledger.playerBalances).toMatchObject({ a: { money: -1000 }, b: { money: 1000 } });
+    expect(ledger.breakdownRows.some((row) => row.label === '홀인원 값')).toBe(false);
   });
 
   it('applies final-total handicap only as the final delta row without mutating raw strokes', () => {

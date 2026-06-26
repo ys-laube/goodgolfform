@@ -31,7 +31,7 @@ const svgNamespace = 'http' + '://www.w3.org/2000/svg';
 export function createScorecardExportSvg(input: ScorecardExportInput): string {
   const width = horizontalPadding * 2 + labelWidth + cellWidth * input.holes.length;
   const height = topHeaderHeight + rowHeight * (3 + input.players.length) + bottomPadding;
-  const title = input.courseName.trim() || input.roundName.trim() || '펀골프 스코어카드';
+  const title = input.courseName.trim() || input.roundName.trim() || '전통 오장 스코어카드';
   const subtitle = [input.roundName.trim(), input.summary.trim()].filter(Boolean).join(' · ') || '로컬 정산 스코어카드';
   const generatedAt = formatExportTimestamp(input.generatedAt);
   const headerRowY = topHeaderHeight;
@@ -46,7 +46,7 @@ export function createScorecardExportSvg(input: ScorecardExportInput): string {
     '<style><![CDATA[text{font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Pretendard","Noto Sans KR",sans-serif}.label{font-size:17px;font-weight:800;fill:#f8fafc}.small{font-size:13px;font-weight:700;fill:#cbd5e1}.cell{font-size:15px;font-weight:900}.muted{fill:#94a3b8}.balance{font-size:14px;font-weight:800;fill:#d1fadf}]]></style>',
     '</defs>',
     '<rect width="100%" height="100%" rx="28" fill="url(#bg)"/>',
-    `<text x="${horizontalPadding}" y="48" class="small">펀골프 정산 장부 · 로컬 내보내기</text>`,
+    `<text x="${horizontalPadding}" y="48" class="small">전통 오장 스코어카드 · 로컬 내보내기</text>`,
     `<text x="${horizontalPadding}" y="86" font-size="30" font-weight="950" fill="#ffffff">${escapeXml(title)}</text>`,
     `<text x="${horizontalPadding}" y="116" class="small">${escapeXml(subtitle)}</text>`,
     `<text x="${width - horizontalPadding}" y="48" text-anchor="end" class="small">${escapeXml(generatedAt)}</text>`,

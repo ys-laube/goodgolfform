@@ -75,7 +75,7 @@ export type RoundLedger = {
   readonly breakdownRows: readonly LedgerBreakdownRow[];
 };
 
-export const defaultOjangUnitAmount = 1_000;
+export const defaultOjangUnitAmount = 5_000;
 export const maximumOjangScoreStrokes = 30;
 
 export const ledgerCalculationOrder = [
@@ -378,14 +378,7 @@ function underParBonusRows(round: BettingRound, hole: HoleResult, scores: readon
       return [];
     }
 
-    const deltas = createMutableBalances(round.players);
-    for (const player of round.players) {
-      if (player.id === entry.player.id) {
-        continue;
-      }
-      deltas[entry.player.id] = roundToTwo((deltas[entry.player.id] ?? 0) + bonusUnits * round.settings.unitAmount);
-      deltas[player.id] = roundToTwo((deltas[player.id] ?? 0) - bonusUnits * round.settings.unitAmount);
-    }
+    const deltas = createSingleAwardDeltas(round.players, entry.player.id, bonusUnits * round.settings.unitAmount);
 
     const label = entry.score.holeInOne || entry.score.entryMode === 'hio'
       ? '홀인원 값'
@@ -399,7 +392,7 @@ function underParBonusRows(round: BettingRound, hole: HoleResult, scores: readon
       holeNumber: hole.holeNumber,
       playerId: entry.player.id,
       label,
-      detail: `${hole.holeNumber}번 홀 ${displayName(entry.player)} ${entry.score.strokes}타(${relativeScoreText(entry.score.strokes, hole.par)}) · ${bonusUnits}타값을 나머지 플레이어와 정산합니다.`,
+      detail: `${hole.holeNumber}번 홀 ${displayName(entry.player)} ${entry.score.strokes}타(${relativeScoreText(entry.score.strokes, hole.par)}) · ${bonusUnits}타값을 나머지 플레이어에게 나누어 정산합니다.`,
       money: positiveTotal(deltas),
       balanceDeltas: deltas,
     })];
@@ -433,14 +426,7 @@ function parThreeNearRow(round: BettingRound, hole: HoleResult, scores: readonly
   }
 
   const success = nearEntry.score.strokes <= hole.par;
-  const deltas = createMutableBalances(round.players);
-  for (const player of round.players) {
-    if (player.id === nearEntry.player.id) {
-      continue;
-    }
-    deltas[nearEntry.player.id] = roundToTwo((deltas[nearEntry.player.id] ?? 0) + (success ? round.settings.unitAmount : -round.settings.unitAmount));
-    deltas[player.id] = roundToTwo((deltas[player.id] ?? 0) + (success ? -round.settings.unitAmount : round.settings.unitAmount));
-  }
+  const deltas = createSingleAwardDeltas(round.players, nearEntry.player.id, success ? round.settings.unitAmount : -round.settings.unitAmount);
 
   return createBreakdownRow({
     game: 'ojang',
@@ -449,11 +435,28 @@ function parThreeNearRow(round: BettingRound, hole: HoleResult, scores: readonly
     playerId: nearEntry.player.id,
     label: success ? '파3 니어 성공' : '파3 니어 실패 · 니뻐',
     detail: success
-      ? `${hole.holeNumber}번 홀 니어 ${displayName(nearEntry.player)} 파 이하 성공 · 1타값을 받습니다.`
-      : `${hole.holeNumber}번 홀 니어 ${displayName(nearEntry.player)} 파 실패(니뻐) · 1타값을 냅니다.`,
+      ? `${hole.holeNumber}번 홀 니어 ${displayName(nearEntry.player)} 파 이하 성공 · 1타값을 나누어 받습니다.`
+      : `${hole.holeNumber}번 홀 니어 ${displayName(nearEntry.player)} 파 실패(니뻐) · 1타값을 나누어 냅니다.`,
     money: positiveTotal(deltas),
     balanceDeltas: deltas,
   });
+}
+
+function createSingleAwardDeltas(players: readonly Player[], selectedPlayerId: PlayerId, amount: number): BalanceMap {
+  const deltas = createMutableBalances(players);
+  const otherPlayers = players.filter((player) => player.id !== selectedPlayerId);
+  deltas[selectedPlayerId] = roundToTwo(amount);
+
+  let assignedToOthers = 0;
+  otherPlayers.forEach((player, index) => {
+    const delta = index === otherPlayers.length - 1
+      ? roundToTwo(-amount - assignedToOthers)
+      : roundToTwo(-amount / otherPlayers.length);
+    deltas[player.id] = delta;
+    assignedToOthers = roundToTwo(assignedToOthers + delta);
+  });
+
+  return roundBalances(deltas);
 }
 
 function rawStrokeTotals(round: BettingRound, completed: readonly HoleResult[]): BalanceMap {
@@ -534,14 +537,14 @@ function normalizeScore(score: HoleScore, playerId: PlayerId): HoleScore {
   const strokes = clampInteger(score.strokes, 1, maximumOjangScoreStrokes);
   const onGreenShots = normalizeOptionalInteger(score.onGreenShots, 1, 6);
   const putts = normalizeOptionalInteger(score.putts, 0, 5);
-  const holeInOne = score.holeInOne === true || score.entryMode === 'hio';
+  const holeInOne = (score.holeInOne === true || score.entryMode === 'hio') && strokes === 1;
 
   if (holeInOne) {
-    return { playerId, strokes: 1, entryMode: 'hio', onGreenShots: 1, putts: 0, holeInOne: true };
+    return { playerId, strokes, entryMode: 'hio', onGreenShots: 1, putts: 0, holeInOne: true };
   }
 
-  if (score.entryMode === 'on-putt' && onGreenShots !== undefined && putts !== undefined) {
-    return { playerId, strokes: clampInteger(onGreenShots + putts, 1, maximumOjangScoreStrokes), entryMode: 'on-putt', onGreenShots, putts, holeInOne: false };
+  if (score.entryMode === 'on-putt' && onGreenShots !== undefined && putts !== undefined && onGreenShots + putts === strokes) {
+    return { playerId, strokes, entryMode: 'on-putt', onGreenShots, putts, holeInOne: false };
   }
 
   return { playerId, strokes, entryMode: 'manual' };

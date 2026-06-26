@@ -22,11 +22,13 @@ describe('local scorecard SVG export', () => {
     expect(svg).toContain('<svg xmlns="http://www.w3.org/2000/svg"');
     expect(svg).toContain('남서울 &amp; OUT');
     expect(svg).toContain('금요 &lt;라운드&gt;');
+    expect(svg).toContain('전통 오장 스코어카드 · 로컬 내보내기');
     expect(svg).toContain('fill="#101828">1H');
     expect(svg).toContain('뒷문');
     expect(svg).toContain('오픈');
     expect(svg).toContain('파 · 4타');
     expect(svg).not.toContain('.cell{font-size:15px;font-weight:900;fill');
+    expect(svg).not.toContain('펀골프 정산 장부');
     expect(svg).not.toContain('<script');
   });
 

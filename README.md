@@ -5,7 +5,7 @@ FunGolf is a Korean, mobile-first traditional 오장 settlement ledger for frien
 ## Product scope
 
 - Hero title is exactly `오늘 폼 정말 좋으시네요 ^0^` with an `오장 룰 자세히 보기` button for the built-in rule explanation.
-- 2–4 player setup with editable blank names, final-total handicaps, and configurable 타당 금액. Default 타당 금액 is 1,000원.
+- 2–4 player setup with editable blank names, final-total handicaps, and configurable 타당 금액. Default 타당 금액 is 5,000원.
 - One ruleset only: traditional 오장. Previous side-mode toggles, bonus cards, team side games, scoring-mode switches, and hole-allocation handicap modes are intentionally removed.
 - Front/back scorecard input with 1–18 holes, par row, 뒷문오픈 row, player rows, 온/펏 buttons, 홀인원, 파3 니어 selection, and optional direct backdoor strokes.
 - Settlement engine calculates pairwise 타수차, 배판, 4명 동타 이월, 버디/이글/홀인원 값, 파3 니어/니뻐, and final-total handicap delta.

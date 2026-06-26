@@ -7,7 +7,7 @@ export const legacyShotAdvicePresetStorageKey = 'korean-caddie:preset-distances:
 export const knownLegacyShotAdviceStorageKeys = [legacyShotAdvicePresetStorageKey] as const;
 export const bettingPlayerCountOptions = [2, 3, 4] as const;
 export const maximumHoleScoreStrokes = 30;
-export const defaultOjangUnitAmount = 1_000;
+export const defaultOjangUnitAmount = 5_000;
 
 export type StorageLike = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>;
 export type BettingScoreEntryMode = 'on-putt' | 'hio' | 'manual';
@@ -264,8 +264,8 @@ function normalizeScore(value: unknown, playerIds: readonly string[]): BettingHo
   }
 
   const playerId = value.playerId;
-  if (value.holeInOne === true || value.entryMode === 'hio') {
-    return { playerId, strokes: 1, entryMode: 'hio', onGreenShots: 1, putts: 0, holeInOne: true };
+  if ((value.holeInOne === true || value.entryMode === 'hio') && value.strokes === 1) {
+    return { playerId, strokes: value.strokes, entryMode: 'hio', onGreenShots: 1, putts: 0, holeInOne: true };
   }
 
   if (
