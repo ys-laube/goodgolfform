@@ -141,8 +141,8 @@ export function useScorecardController({ round, session }: ScorecardControllerOp
   };
 }
 
-export function parseIntegerDraft(value: string, fallback: number): number {
-  return parseEditableIntegerDraft(value) ?? fallback;
+export function parseIntegerDraft(value: string, defaultValue: number): number {
+  return parseEditableIntegerDraft(value) ?? defaultValue;
 }
 
 function commitIntegerDraft(value: string, commit: (parsedValue: number) => void) {

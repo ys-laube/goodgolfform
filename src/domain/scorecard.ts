@@ -90,7 +90,7 @@ export type ScorecardRoundView = {
   readonly memoHighlights: readonly ScorecardMemoHighlight[];
 };
 
-const fallbackPlayers: readonly ScorecardPlayer[] = [
+const blankPlayerTemplates: readonly ScorecardPlayer[] = [
   { id: 'player-1', name: '' },
   { id: 'player-2', name: '' },
   { id: 'player-3', name: '' },
@@ -99,7 +99,7 @@ const fallbackPlayers: readonly ScorecardPlayer[] = [
 
 export function createDefaultScorecardPlayers(playerCount = 1): readonly ScorecardPlayer[] {
   const count = normalizePlayerCount(playerCount);
-  return fallbackPlayers.slice(0, count).map((player) => ({ ...player }));
+  return blankPlayerTemplates.slice(0, count).map((player) => ({ ...player }));
 }
 
 export function createDefaultScorecardRound(input: {
@@ -168,7 +168,7 @@ export function applyPlayerCountMutation(round: ScorecardRound, playerCount: num
   const nextPlayerCount = normalizePlayerCount(playerCount);
   const usedPlayerIds = new Set<string>();
   const players = Array.from({ length: nextPlayerCount }, (_, index) => {
-    const player = round.players[index] ?? fallbackPlayers[index];
+    const player = round.players[index] ?? blankPlayerTemplates[index];
     const id = uniquePlayerId(player.id, usedPlayerIds, index + 1);
     usedPlayerIds.add(id);
     return { id, name: player.name ?? '' };
@@ -385,7 +385,7 @@ function cellViewForScore(playerId: string, holeNumber: number, par: number, sco
     playerId,
     holeNumber,
     main: relativeScoreLabel(relative),
-    sub: score.entryMode === 'manual' ? `${score.strokes}타` : `온 ${score.onGreenShots ?? 0} · 펏 ${score.putts ?? 0}`,
+    sub: score.entryMode === 'manual' ? '' : `온 ${score.onGreenShots ?? 0} · 펏 ${score.putts ?? 0}`,
     strokes: score.strokes,
     relative,
   };
@@ -523,19 +523,19 @@ function normalizeHolePar(value: unknown): number {
   return clampInteger(typeof value === 'number' ? value : 4, 3, 5);
 }
 
-function uniquePlayerId(candidate: string, usedIds: ReadonlySet<string>, fallbackIndex: number): string {
+function uniquePlayerId(candidate: string, usedIds: ReadonlySet<string>, defaultIndex: number): string {
   const trimmed = candidate.trim();
   if (trimmed && !usedIds.has(trimmed)) {
     return trimmed;
   }
 
-  let suffix = fallbackIndex;
-  let fallback = `player-${suffix}`;
-  while (usedIds.has(fallback)) {
+  let suffix = defaultIndex;
+  let generatedId = `player-${suffix}`;
+  while (usedIds.has(generatedId)) {
     suffix += 1;
-    fallback = `player-${suffix}`;
+    generatedId = `player-${suffix}`;
   }
-  return fallback;
+  return generatedId;
 }
 
 function hasUniquePlayerIds(players: readonly ScorecardPlayer[]): boolean {

@@ -54,6 +54,17 @@ describe('simple scorecard domain', () => {
     expect(view.reviews[0]).toMatchObject({ completedHoles: 1, totalStrokes: 4, totalRelative: 0, averageOnGreenShots: 2, averagePutts: 2 });
   });
 
+  it('keeps direct-stroke fallback out of the scorecard annotation slot', () => {
+    const round = applyHoleScoreMutation(createDefaultScorecardRound(), 1, 'player-1', {
+      strokes: 7,
+      entryMode: 'manual',
+    });
+
+    const view = buildScorecardView(round);
+
+    expect(view.holes[0]?.cells[0]).toMatchObject({ main: '+3', sub: '', strokes: 7, relative: 3 });
+  });
+
   it('calculates simple review counts, front/back totals, 3-putt count, and memo highlights', () => {
     let round = applyPlayerCountMutation(createDefaultScorecardRound(), 2);
     round = applyHoleScoreMutation(round, 1, 'player-1', { strokes: 3, entryMode: 'on-putt', onGreenShots: 1, putts: 2 });
@@ -67,7 +78,7 @@ describe('simple scorecard domain', () => {
     expect(buildScorecardView(round).memoHighlights).toEqual([{ holeNumber: 10, memo: '후반 첫 홀 드라이버 우측, 4펏' }]);
   });
 
-  it('uses display fallback without mutating blank stored names', () => {
+  it('uses display labels without mutating blank stored names', () => {
     const round = createDefaultScorecardRound();
     expect(round.players[0]?.name).toBe('');
     expect(displayPlayerName(round.players[0]!, 0)).toBe('1번 플레이어');

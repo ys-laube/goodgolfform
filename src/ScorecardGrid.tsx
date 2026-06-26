@@ -106,7 +106,7 @@ export function ScorecardGrid({
                     aria-label={`${displayPlayerName(player, playerIndex)} ${scorecardHoleNumber}번 홀 ${cell?.main ?? '미입력'}`}
                   >
                     <strong>{cell?.main ?? '—'}</strong>
-                    <span>{cell?.sub || '온 · 펏'}</span>
+                    <span>{cell ? cell.sub : '온 · 펏'}</span>
                   </button>
                 );
               })}

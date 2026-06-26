@@ -15,11 +15,3 @@ export function availableLocalStorage(): StorageLike | undefined {
     return undefined;
   }
 }
-
-export function currentMatchMedia(): Window['matchMedia'] | undefined {
-  try {
-    return browserWindow()?.matchMedia;
-  } catch {
-    return undefined;
-  }
-}
