@@ -499,8 +499,6 @@ button:focus-visible {
 }
 
 .share-card {
-  position: sticky;
-  bottom: max(0.8rem, env(safe-area-inset-bottom));
   border-color: rgba(16, 24, 40, 0.12);
   background:
     linear-gradient(135deg, rgba(16, 24, 40, 0.96), rgba(29, 78, 216, 0.88)),
@@ -595,7 +593,7 @@ button:focus-visible {
   }
 
   .share-actions {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
