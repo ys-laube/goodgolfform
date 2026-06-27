@@ -36,8 +36,8 @@ describe('simple scorecard static guardrails', () => {
     expect(html).toContain('온');
     expect(html).toContain('펏');
     expect(html).toContain('라운드 리뷰');
-    expect(html).toContain('이미지 저장');
-    expect(html).toContain('스코어카드 저장');
+    expect(html).toContain('스코어카드 내보내기');
+    expect(html).toContain('카카오톡 등으로 내보냅니다');
     expect(html).not.toContain('스코어카드 PNG 저장');
   });
 
@@ -81,6 +81,8 @@ describe('simple scorecard static guardrails', () => {
 
     expect(styles).toContain('grid-template-columns: 2.2rem repeat(3, minmax(2.75rem, 1fr))');
     expect(styles).toContain('grid-row: 1 / span 2');
+    expect(styles).toContain('align-self: start');
+    expect(styles).toContain('min-height: 2.75rem');
     expect(styles).toContain('.choice-chip');
     expect(styles).toContain('width: 100%');
   });

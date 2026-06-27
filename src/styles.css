@@ -347,8 +347,13 @@ input:focus, textarea:focus { border-color: rgba(37, 99, 235, 0.6); box-shadow: 
   }
 
   .button-row > span {
+    display: flex;
     grid-row: 1 / span 2;
+    align-self: start;
+    align-items: center;
+    justify-content: center;
     width: auto;
+    min-height: 2.75rem;
     text-align: center;
   }
 
