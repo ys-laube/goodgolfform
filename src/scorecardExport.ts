@@ -11,6 +11,10 @@ export type ScorecardExportSaveResult =
   | { readonly ok: true; readonly method: 'photo-menu' | 'download' }
   | { readonly ok: false; readonly reason: 'browser-unavailable' | 'conversion-failed' | 'share-cancelled' };
 
+export type ScorecardExportShareResult =
+  | { readonly ok: true; readonly method: 'photo-menu' }
+  | { readonly ok: false; readonly reason: 'browser-unavailable' | 'share-unavailable' | 'share-cancelled' | 'share-failed' };
+
 const cellWidth = 78;
 const rowHeight = 52;
 const labelWidth = 140;
@@ -70,30 +74,54 @@ export function createScorecardExportSvg(input: ScorecardExportInput): string {
   ].join('');
 }
 
-export async function saveScorecardExportPng(fileName: string, svg: string): Promise<ScorecardExportSaveResult> {
+export async function createScorecardExportPngBlob(svg: string): Promise<Blob | null> {
   if (typeof document === 'undefined' || typeof Image === 'undefined' || typeof URL === 'undefined') {
+    return null;
+  }
+
+  return svgToPngBlob(svg);
+}
+
+export async function shareScorecardExportPng(fileName: string, blob: Blob): Promise<ScorecardExportShareResult> {
+  if (typeof File === 'undefined' || typeof navigator === 'undefined') {
     return { ok: false, reason: 'browser-unavailable' };
   }
 
-  const blob = await svgToPngBlob(svg);
+  const file = new File([blob], fileName, { type: pngMimeType });
+  if (!canOpenPhotoSaveMenu(navigator, file)) {
+    return { ok: false, reason: 'share-unavailable' };
+  }
+
+  try {
+    await navigator.share({ files: [file], title: '스코어카드 사진' });
+    return { ok: true, method: 'photo-menu' };
+  } catch (error) {
+    if (error instanceof Error && error.name === 'AbortError') {
+      return { ok: false, reason: 'share-cancelled' };
+    }
+    return { ok: false, reason: 'share-failed' };
+  }
+}
+
+export function downloadScorecardExportPng(fileName: string, blob: Blob): void {
+  downloadBlob(fileName, blob);
+}
+
+export async function saveScorecardExportPng(fileName: string, svg: string): Promise<ScorecardExportSaveResult> {
+  const blob = await createScorecardExportPngBlob(svg);
   if (!blob) {
     return { ok: false, reason: 'conversion-failed' };
   }
 
-  const file = typeof File === 'undefined' ? null : new File([blob], fileName, { type: pngMimeType });
-  const shareNavigator = typeof navigator === 'undefined' ? null : navigator;
-  if (file && canOpenPhotoSaveMenu(shareNavigator, file)) {
-    try {
-      await shareNavigator.share({ files: [file], title: '스코어카드 사진' });
-      return { ok: true, method: 'photo-menu' };
-    } catch (error) {
-      if (error instanceof Error && error.name === 'AbortError') {
-        return { ok: false, reason: 'share-cancelled' };
-      }
-    }
+  const shareResult = await shareScorecardExportPng(fileName, blob);
+  if (shareResult.ok) {
+    return { ok: true, method: 'photo-menu' };
+  }
+  if (shareResult.reason === 'share-cancelled') {
+    return { ok: false, reason: 'share-cancelled' };
   }
 
-  downloadBlob(fileName, blob);
+  downloadScorecardExportPng(fileName, blob);
   return { ok: true, method: 'download' };
 }
 
@@ -246,7 +274,15 @@ function exportedSvgSize(svg: string): { readonly width: number; readonly height
 }
 
 function canOpenPhotoSaveMenu(value: Navigator | null, file: File): value is Navigator & { share: (data: ShareData) => Promise<void>; canShare: (data: ShareData) => boolean } {
-  return Boolean(value && 'share' in value && 'canShare' in value && value.canShare({ files: [file] }));
+  if (!value || !('share' in value) || !('canShare' in value)) {
+    return false;
+  }
+
+  try {
+    return value.canShare({ files: [file] });
+  } catch {
+    return false;
+  }
 }
 
 function downloadBlob(fileName: string, blob: Blob): void {

@@ -3,7 +3,7 @@ import { useState, type CSSProperties } from 'react';
 import { ScorecardGrid } from './ScorecardGrid';
 import { displayPlayerName, relativeScoreLabel, scoreTypeLabel, scorecardPlayerCountOptions } from './domain/scorecard';
 import { parseEditableIntegerDraft } from './inputDrafts';
-import { createScorecardExportSvg, saveScorecardExportPng, scorecardExportFileName } from './scorecardExport';
+import { createScorecardExportPngBlob, createScorecardExportSvg, downloadScorecardExportPng, scorecardExportFileName, shareScorecardExportPng } from './scorecardExport';
 import { useScorecardController } from './useScorecardController';
 import { useScorecardSession } from './useScorecardSession';
 
@@ -11,12 +11,19 @@ const playerTones = ['#2563eb', '#db2777', '#059669', '#d97706'] as const;
 const onGreenChoices = [1, 2, 3, 4, 5, 6] as const;
 const puttChoices = [0, 1, 2, 3, 4, 5] as const;
 
+type ExportPreview = {
+  readonly source: string;
+  readonly fileName: string;
+  readonly blob: Blob;
+};
+
 export function App() {
   const session = useScorecardSession();
   const { round } = session;
   const [holeCountDraft, setHoleCountDraft] = useState(() => round.settings.holeCount.toString());
   const [manualScoreDrafts, setManualScoreDrafts] = useState<Record<string, string>>({});
   const [exportStatus, setExportStatus] = useState<string | null>(null);
+  const [exportPreview, setExportPreview] = useState<ExportPreview | null>(null);
   const controller = useScorecardController({ round, session });
   const selectedHole = controller.roundView.holes.find((hole) => hole.holeNumber === controller.holeNumber);
 
@@ -52,6 +59,7 @@ export function App() {
     setHoleCountDraft('18');
     setManualScoreDrafts({});
     setExportStatus(null);
+    setExportPreview(null);
     controller.resetScorecardDrafts();
     session.resetRound();
   }
@@ -60,6 +68,7 @@ export function App() {
     setHoleCountDraft('18');
     setManualScoreDrafts({});
     setExportStatus(null);
+    setExportPreview(null);
     controller.resetScorecardDrafts();
     session.clearSavedRound();
   }
@@ -75,14 +84,44 @@ export function App() {
 
   async function handleExportPng() {
     const now = new Date().toISOString();
+    const fileName = scorecardExportFileName(round.courseName || round.roundName, now);
     const exportSvg = createScorecardExportSvg({ roundName: round.roundName, courseName: round.courseName, generatedAt: now, view: controller.roundView });
+    setExportPreview(null);
     setExportStatus('스코어카드 사진을 만드는 중입니다.');
-    const result = await saveScorecardExportPng(scorecardExportFileName(round.courseName || round.roundName, now), exportSvg);
-    if (result.ok) {
-      setExportStatus(result.method === 'photo-menu' ? '내보내기 메뉴를 열었습니다. 카카오톡 나에게 보내기 등 원하는 앱을 선택해 주세요.' : 'PNG 사진 파일로 저장했습니다.');
+
+    const blob = await createScorecardExportPngBlob(exportSvg);
+    if (!blob) {
+      setExportStatus('이 브라우저에서는 스코어카드 사진을 만들 수 없습니다.');
       return;
     }
-    setExportStatus(result.reason === 'share-cancelled' ? '사진 저장을 취소했습니다.' : '이 브라우저에서는 사진 저장을 실행할 수 없습니다.');
+
+    const shareResult = await shareScorecardExportPng(fileName, blob);
+    if (shareResult.ok) {
+      setExportStatus('내보내기 메뉴를 열었습니다. 카카오톡 나에게 보내기 등 원하는 앱을 선택해 주세요.');
+      return;
+    }
+    if (shareResult.reason === 'share-cancelled') {
+      setExportStatus('내보내기를 취소했습니다.');
+      return;
+    }
+
+    try {
+      const source = await blobToDataUrl(blob);
+      setExportPreview({ source, fileName, blob });
+      setExportStatus('이 브라우저에서는 내보내기 메뉴가 제한되어 아래 미리보기를 만들었습니다.');
+    } catch {
+      downloadScorecardExportPng(fileName, blob);
+      setExportStatus('파일 다운로드를 요청했습니다. 인앱 브라우저에서는 저장 위치가 표시되지 않을 수 있습니다.');
+    }
+  }
+
+  function downloadExportPreview() {
+    if (!exportPreview) {
+      return;
+    }
+
+    downloadScorecardExportPng(exportPreview.fileName, exportPreview.blob);
+    setExportStatus('파일 다운로드를 요청했습니다. 카카오톡 인앱 브라우저에서는 아래 이미지를 길게 눌러 저장하는 방법이 더 안정적입니다.');
   }
 
   return (
@@ -314,9 +353,32 @@ export function App() {
           <button className="secondary-button" type="button" onClick={clearSavedRound}>저장 기록 지우기</button>
         </div>
         {exportStatus ? <p className="status-text">{exportStatus}</p> : null}
+        {exportPreview ? (
+          <div className="export-preview" aria-label="스코어카드 이미지 미리보기">
+            <img src={exportPreview.source} alt="내보낼 스코어카드 미리보기" />
+            <p>카카오톡 인앱 브라우저에서 다운로드 파일이 안 보이면, 이미지를 길게 눌러 저장/공유하세요. 계속 안 되면 우측 상단 메뉴에서 Chrome 또는 Safari로 열어 다시 내보내면 안정적입니다.</p>
+            <div className="export-actions">
+              <button className="secondary-button" type="button" onClick={downloadExportPreview}>파일 다운로드</button>
+              <button className="secondary-button" type="button" onClick={() => setExportPreview(null)}>미리보기 닫기</button>
+            </div>
+          </div>
+        ) : null}
       </section>
     </main>
   );
+}
+
+function blobToDataUrl(blob: Blob): Promise<string> {
+  if (typeof FileReader === 'undefined') {
+    return Promise.reject(new Error('file reader unavailable'));
+  }
+
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => (typeof reader.result === 'string' ? resolve(reader.result) : reject(new Error('invalid file reader result')));
+    reader.onerror = () => reject(reader.error ?? new Error('file reader failed'));
+    reader.readAsDataURL(blob);
+  });
 }
 
 function clampInteger(value: number, min: number, max: number): number {

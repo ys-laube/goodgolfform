@@ -87,6 +87,16 @@ describe('simple scorecard static guardrails', () => {
     expect(styles).toContain('width: 100%');
   });
 
+  it('keeps a visible in-app browser export fallback instead of silent downloads', () => {
+    const appSource = readRepoFile('src/App.tsx');
+    const styles = readRepoFile('src/styles.css');
+
+    expect(appSource).toContain('이미지를 길게 눌러 저장/공유');
+    expect(appSource).toContain('Chrome 또는 Safari');
+    expect(styles).toContain('.export-preview');
+    expect(styles).toContain('object-fit: contain');
+  });
+
   it('uses the scorecard storage key and does not reference the old ledger key in runtime source', () => {
     const runtime = ['src/domain/scorecardStorage.ts', 'src/useScorecardSession.ts', 'src/App.tsx'].map(readRepoFile).join('\n');
     expect(runtime).toContain('fungolf-scorecard:active-round');
