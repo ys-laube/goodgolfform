@@ -37,6 +37,8 @@ describe('simple scorecard static guardrails', () => {
     expect(html).toContain('펏');
     expect(html).toContain('라운드 리뷰');
     expect(html).toContain('이미지 저장');
+    expect(html).toContain('스코어카드 저장');
+    expect(html).not.toContain('스코어카드 PNG 저장');
   });
 
   it('index metadata describes the simple scorecard product', () => {
@@ -55,7 +57,6 @@ describe('simple scorecard static guardrails', () => {
     }
   });
 
-
   it('keeps each nine-hole scorecard half inside the available width', () => {
     const scorecardCss = readRepoFile('src/scorecard.css');
 
@@ -63,7 +64,6 @@ describe('simple scorecard static guardrails', () => {
     expect(scorecardCss).toContain('width: 100%');
     expect(scorecardCss).not.toContain('min-width: max-content');
   });
-
 
   it('keeps compact mobile scorecard labels centered and par inputs visible', () => {
     const scorecardCss = readRepoFile('src/scorecard.css');
@@ -74,6 +74,15 @@ describe('simple scorecard static guardrails', () => {
     expect(scorecardCss).toContain('text-align: center');
     expect(scorecardCss).toContain('min-width: 0');
     expect(scorecardCss).toContain('padding: 0');
+  });
+
+  it('keeps mobile on-putt choice buttons in two balanced rows of three', () => {
+    const styles = readRepoFile('src/styles.css');
+
+    expect(styles).toContain('grid-template-columns: 2.2rem repeat(3, minmax(2.75rem, 1fr))');
+    expect(styles).toContain('grid-row: 1 / span 2');
+    expect(styles).toContain('.choice-chip');
+    expect(styles).toContain('width: 100%');
   });
 
   it('uses the scorecard storage key and does not reference the old ledger key in runtime source', () => {

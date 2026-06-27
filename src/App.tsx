@@ -79,7 +79,7 @@ export function App() {
     setExportStatus('스코어카드 사진을 만드는 중입니다.');
     const result = await saveScorecardExportPng(scorecardExportFileName(round.courseName || round.roundName, now), exportSvg);
     if (result.ok) {
-      setExportStatus(result.method === 'photo-menu' ? '사진 저장 메뉴를 열었습니다. 사진 앱에 저장을 선택해 주세요.' : 'PNG 사진 파일로 저장했습니다.');
+      setExportStatus(result.method === 'photo-menu' ? '사진 저장 메뉴를 열었습니다. 메뉴에 보이면 이미지 저장/사진에 저장을 선택해 주세요.' : '사진 파일로 다운로드했습니다. 브라우저에 따라 사진첩이 아니라 다운로드 폴더에 저장될 수 있습니다.');
       return;
     }
     setExportStatus(result.reason === 'share-cancelled' ? '사진 저장을 취소했습니다.' : '이 브라우저에서는 사진 저장을 실행할 수 없습니다.');
@@ -307,10 +307,10 @@ export function App() {
         <div>
           <p className="eyebrow">Save image</p>
           <h2 id="export-title">스코어카드 이미지 저장</h2>
-          <p>전체 스코어카드, 라운드 리뷰, 홀 메모를 PNG 사진 한 장으로 저장합니다.</p>
+          <p>전체 스코어카드, 라운드 리뷰, 홀 메모를 사진 한 장으로 저장합니다.</p>
         </div>
         <div className="export-actions">
-          <button className="primary-button" type="button" onClick={handleExportPng}>스코어카드 PNG 저장</button>
+          <button className="primary-button" type="button" onClick={handleExportPng}>스코어카드 저장</button>
           <button className="secondary-button" type="button" onClick={clearSavedRound}>저장 기록 지우기</button>
         </div>
         {exportStatus ? <p className="status-text">{exportStatus}</p> : null}

@@ -338,3 +338,21 @@ input:focus, textarea:focus { border-color: rgba(37, 99, 235, 0.6); box-shadow: 
   .entry-list { grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr)); }
   .export-card { grid-template-columns: 1fr auto; align-items: center; }
 }
+
+@media (max-width: 520px) {
+  .button-row {
+    display: grid;
+    grid-template-columns: 2.2rem repeat(3, minmax(2.75rem, 1fr));
+    align-items: center;
+  }
+
+  .button-row > span {
+    grid-row: 1 / span 2;
+    width: auto;
+    text-align: center;
+  }
+
+  .choice-chip {
+    width: 100%;
+  }
+}
